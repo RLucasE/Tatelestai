@@ -10,15 +10,23 @@ const form = reactive({
   password_confirmation: "",
 });
 
+const errors = reactive({
+  name: [],
+  email: [],
+  password: [],
+});
+
 const register = async (data) => {
   await axiosInstance.get("/sanctum/csrf-cookie", {
     baseURL: "http://localhost:8000",
   });
   try {
-    const response = await axiosInstance.post("/register", data);
-    console.log(response.data);
-  } catch (error) {
-    console.log(error);
+    await axiosInstance.post("/register", data);
+  } catch (e) {
+    console.log(e.response.data);
+    errors.name = e.response.data.errors.name;
+    errors.email = e.response.data.errors.email;
+    errors.password = e.response.data.errors.password;
   }
 };
 </script>
@@ -40,8 +48,13 @@ const register = async (data) => {
         v-model="form.name"
         class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
         placeholder="Name"
-        required
       />
+
+      <template v-if="Array.isArray(errors.name) && errors.name.length">
+        <span v-for="error in errors.name" :key="error" class="text-red-500">{{
+          error
+        }}</span>
+      </template>
     </div>
     <div class="mb-5">
       <label
@@ -57,6 +70,11 @@ const register = async (data) => {
         placeholder="example@gmail.com"
         required
       />
+      <template v-if="Array.isArray(errors.email) && errors.email.length">
+        <span v-for="error in errors.email" :key="error" class="text-red-500">{{
+          error
+        }}</span>
+      </template>
     </div>
     <div class="mb-5">
       <label
@@ -71,6 +89,15 @@ const register = async (data) => {
         class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
         required
       />
+      <template v-if="Array.isArray(errors.password) && errors.password.length">
+        <span
+          v-for="error in errors.password"
+          :key="error"
+          class="text-red-500"
+        >
+          {{ error }}
+        </span>
+      </template>
     </div>
     <div class="mb-5">
       <label
