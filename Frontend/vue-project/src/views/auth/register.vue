@@ -2,6 +2,9 @@
 import { reactive, ref } from "vue";
 import axiosInstance from "@/lib/axios";
 import Button from "@/components/Button.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const form = reactive({
   name: "",
@@ -22,8 +25,11 @@ const register = async (data) => {
   });
   try {
     await axiosInstance.post("/register", data);
+    errors.name = [];
+    errors.email = [];
+    errors.password = [];
+    router.push("/dashboard");
   } catch (e) {
-    console.log(e.response.data);
     errors.name = e.response.data.errors.name;
     errors.email = e.response.data.errors.email;
     errors.password = e.response.data.errors.password;
