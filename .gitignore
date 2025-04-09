@@ -15,19 +15,20 @@ Thumbs.db
 # Node.js
 node_modules/
 
-# Laravel
-/vendor/
-/storage/*.key
-/storage/*.log
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/views/*
-/bootstrap/cache/*
-.env
-.phpunit.result.cache
+# Ignorar vendor (dependencias de Composer)
+Backend/example-app/vendor/
 
-# Composer
-composer.lock
+# Ignorar claves, logs y cachés
+Backend/example-app/storage/*.key
+Backend/example-app/storage/*.log
+Backend/example-app/storage/framework/cache/*
+Backend/example-app/storage/framework/sessions/*
+Backend/example-app/storage/framework/views/*
+Backend/example-app/bootstrap/cache/*
+
+# Ignorar variables de entorno y archivos temporales
+Backend/example-app/.env
+Backend/example-app/.phpunit.result.cache
 
 # IDEs
 .vscode/
