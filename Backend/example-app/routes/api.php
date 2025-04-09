@@ -9,12 +9,6 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 });
 
 
-
-Route::get('/testeeess', function () {
-    return ['Users' => User::all()];
-});
-
-
 Route::get('/test', function () {
     return ['Users' => User::all()];
 });
