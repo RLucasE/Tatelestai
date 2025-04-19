@@ -8,6 +8,7 @@ const router = useRouter();
 
 const form = reactive({
   name: "",
+  last_name: "",
   email: "",
   password: "",
   password_confirmation: "",
@@ -15,6 +16,7 @@ const form = reactive({
 
 const errors = reactive({
   name: [],
+  last_name: [],
   email: [],
   password: [],
 });
@@ -26,11 +28,13 @@ const register = async (data) => {
   try {
     await axiosInstance.post("/register", data);
     errors.name = [];
+    errors.last_name = [];
     errors.email = [];
     errors.password = [];
     router.push("/dashboard");
   } catch (e) {
     errors.name = e.response.data.errors.name;
+    errors.last_name = e.response.data.errors.last_name;
     errors.email = e.response.data.errors.email;
     errors.password = e.response.data.errors.password;
   }
@@ -52,6 +56,26 @@ const register = async (data) => {
         type="name"
         id="name"
         v-model="form.name"
+        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
+        placeholder="Name"
+      />
+
+      <template v-if="Array.isArray(errors.name) && errors.name.length">
+        <span v-for="error in errors.name" :key="error" class="text-red-500">{{
+          error
+        }}</span>
+      </template>
+    </div>
+    <div class="mb-5">
+      <label
+        for="last_name"
+        class="block mb-5 text-sm font-medium text-gray-900 dark:text-white"
+        >Last name</label
+      >
+      <input
+        type="last_name"
+        id="last_name"
+        v-model="form.last_name"
         class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
         placeholder="Name"
       />
