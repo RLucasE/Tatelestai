@@ -29,5 +29,26 @@ class OfferCateSeeder extends Seeder
             'offer_id' => 1,
             'category_id' => 3
         ]);
+
+
+        OfferCate::create([
+            'offer_id' => 2,
+            'category_id' => 1
+        ]);
+
+        OfferCate::create([
+            'offer_id' => 2,
+            'category_id' => 2
+        ]);
+
+        OfferCate::create([
+            'offer_id' => 3,
+            'category_id' => 3
+        ]);
+
+        OfferCate::create([
+            'offer_id' => 3,
+            'category_id' => 2
+        ]);
     }
 }

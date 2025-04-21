@@ -19,5 +19,13 @@ class OfferSeeder extends Seeder
         Offer::factory()->create([
             'user_id' => User::first()->id
         ]);
+
+        Offer::factory()->create([
+            'user_id' => User::first()->id
+        ]);
+
+        Offer::factory()->create([
+            'user_id' => User::first()->id
+        ]);
     }
 }

@@ -31,7 +31,7 @@ const register = async (data) => {
     errors.last_name = [];
     errors.email = [];
     errors.password = [];
-    router.push("/dashboard");
+    router.push("/customer");
   } catch (e) {
     errors.name = e.response.data.errors.name;
     errors.last_name = e.response.data.errors.last_name;

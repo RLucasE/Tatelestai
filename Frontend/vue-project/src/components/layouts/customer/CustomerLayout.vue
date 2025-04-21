@@ -1,3 +1,25 @@
+<script setup>
+import axiosInstance from "@/lib/axios";
+import { ref } from "vue";
+import CustomerCard from "./CustomerCard.vue";
+
+const offers = ref([]);
+
+const getOffers = async () => {
+  try {
+    const response = await axiosInstance.get("/offers");
+    offers.value = response.data;
+    console.log("offers: ", offers);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching offers:", error);
+    throw error;
+  }
+};
+
+getOffers();
+</script>
+
 <template>
   <nav class="flex justify-between items-center bg-gray-500 pl-6 pr-6 h-16">
     <div>
@@ -18,9 +40,21 @@
       >
     </div>
   </nav>
-  <main>
-    <RouterView></RouterView>
-    <RouterView></RouterView>
-    <RouterView></RouterView>
+  <main class="customer-cards-box bg-white">
+    <div v-for="offer in offers" :key="offer.id">
+      <CustomerCard :offer="offer"></CustomerCard>
+    </div>
   </main>
 </template>
+
+<style scoped>
+.customer-cards-box {
+  display: flex;
+  flex-wrap: wrap;
+  background-color: slategrey;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  height: 100vh;
+}
+</style>
