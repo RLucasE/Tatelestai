@@ -17,7 +17,19 @@ const getOffers = async () => {
   }
 };
 
+const getUser = async () => {
+  try {
+    const response = await axiosInstance.get("/user");
+    console.log("user: ", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    throw error;
+  }
+};
+
 getOffers();
+getUser();
 </script>
 
 <template>

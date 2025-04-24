@@ -4,12 +4,17 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Offer;
+use Illuminate\Support\Facades\Auth;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
+    $user = Auth::user();
+    return [
+        'user' => $user,
+        'roles' => $user->roles->pluck('name'), // Obtener los roles del usuario
+    ];
 });
 
-Route::middleware(['auth:sanctum'])->get('/offers', function (Request $request) {
+Route::middleware(['auth:sanctum', 'role:customer'])->get('/offers', function (Request $request) {
     return Offer::with('categories')
         ->latest()
         ->take(10) // Limita a 10 resultados

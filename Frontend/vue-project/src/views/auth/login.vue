@@ -2,6 +2,9 @@
 import { reactive } from "vue";
 import axiosInstance from "@/lib/axios";
 import Button from "@/components/Button.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const form = reactive({
   email: "",
@@ -14,6 +17,7 @@ const login = async (data) => {
   });
   try {
     const response = await axiosInstance.post("/login", data);
+    router.push("/customer");
     console.log(response.data);
   } catch (error) {
     console.log(error);
