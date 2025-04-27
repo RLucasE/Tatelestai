@@ -2,8 +2,10 @@
 import axiosInstance from "@/lib/axios";
 import { ref } from "vue";
 import CustomerCard from "./CustomerCard.vue";
+import { useAuthStore } from "@/stores/auth";
 
 const offers = ref([]);
+const authStore = useAuthStore();
 
 const getOffers = async () => {
   try {
@@ -29,7 +31,9 @@ const getUser = async () => {
 };
 
 getOffers();
-getUser();
+getUser(); // Fetch user data when the component is mounted
+const user = authStore.isLoggedIn;
+console.log("user authenticated: ", user);
 </script>
 
 <template>

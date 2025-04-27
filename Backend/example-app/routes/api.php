@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Auth;
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     $user = Auth::user();
     return [
-        'user' => $user,
+        'id' => $user->id,
+        'name' => $user->name,
+        'last_name' => $user->last_name,
+        'email' => $user->email,
         'roles' => $user->roles->pluck('name'), // Obtener los roles del usuario
     ];
 });

@@ -1,10 +1,11 @@
 <script setup>
 import { reactive } from "vue";
-import axiosInstance from "@/lib/axios";
 import Button from "@/components/Button.vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const form = reactive({
   email: "",
@@ -12,17 +13,15 @@ const form = reactive({
 });
 
 const login = async (data) => {
-  await axiosInstance.get("/sanctum/csrf-cookie", {
-    baseURL: "http://localhost:8000",
-  });
   try {
-    const response = await axiosInstance.post("/login", data);
+    await authStore.login(data);
     router.push("/customer");
-    console.log(response.data);
   } catch (error) {
-    console.log(error);
+    console.error("Login failed:", error);
   }
 };
+
+console.log("user store", authStore.isLoggedIn);
 </script>
 
 <template>
@@ -40,6 +39,7 @@ const login = async (data) => {
         type="email"
         id="email"
         v-model="form.email"
+        autocomplete="email"
         class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
         placeholder="example@gmail.com"
         required
@@ -55,6 +55,7 @@ const login = async (data) => {
         type="password"
         id="password"
         v-model="form.password"
+        autocomplete="current-password"
         class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
         required
       />

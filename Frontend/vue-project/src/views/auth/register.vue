@@ -1,10 +1,11 @@
 <script setup>
 import { reactive, ref } from "vue";
-import axiosInstance from "@/lib/axios";
 import Button from "@/components/Button.vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const form = reactive({
   name: "",
@@ -22,21 +23,18 @@ const errors = reactive({
 });
 
 const register = async (data) => {
-  await axiosInstance.get("/sanctum/csrf-cookie", {
-    baseURL: "http://localhost:8000",
-  });
+  for (const error in errors) {
+    errors[error] = [];
+  }
   try {
-    await axiosInstance.post("/register", data);
-    errors.name = [];
-    errors.last_name = [];
-    errors.email = [];
-    errors.password = [];
-    router.push("/customer");
-  } catch (e) {
-    errors.name = e.response.data.errors.name;
-    errors.last_name = e.response.data.errors.last_name;
-    errors.email = e.response.data.errors.email;
-    errors.password = e.response.data.errors.password;
+    await authStore.register(data); // Llama a registerLogic con los datos del formulario
+    router.push("/customer"); // Redirige al usuario después de un registro exitoso
+  } catch (error) {
+    console.error("Register failed:", error);
+    errors.name = error.response.data.errors.name;
+    errors.last_name = error.response.data.errors.last_name;
+    errors.email = error.response.data.errors.email;
+    errors.password = error.response.data.errors.password;
   }
 };
 </script>
