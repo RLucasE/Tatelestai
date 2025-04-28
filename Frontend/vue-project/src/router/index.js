@@ -37,8 +37,9 @@ router.beforeEach((to, from, next) => {
     return next(); // Permite el acceso
   }
 
-  // Si la ruta no es pública, verifica si el usuario está autenticado
-  if (!authStore.isLoggedIn) {
+  authStore.verifySession(); // Verifica la sesión del usuario
+
+  if (!authStore.isLoggedIn()) {
     return next({ name: "login" }); // Redirige al login si no está autenticado
   }
 

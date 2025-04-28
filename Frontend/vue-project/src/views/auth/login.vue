@@ -20,8 +20,6 @@ const login = async (data) => {
     console.error("Login failed:", error);
   }
 };
-
-console.log("user store", authStore.isLoggedIn);
 </script>
 
 <template>

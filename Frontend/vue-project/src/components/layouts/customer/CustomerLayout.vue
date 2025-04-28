@@ -31,9 +31,6 @@ const getUser = async () => {
 };
 
 getOffers();
-getUser(); // Fetch user data when the component is mounted
-const user = authStore.isLoggedIn;
-console.log("user authenticated: ", user);
 </script>
 
 <template>

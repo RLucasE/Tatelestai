@@ -2,41 +2,66 @@
 import { defineStore } from "pinia";
 import axiosInstance from "@/lib/axios";
 import { loginLogic, registerLogic } from "@/lib/authentication";
+import { useStorageStore } from "@/stores/storage";
 
-export const useAuthStore = defineStore("auth", {
-  state: () => ({
-    user: null,
-  }),
-  getters: {
-    isLoggedIn: (state) => !!state.user,
-  },
-  actions: {
-    async fetchUser() {
+export const useAuthStore = defineStore("auth", () => {
+  let user = useStorageStore().getUser();
+  let isAuthenticated = false;
+
+  function isLoggedIn() {
+    return user;
+  }
+
+  async function fetchUser() {
+    try {
+      const data = await axiosInstance.get("/user");
+      console.log("Fetched user", data.data);
+      user.value = data.data;
+      isAuthenticated = true;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function login(data) {
+    try {
+      await loginLogic(data);
+      await fetchUser();
+    } catch (error) {
+      console.error("login error in auth store", error);
+      throw error;
+    }
+  }
+
+  async function register(data) {
+    try {
+      await registerLogic(data);
+      await fetchUser();
+    } catch (error) {
+      console.error("register error in auth store", error);
+      throw error;
+    }
+  }
+
+  async function verifySession() {
+    if (user && !isAuthenticated) {
+      console.log("User in auth store", user);
       try {
-        const data = await axiosInstance.get("/user");
-        console.log("Fetched user", data.data);
-        this.user = data.data;
+        await fetchUser();
       } catch (error) {
-        console.log(error);
+        console.error("Error verifying session", error);
+        isAuthenticated = false;
+        user = null;
       }
-    },
-    async login(data) {
-      try {
-        await loginLogic(data);
-        await this.fetchUser();
-      } catch (error) {
-        console.error("login error in auth store", error);
-        throw error;
-      }
-    },
-    async register(data) {
-      try {
-        await registerLogic(data);
-        await this.fetchUser();
-      } catch (error) {
-        console.error("register error in auth store", error);
-        throw error;
-      }
-    },
-  },
+    }
+    console.log(isAuthenticated);
+  }
+
+  return {
+    verifySession,
+    isLoggedIn,
+    fetchUser,
+    login,
+    register,
+  };
 });
