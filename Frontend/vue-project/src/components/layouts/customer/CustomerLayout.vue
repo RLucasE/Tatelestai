@@ -15,7 +15,6 @@ const getOffers = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching offers:", error);
-    throw error;
   }
 };
 

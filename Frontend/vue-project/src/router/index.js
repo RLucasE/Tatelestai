@@ -26,7 +26,7 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   // Rutas públicas
@@ -37,7 +37,13 @@ router.beforeEach((to, from, next) => {
     return next(); // Permite el acceso
   }
 
-  authStore.verifySession(); // Verifica la sesión del usuario
+  try {
+    await authStore.verifySession();
+  } catch (error) {
+    console.error("Error verifying session in router.beforeHeach", error);
+  }
+
+  // Verifica la sesión del usuario
 
   if (!authStore.isLoggedIn()) {
     return next({ name: "login" }); // Redirige al login si no está autenticado

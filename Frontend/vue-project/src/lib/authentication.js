@@ -3,10 +3,10 @@ import axiosInstance from "./axios";
 const baseURL = "http://localhost:8000";
 
 export const loginLogic = async (data) => {
-  await axiosInstance.get("/sanctum/csrf-cookie", {
-    baseURL,
-  });
   try {
+    await axiosInstance.get("/sanctum/csrf-cookie", {
+      baseURL,
+    });
     const response = await axiosInstance.post("/login", data);
     console.log(response.data);
   } catch (error) {

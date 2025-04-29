@@ -18,6 +18,7 @@ const login = async (data) => {
     router.push("/customer");
   } catch (error) {
     console.error("Login failed:", error);
+    throw error;
   }
 };
 </script>

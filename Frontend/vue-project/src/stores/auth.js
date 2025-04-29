@@ -19,7 +19,8 @@ export const useAuthStore = defineStore("auth", () => {
       user.value = data.data;
       isAuthenticated = true;
     } catch (error) {
-      console.log(error);
+      console.log("error fetching user", error);
+      throw error;
     }
   }
 
@@ -49,9 +50,10 @@ export const useAuthStore = defineStore("auth", () => {
       try {
         await fetchUser();
       } catch (error) {
-        console.error("Error verifying session", error);
+        console.error("Error verifying session in auth.verifySession", error);
         isAuthenticated = false;
-        user = null;
+        user.value = null;
+        throw error;
       }
     }
     console.log(isAuthenticated);
