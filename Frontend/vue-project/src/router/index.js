@@ -42,14 +42,6 @@ router.beforeEach(async (to, from, next) => {
   } catch (error) {
     console.error("Error verifying session in router.beforeHeach", error);
   }
-
-  // Verifica la sesión del usuario
-
-  if (!authStore.isLoggedIn()) {
-    return next({ name: "login" }); // Redirige al login si no está autenticado
-  }
-
-  // Permite el acceso a rutas protegidas si el usuario está autenticado
   next();
 });
 
