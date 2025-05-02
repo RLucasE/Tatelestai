@@ -12,6 +12,18 @@ export const useAuthStore = defineStore("auth", () => {
     return user;
   }
 
+  function isCustomer() {
+    return user && user.value.roles.includes("customer");
+  }
+
+  function isAdmin() {
+    return user && user.value.roles.includes("admin");
+  }
+
+  function isSeller() {
+    return user && user.value.roles.includes("seller");
+  }
+
   async function fetchUser() {
     try {
       const data = await axiosInstance.get("/user");
@@ -60,6 +72,9 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   return {
+    isCustomer,
+    isAdmin,
+    isSeller,
     verifySession,
     isLoggedIn,
     fetchUser,

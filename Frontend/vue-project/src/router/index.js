@@ -5,6 +5,7 @@ import Login from "@/views/auth/login.vue";
 import CustomerLayout from "@/components/layouts/customer/CustomerLayout.vue";
 import CustomerCard from "@/components/layouts/customer/CustomerCard.vue";
 import { useAuthStore } from "@/stores/auth";
+import DashboardLayout from "@/components/layouts/DashboardLayout.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,15 +14,41 @@ const router = createRouter({
       path: "/",
       component: HomeLayout,
       children: [
-        { path: "register", component: Register },
-        { name: "login", path: "login", component: Login },
+        {
+          name: "register",
+          path: "register",
+          component: Register,
+          meta: { requiresAuth: false },
+        },
+        {
+          name: "login",
+          path: "login",
+          component: Login,
+          meta: { requiresAuth: false },
+        },
       ],
+      meta: {
+        requiresAuth: false,
+      },
     },
     {
       path: "/customer",
       name: "customer",
       component: CustomerLayout,
       children: [{ path: "", name: "main", component: CustomerCard }],
+      meta: {
+        requiresAuth: true,
+        requiresCustomer: true,
+      },
+    },
+    {
+      path: "/seller",
+      name: "seller",
+      component: DashboardLayout,
+      meta: {
+        requiresAuth: true,
+        requiresCustomer: true,
+      },
     },
   ],
 });
@@ -29,19 +56,13 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  // Rutas públicas
-  const publicRoutes = ["/", "/login", "/register"];
+  authStore.verifySession();
 
-  // Verifica si la ruta es pública
-  if (publicRoutes.includes(to.path)) {
-    return next(); // Permite el acceso
+  if (!authStore.isLoggedIn()) {
+    console.log("not authenticated, redirecting to login");
+    return next({ name: "login" });
   }
 
-  try {
-    await authStore.verifySession();
-  } catch (error) {
-    console.error("Error verifying session in router.beforeHeach", error);
-  }
   next();
 });
 

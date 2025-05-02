@@ -15,7 +15,19 @@ const form = reactive({
 const login = async (data) => {
   try {
     await authStore.login(data);
-    router.push("/customer");
+    switch (true) {
+      case authStore.isCustomer():
+        router.push("/customer");
+        break;
+      case authStore.isAdmin():
+        router.push("/admin");
+        break;
+      case authStore.isSeller():
+        router.push("/seller");
+        break;
+      default:
+        console.error("Unknown user role");
+    }
   } catch (error) {
     console.error("Login failed:", error);
     throw error;
