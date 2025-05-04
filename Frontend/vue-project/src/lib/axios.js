@@ -26,7 +26,7 @@ axiosInstance.interceptors.response.use(
         router.push({ name: "login" });
       } else if (status === 403) {
         // Handle forbidden access
-        router.push({ name: "forbidden" });
+        router.push({ name: "login" });
       } else if (status === 404) {
         // Handle not found
         router.push({ name: "not-found" });

@@ -56,14 +56,35 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  authStore.verifySession();
+  try {
+    await authStore.verifySession();
+  } catch (error) {
+    if (!to.meta.requiresAuth) {
+      next();
+    }
+  }
+  console.log(to.meta.requiresAuth, authStore.isLoggedIn());
 
-  if (!authStore.isLoggedIn()) {
-    console.log("not authenticated, redirecting to login");
-    return next({ name: "login" });
+  if (to.meta.requiresAuth && authStore.isLoggedIn()) {
+    next();
   }
 
-  next();
+  if (!to.meta.requiresAuth && authStore.isLoggedIn()) {
+    switch (true) {
+      case authStore.isCustomer():
+        next({ name: "customer" });
+        break;
+      case authStore.isSeller():
+        next({ name: "seller" });
+        break;
+      default:
+        next({ name: "login" });
+    }
+  }
+
+  if (to.meta.requiresAuth && !authStore.isLoggedIn()) {
+    next({ name: "login" });
+  }
 });
 
 export default router;

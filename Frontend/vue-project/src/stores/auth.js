@@ -1,6 +1,6 @@
 // stores/users.js
 import { defineStore } from "pinia";
-import axiosInstance from "@/lib/axios";
+import axiosInstance from "@/lib/helpers/axiosDefault";
 import { loginLogic, registerLogic } from "@/lib/authentication";
 import { useStorageStore } from "@/stores/storage";
 
@@ -9,7 +9,7 @@ export const useAuthStore = defineStore("auth", () => {
   let isAuthenticated = false;
 
   function isLoggedIn() {
-    return user;
+    return user.value !== null;
   }
 
   function isCustomer() {
