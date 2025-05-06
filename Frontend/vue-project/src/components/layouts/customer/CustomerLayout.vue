@@ -35,27 +35,28 @@ getOffers();
 <template>
   <nav class="flex justify-between items-center bg-gray-500 pl-6 pr-6 h-16">
     <div>
-      <a
-        href="#"
-        class="flex-no-grow flex-no-shrink relative py-2 px-4 leading-normal text-white no-underline flex items-center hover:bg-gray-700"
-        >Logotipo</a
+      <RouterLink
+        class="py-2 px-4 leading-normal text-white no-underline hover:bg-gray-700"
+        to="/customer"
+        >Logotipo</RouterLink
       >
     </div>
     <div>
-      <a href="#" class="py-2 px-4 text-white no-underline hover:bg-gray-700"
-        >Carrito</a
-      >
-      <a
-        href="#"
+      <RouterLink
         class="py-2 px-4 leading-normal text-white no-underline hover:bg-gray-700"
-        >Perfil</a
+        to="/customer/offers"
+        >Ofertas</RouterLink
+      >
+
+      <RouterLink
+        class="py-2 px-4 leading-normal text-white no-underline hover:bg-gray-700"
+        to="profile"
+        >Perfil</RouterLink
       >
     </div>
   </nav>
   <main class="customer-cards-box bg-white">
-    <div v-for="offer in offers" :key="offer.id">
-      <CustomerCard :offer="offer"></CustomerCard>
-    </div>
+    <RouterView></RouterView>
   </main>
 </template>
 
