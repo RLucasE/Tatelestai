@@ -1,3 +1,14 @@
+<script setup>
+import { useAuthStore } from "@/stores/auth";
+
+const authStore = useAuthStore();
+
+const getUser = () => {
+  return authStore.getUser();
+};
+
+const user = getUser();
+</script>
 <template>
-  <div>Profile</div>
+  <div>{{ user }}</div>
 </template>

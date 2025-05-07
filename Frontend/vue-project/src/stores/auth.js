@@ -8,6 +8,10 @@ export const useAuthStore = defineStore("auth", () => {
   let user = useStorageStore().getUser();
   let isAuthenticated = false;
 
+  function getUser() {
+    return user.value;
+  }
+
   function isLoggedIn() {
     return user.value !== null;
   }
@@ -72,6 +76,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   return {
+    getUser,
     isCustomer,
     isAdmin,
     isSeller,

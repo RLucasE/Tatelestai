@@ -3,33 +3,6 @@ import axiosInstance from "@/lib/axios";
 import { ref } from "vue";
 import CustomerCard from "./CustomerCard.vue";
 import { useAuthStore } from "@/stores/auth";
-
-const offers = ref([]);
-const authStore = useAuthStore();
-
-const getOffers = async () => {
-  try {
-    const response = await axiosInstance.get("/offers");
-    offers.value = response.data;
-    console.log("offers: ", offers);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching offers:", error);
-  }
-};
-
-const getUser = async () => {
-  try {
-    const response = await axiosInstance.get("/user");
-    console.log("user: ", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    throw error;
-  }
-};
-
-getOffers();
 </script>
 
 <template>
@@ -50,7 +23,7 @@ getOffers();
 
       <RouterLink
         class="py-2 px-4 leading-normal text-white no-underline hover:bg-gray-700"
-        to="profile"
+        to="/customer/profile"
         >Perfil</RouterLink
       >
     </div>
