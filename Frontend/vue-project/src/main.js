@@ -5,16 +5,15 @@ import App from "./App.vue";
 import router from "./router";
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
-import { setAxiosRouter } from "./lib/axios";
 
 const app = createApp(App);
 const pinia = createPinia();
 
 pinia.use(piniaPluginPersistedstate);
 
-setAxiosRouter(router);
-
 app.use(pinia);
 app.use(router);
 
-app.mount("#app");
+router.isReady().then(() => {
+  app.mount("#app"); // ✅ solo montamos cuando el router ya está listo
+});

@@ -12,34 +12,40 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  try {
-    await authStore.verifySession();
-  } catch (error) {
-    if (!to.meta.requiresAuth) {
+  if (!to.meta.requiresAuth) {
+    console.log("heavy ferifyi session...");
+    try {
+      await authStore.heavyVerifySession();
+      next({ name: "customer" });
+    } catch (error) {
       next();
-    }
-  }
-  console.log(to.meta.requiresAuth, authStore.isLoggedIn());
-
-  if (to.meta.requiresAuth && authStore.isLoggedIn()) {
-    next();
-  }
-
-  if (!to.meta.requiresAuth && authStore.isLoggedIn()) {
-    switch (true) {
-      case authStore.isCustomer():
-        next({ name: "customer" });
-        break;
-      case authStore.isSeller():
-        next({ name: "seller" });
-        break;
-      default:
-        next({ name: "login" });
+      console.log(error);
     }
   }
 
-  if (to.meta.requiresAuth && !authStore.isLoggedIn()) {
-    next({ name: "login" });
+  if (to.meta.requiresAuth) {
+    try {
+      await authStore.verifySession();
+    } catch (error) {
+      console.log(error);
+    }
+
+    if (authStore.isLoggedIn()) {
+      if (!from.meta.requiresAuth) {
+        if (authStore.isCustomer() && to.meta.requiresCustomer) {
+          next();
+        }
+        if (authStore.isSeller() && to.meta.requiresSeller) {
+          next();
+        }
+      } else {
+        next();
+      }
+    }
+
+    if (!authStore.isLoggedIn()) {
+      next({ name: "login" });
+    }
   }
 });
 
