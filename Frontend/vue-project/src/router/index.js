@@ -32,7 +32,12 @@ router.beforeEach(async (to, from, next) => {
 
     if (authStore.isLoggedIn()) {
       if (!from.meta.requiresAuth) {
-        if (authStore.isCustomer() && to.meta.requiresCustomer) {
+        if (
+          authStore.isCustomer() &&
+          to.meta.requiresCustomer &&
+          from.name !== "customer"
+        ) {
+          console.log("customer");
           next();
         }
         if (authStore.isSeller() && to.meta.requiresSeller) {
