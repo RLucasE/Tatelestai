@@ -31,9 +31,18 @@
   --color-border-hover: var(--vt-c-divider-light-1);
 
   --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  
 
   --section-gap: 160px;
+
+  --color-text: #ffffff;     
+  --color-bg: #afadab;        /* Zinc 900 */
+  --color-primary: #6f6c69;   /* Indigo 500 */
+  --color-secondary: #5f5c59;    /* Fuchsia 400 */
+  --color-focus: #3e3b39;
+  --color-darkest:  #22201f  ;  /* Cyan 300 */
+
+  --border-radius: 0.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,7 +55,7 @@
     --color-border-hover: var(--vt-c-divider-dark-1);
 
     --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
+   
   }
 }
 
@@ -54,6 +63,7 @@ body {
   min-height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
+  margin: 0;
   transition:
     color 0.5s,
     background-color 0.5s;

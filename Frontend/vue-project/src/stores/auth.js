@@ -36,6 +36,8 @@ export const useAuthStore = defineStore("auth", () => {
       isAuthenticated = true;
     } catch (error) {
       console.log("error fetching user", error);
+      isAuthenticated = false;
+      user.value = null;
       throw error;
     }
   }
@@ -60,6 +62,15 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
+  async function heavyVerifySession() {
+    try {
+      await fetchUser();
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
   async function verifySession() {
     if (user && !isAuthenticated) {
       console.log("User in auth store", user);
@@ -67,8 +78,6 @@ export const useAuthStore = defineStore("auth", () => {
         await fetchUser();
       } catch (error) {
         console.error("Error verifying session in auth.verifySession", error);
-        isAuthenticated = false;
-        user.value = null;
         throw error;
       }
     }
@@ -80,6 +89,7 @@ export const useAuthStore = defineStore("auth", () => {
     isCustomer,
     isAdmin,
     isSeller,
+    heavyVerifySession,
     verifySession,
     isLoggedIn,
     fetchUser,

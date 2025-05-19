@@ -17,7 +17,12 @@ const login = async (data) => {
     await authStore.login(data);
     switch (true) {
       case authStore.isCustomer():
-        router.push("/customer");
+        try {
+          router.push({ name: "customer" });
+        } catch (error) {
+          console.log(error);
+        }
+
         break;
       case authStore.isAdmin():
         router.push("/admin");

@@ -16,10 +16,51 @@ const getOffers = async () => {
   }
 };
 
+console.log(axiosInstance);
 getOffers();
 </script>
 <template>
-  <div v-for="offer in offers" class="customer-card-box">
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
+    <CustomerCard :offer="offer" />
+  </div>
+  <div class="customer-card-box" v-for="offer in offers">
     <CustomerCard :offer="offer" />
   </div>
 </template>
+
+<style scoped>
+.customer-card-box {
+  background-color: var(--color-focus);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 20rem;
+
+  border-radius: var(--border-radius);
+}
+
+@media (min-width: 768px) {
+  .customer-card-box {
+    height: 5rem;
+    margin: 2rem;
+  }
+}
+</style>
