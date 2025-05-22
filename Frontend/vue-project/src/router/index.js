@@ -9,14 +9,23 @@ const router = createRouter({
   routes: [...noAuthRoutes, ...customerRoutes, ...sellerRoutes],
 });
 
+function redirectByRole(authStore, next) {
+  if (authStore.isCustomer()) {
+    next({ name: "customer" });
+  } else if (authStore.isSeller()) {
+    next({ name: "seller" });
+  } else {
+    next({ path: "/" });
+  }
+}
+
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   if (!to.meta.requiresAuth) {
-    console.log("heavy ferifyi session...");
     try {
       await authStore.heavyVerifySession();
-      next({ name: "customer" });
+      redirectByRole(authStore, next);
     } catch (error) {
       next();
       console.log(error);
@@ -31,20 +40,15 @@ router.beforeEach(async (to, from, next) => {
     }
 
     if (authStore.isLoggedIn()) {
-      if (!from.meta.requiresAuth) {
-        if (
-          authStore.isCustomer() &&
-          to.meta.requiresCustomer &&
-          from.name !== "customer"
-        ) {
-          console.log("customer");
+      switch (true) {
+        case to.meta.requiresCustomer && authStore.isCustomer():
           next();
-        }
-        if (authStore.isSeller() && to.meta.requiresSeller) {
+          break;
+        case to.meta.requiresSeller && authStore.isSeller():
           next();
-        }
-      } else {
-        next();
+          break;
+        default:
+          redirectByRole(authStore, next);
       }
     }
 

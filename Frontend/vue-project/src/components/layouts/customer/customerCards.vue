@@ -16,7 +16,6 @@ const getOffers = async () => {
   }
 };
 
-console.log(axiosInstance);
 getOffers();
 </script>
 <template>

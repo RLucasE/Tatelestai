@@ -5,7 +5,7 @@ export default [
     component: () => import("@/components/layouts/DashboardLayout.vue"),
     meta: {
       requiresAuth: true,
-      requiresCustomer: true,
+      requiresSeller: true,
     },
   },
 ];
