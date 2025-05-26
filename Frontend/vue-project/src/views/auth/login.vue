@@ -30,6 +30,9 @@ const login = async (data) => {
       case authStore.isSeller():
         router.push("/seller");
         break;
+      case authStore.isUnknowknChoice():
+        router.push("/select-role");
+        break;
       default:
         console.error("Unknown user role");
     }

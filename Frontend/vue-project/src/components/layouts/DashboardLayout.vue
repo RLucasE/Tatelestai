@@ -1,13 +1,15 @@
-<script setup></script>
+<script setup>
+import Sidevar from "./seller/Sidevar.vue";
+</script>
 
 <template>
   <nav class="flex justify-between items-center pl-6 pr-6 h-16">
     <div>
-      <RouterLink
+      <!-- <RouterLink
         class="py-2 px-4 leading-normal customer-nav-link"
         to="/customer"
         >Logotipo</RouterLink
-      >
+      > -->
     </div>
     <div>
       <RouterLink
@@ -19,6 +21,7 @@
   </nav>
   <main class="customer-cards-box">
     <RouterView></RouterView>
+    <Sidevar></Sidevar>
   </main>
 </template>
 

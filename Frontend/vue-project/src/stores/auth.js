@@ -28,6 +28,10 @@ export const useAuthStore = defineStore("auth", () => {
     return user && user.value.roles.includes("seller");
   }
 
+  function isUnknowknChoice() {
+    return user && user.value.roles.includes("unknown_choice");
+  }
+
   async function fetchUser() {
     try {
       const data = await axiosInstance.get("/user");
@@ -89,6 +93,7 @@ export const useAuthStore = defineStore("auth", () => {
     isCustomer,
     isAdmin,
     isSeller,
+    isUnknowknChoice,
     heavyVerifySession,
     verifySession,
     isLoggedIn,

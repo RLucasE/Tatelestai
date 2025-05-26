@@ -14,6 +14,4 @@ pinia.use(piniaPluginPersistedstate);
 app.use(pinia);
 app.use(router);
 
-router.isReady().then(() => {
-  app.mount("#app"); // ✅ solo montamos cuando el router ya está listo
-});
+app.mount("#app"); // ✅ solo montamos cuando el router ya está listo

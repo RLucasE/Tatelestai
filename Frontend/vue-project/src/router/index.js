@@ -2,11 +2,12 @@ import { createRouter, createWebHistory } from "vue-router";
 import customerRoutes from "./modules/customer-routes";
 import noAuthRoutes from "./modules/no-auth-routes";
 import sellerRoutes from "./modules/seller-routes";
+import otherRoutes from "./modules/other-routes";
 import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...noAuthRoutes, ...customerRoutes, ...sellerRoutes],
+  routes: [...noAuthRoutes, ...customerRoutes, ...sellerRoutes, ...otherRoutes],
 });
 
 function redirectByRole(authStore, next) {
@@ -14,6 +15,8 @@ function redirectByRole(authStore, next) {
     next({ name: "customer" });
   } else if (authStore.isSeller()) {
     next({ name: "seller" });
+  } else if (authStore.isUnknowknChoice()) {
+    next({ name: "select-role" });
   } else {
     next({ path: "/" });
   }
@@ -45,6 +48,9 @@ router.beforeEach(async (to, from, next) => {
           next();
           break;
         case to.meta.requiresSeller && authStore.isSeller():
+          next();
+          break;
+        case to.meta.requiresUnknowknChoice && authStore.isUnknowknChoice():
           next();
           break;
         default:
