@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Offer;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\UserManagement;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     $user = Auth::user();
@@ -17,6 +18,8 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     ];
 });
 
+Route::middleware(['auth:sanctum', 'role:unknown_choice'])->post('/select-role', [UserManagement::class, 'chooseRole']);
+
 Route::middleware(['auth:sanctum', 'role:customer'])->get('/offers', function (Request $request) {
     return Offer::with('categories')
         ->latest()
@@ -26,5 +29,5 @@ Route::middleware(['auth:sanctum', 'role:customer'])->get('/offers', function (R
 
 
 Route::get('/test', function () {
-    return ['Users' => User::all()];
+    return ['Users' => Auth::user()->hasRole("unknown_choice") ? "Unknown Choice" : "Known Choice"];
 });
