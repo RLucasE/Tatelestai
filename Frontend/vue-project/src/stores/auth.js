@@ -46,6 +46,14 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
+  async function refreshUser() {
+    try {
+      await fetchUser();
+    } catch (error) {
+      console.log("error refreshing user", error);
+    }
+  }
+
   async function login(data) {
     try {
       await loginLogic(data);
@@ -98,6 +106,7 @@ export const useAuthStore = defineStore("auth", () => {
     verifySession,
     isLoggedIn,
     fetchUser,
+    refreshUser,
     login,
     register,
   };

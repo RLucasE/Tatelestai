@@ -29,5 +29,5 @@ Route::middleware(['auth:sanctum', 'role:customer'])->get('/offers', function (R
 
 
 Route::get('/test', function () {
-    return ['Users' => Auth::user()->hasRole("unknown_choice") ? "Unknown Choice" : "Known Choice"];
+    return "test";
 });
