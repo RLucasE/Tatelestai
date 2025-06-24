@@ -5,9 +5,9 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Offer>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\establishmentType>
  */
-class OfferFactory extends Factory
+class EstablishmentTypeFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -18,7 +18,6 @@ class OfferFactory extends Factory
     {
         return [
             //
-            'expiration_date' => $this->faker->dateTimeBetween('+1 day', '+1 week'),
         ];
     }
 }

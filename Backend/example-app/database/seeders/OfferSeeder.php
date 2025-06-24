@@ -17,15 +17,9 @@ class OfferSeeder extends Seeder
     {
         //
         Offer::factory()->create([
-            'user_id' => User::first()->id
-        ]);
-
-        Offer::factory()->create([
-            'user_id' => User::first()->id
-        ]);
-
-        Offer::factory()->create([
-            'user_id' => User::first()->id
+            'food_establishment_id' => 1,
+            'title' => 'Papas Fritas y Pancho',
+            'description' => 'Papas fritas preparadas con sal más un super pancho'
         ]);
     }
 }

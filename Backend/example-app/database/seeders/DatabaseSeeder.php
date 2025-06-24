@@ -22,8 +22,12 @@ class DatabaseSeeder extends Seeder
             'password' => 12345678,
         ]);
         $this->call(PermissionSeeder::class);
-        $this->call(OfferSeeder::class);
         $this->call(CategorySeeder::class);
-        $this->call(OfferCateSeeder::class);
+        $this->call(EstablishmentTypeSeeder::class);
+        $this->call(FoodEstablishmentSeeder::class);
+        $this->call(ProductSeeder::class);
+        $this->call(ProductCategorySeeder::class);
+        $this->call(OfferSeeder::class);
+        $this->call(ProductOfferSeeder::class);
     }
 }

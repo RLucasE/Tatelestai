@@ -30,5 +30,10 @@ class CategorySeeder extends Seeder
             'category_name' => 'Facturas',
             'parent_id' => $panaderiaId
         ]);
+
+        Category::factory()->create([
+            'category_name' => 'Platos Preparados',
+            'parent_id' => null
+        ]);
     }
 }

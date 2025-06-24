@@ -19,4 +19,14 @@ class Offer extends Model
     {
         return $this->belongsToMany(Category::class, 'offer_cates', 'offer_id', 'category_id');
     }
+
+    public function foodEstablishment()
+    {
+        return $this->belongsTo(FoodEstablishment::class);
+    }
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_offers', 'offer_id', 'product_id');
+    }
 }

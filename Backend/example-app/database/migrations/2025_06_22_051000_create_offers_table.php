@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('offers', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->unsignedBigInteger('user_id');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('food_establishment_id');
+            $table->foreign('food_establishment_id')->references('id')->on('food_establishments')->onDelete('cascade');
+            $table->string('title');
+            $table->text('description');
+            $table->date('expiration_date');
         });
     }
 
