@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserState;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -23,10 +24,14 @@ class UserManagement extends Controller
 
         if ($role === 'seller') {
             $user->syncRoles(["seller"]); // De momento solo le asignamos el rol, falta implementar la lógica de asignación de nuevos vendedores
+            $user->state = UserState::REGISTERING;
+            $user->save();
             $changed = true;
         }
         if ($role === 'customer') {
             $user->syncRoles(["customer"]);
+            $user->state = UserState::ACTIVE;
+            $user->save();
             $changed = true;
         }
 

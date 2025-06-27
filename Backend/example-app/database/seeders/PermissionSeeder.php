@@ -18,13 +18,11 @@ class PermissionSeeder extends Seeder
         //
         Role::create(['name' => 'default']);
         Role::create(['name' => 'customer']);
-        Role::create(['name' => 'unknown_choice']);
-        Role::create(['name' => 'pending_seller']);
         Role::create(['name' => 'seller']);
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'super_admin']);
 
         $user = User::where('email', 'lucascabjnmro2@gmail.com')->first();
-        $user->assignRole('unknown_choice');
+        $user->assignRole('default');
     }
 }
