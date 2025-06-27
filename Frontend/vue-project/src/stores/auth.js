@@ -28,8 +28,16 @@ export const useAuthStore = defineStore("auth", () => {
     return user && user.value.roles.includes("seller");
   }
 
-  function isUnknowknChoice() {
-    return user && user.value.roles.includes("unknown_choice");
+  function isDefaultRole() {
+    return user && user.value.roles.includes("default");
+  }
+
+  function selectingRole() {
+    return user && user.value.state === "selecting";
+  }
+
+  function registeringEstablishment() {
+    return user && user.value.state === "registering";
   }
 
   async function fetchUser() {
@@ -101,7 +109,9 @@ export const useAuthStore = defineStore("auth", () => {
     isCustomer,
     isAdmin,
     isSeller,
-    isUnknowknChoice,
+    isDefaultRole,
+    selectingRole,
+    registeringEstablishment,
     heavyVerifySession,
     verifySession,
     isLoggedIn,

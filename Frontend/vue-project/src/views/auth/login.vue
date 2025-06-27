@@ -15,27 +15,29 @@ const form = reactive({
 const login = async (data) => {
   try {
     await authStore.login(data);
-    switch (true) {
-      case authStore.isCustomer():
-        try {
-          router.push({ name: "customer" });
-        } catch (error) {
-          console.log(error);
-        }
+    window.location.reload();
 
-        break;
-      case authStore.isAdmin():
-        router.push("/admin");
-        break;
-      case authStore.isSeller():
-        router.push("/seller");
-        break;
-      case authStore.isUnknowknChoice():
-        router.push("/select-role");
-        break;
-      default:
-        console.error("Unknown user role");
-    }
+    // switch (true) {
+    //   case authStore.isCustomer():
+    //     try {
+    //       router.push({ name: "customer" });
+    //     } catch (error) {
+    //       console.log(error);
+    //     }
+
+    //     break;
+    //   case authStore.isAdmin():
+    //     router.push("/admin");
+    //     break;
+    //   case authStore.isSeller():
+    //     router.push("/seller");
+    //     break;
+    //   case authStore.isUnknowknChoice():
+    //     router.push("/select-role");
+    //     break;
+    //   default:
+    //     console.error("Unknown user role");
+    // }
   } catch (error) {
     console.error("Login failed:", error);
     throw error;

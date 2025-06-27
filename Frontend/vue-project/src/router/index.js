@@ -14,9 +14,14 @@ function redirectByRole(authStore, next) {
   if (authStore.isCustomer()) {
     next({ name: "customer" });
   } else if (authStore.isSeller()) {
-    next({ name: "seller" });
-  } else if (authStore.isUnknowknChoice()) {
-    next({ name: "select-role" });
+    if (authStore.registeringEstablishment())
+      next({ name: "register-establishment" });
+    else next({ name: "seller" });
+  } else if (authStore.isDefaultRole()) {
+    if (authStore.selectingRole()) {
+      console.log("2");
+      next({ name: "select-role" });
+    }
   } else {
     next({ path: "/" });
   }
@@ -26,6 +31,7 @@ router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   if (!to.meta.requiresAuth) {
+    console.log("1");
     try {
       await authStore.heavyVerifySession();
       redirectByRole(authStore, next);
@@ -36,11 +42,13 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresAuth) {
+    console.log("3");
     try {
       await authStore.verifySession();
     } catch (error) {
       console.log(error);
     }
+    console.log("4");
 
     if (authStore.isLoggedIn()) {
       switch (true) {
@@ -48,10 +56,19 @@ router.beforeEach(async (to, from, next) => {
           next();
           break;
         case to.meta.requiresSeller && authStore.isSeller():
-          next();
+          if (
+            to.meta.requiresRegisteringEstablishment &&
+            authStore.registeringEstablishment()
+          ) {
+            next();
+          } else next();
+
           break;
-        case to.meta.requiresUnknowknChoice && authStore.isUnknowknChoice():
-          next();
+        case to.meta.requiresDefault && authStore.isDefaultRole():
+          if (to.meta.requiresSelectingRole && authStore.selectingRole()) {
+            next();
+          }
+
           break;
         default:
           redirectByRole(authStore, next);
