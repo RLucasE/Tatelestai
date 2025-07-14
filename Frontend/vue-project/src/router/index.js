@@ -16,10 +16,11 @@ function redirectByRole(authStore, next) {
   } else if (authStore.isSeller()) {
     if (authStore.registeringEstablishment())
       next({ name: "register-establishment" });
-    else next({ name: "seller" });
+    if (authStore.waitingConfirmation()) {
+      next({ name: "waiting-confirmation" });
+    } else next({ name: "seller" });
   } else if (authStore.isDefaultRole()) {
     if (authStore.selectingRole()) {
-      console.log("2");
       next({ name: "select-role" });
     }
   } else {
@@ -31,7 +32,6 @@ router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   if (!to.meta.requiresAuth) {
-    console.log("1");
     try {
       await authStore.heavyVerifySession();
       redirectByRole(authStore, next);
@@ -41,37 +41,46 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  console.log("to", to.name);
+  console.log("to.meta", to.meta);
+
   if (to.meta.requiresAuth) {
-    console.log("3");
     try {
       await authStore.verifySession();
     } catch (error) {
       console.log(error);
     }
-    console.log("4");
-
     if (authStore.isLoggedIn()) {
       switch (true) {
         case to.meta.requiresCustomer && authStore.isCustomer():
           next();
           break;
         case to.meta.requiresSeller && authStore.isSeller():
-          if (
-            to.meta.requiresRegisteringEstablishment &&
-            authStore.registeringEstablishment()
-          ) {
-            next();
-          } else next();
-
+          switch (true) {
+            case to.meta.requiresRegisteringEstablishment &&
+              authStore.registeringEstablishment():
+              next();
+              break;
+            case to.meta.requiresWaitingConfirmation &&
+              authStore.waitingConfirmation():
+              next();
+              break;
+            case to.meta.requiresActive && authStore.active():
+              next();
+              break;
+            default:
+              redirectByRole(authStore, next);
+          }
           break;
         case to.meta.requiresDefault && authStore.isDefaultRole():
           if (to.meta.requiresSelectingRole && authStore.selectingRole()) {
             next();
           }
-
           break;
         default:
+          console.log("redirecting by role");
           redirectByRole(authStore, next);
+          console.log("redirecting");
       }
     }
 

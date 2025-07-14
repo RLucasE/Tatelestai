@@ -20,4 +20,15 @@ export default [
       requiresRegisteringEstablishment: true,
     },
   },
+  {
+    path: "/waiting-confirmation",
+    name: "waiting-confirmation",
+    component: () =>
+      import("@/components/layouts/others/waiting-confirmation.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresSeller: true,
+      requiresWaitingConfirmation: true,
+    },
+  },
 ];

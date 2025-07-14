@@ -47,4 +47,33 @@ class UserManagement extends Controller
             'new_roles' => $user->roles()->pluck('name'),
         ]);
     }
+
+    public function registerEstablishment(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'establishment_type_id' => 'required|integer|exists:establishment_types,id',
+        ]);
+
+        /** @var \App\Models\User */
+        $user = Auth::user();
+
+        if ($user->foodEstablishment()->exists()) {
+            return response()->json([
+                'message' => 'You already have a registered establishment.',
+            ], 400);
+        }
+
+        $establishment = $user->foodEstablishment()->create([
+            'establishment_type_id' => $request->input('establishment_type_id'),
+        ]);
+
+        $user->state = UserState::WAITING_FOR_CONFIRMATION;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Establishment registered successfully.',
+            'establishment' => $establishment,
+        ]);
+    }
 }

@@ -40,6 +40,14 @@ export const useAuthStore = defineStore("auth", () => {
     return user && user.value.state === "registering";
   }
 
+  function waitingConfirmation() {
+    return user && user.value.state === "waiting_for_confirmation";
+  }
+
+  function active() {
+    return user && user.value.state === "active";
+  }
+
   async function fetchUser() {
     try {
       const data = await axiosInstance.get("/user");
@@ -112,6 +120,8 @@ export const useAuthStore = defineStore("auth", () => {
     isDefaultRole,
     selectingRole,
     registeringEstablishment,
+    waitingConfirmation,
+    active,
     heavyVerifySession,
     verifySession,
     isLoggedIn,

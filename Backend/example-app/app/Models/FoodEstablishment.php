@@ -5,10 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+
+
 class FoodEstablishment extends Model
 {
     /** @use HasFactory<\Database\Factories\FoodEstablishmentFactory> */
     use HasFactory;
+    protected $fillable = [
+        'establishment_type_id',
+    ];
 
 
     public function user()

@@ -4,7 +4,7 @@ import axiosInstance from "@/lib/axios";
 
 const form = ref({
   name: "",
-  establishment_type_id: "",
+  establishment_type_id: 0,
 });
 
 const establishmentTypes = ref([]);
@@ -24,7 +24,7 @@ const registerEstablishment = async () => {
   loading.value = true;
   error.value = "";
   try {
-    await axiosInstance.post("/food-establishments", form.value);
+    await axiosInstance.post("/food-establishment", form.value);
     alert("Establecimiento registrado correctamente");
     form.value.name = "";
     form.value.establishment_type_id = "";
@@ -32,6 +32,7 @@ const registerEstablishment = async () => {
     error.value = "Error al registrar el establecimiento";
   } finally {
     loading.value = false;
+    window.location.reload();
   }
 };
 
@@ -64,3 +65,18 @@ onMounted(fetchEstablishmentTypes);
     </form>
   </div>
 </template>
+
+<style scoped>
+select,
+option {
+  color: var(--color-text);
+  background-color: var(
+    --color-secondary
+  ); /* Cambia 'red' por el color que quieras */
+}
+
+input {
+  color: var(--color-text);
+  background-color: var(--color-primary);
+}
+</style>
