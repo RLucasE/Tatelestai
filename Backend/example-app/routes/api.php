@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserState;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -30,6 +31,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:' . UserState::REGISTERING->value]);
+    Route::middleware('user.state:' . UserState::ACTIVE->value)->group(function () {
+        Route::post('/product', [ProductController::class, 'store']);
+    });
 });
 
 Route::get('/test', function () {

@@ -17,6 +17,11 @@
         <li>
           <RouterLink to="/seller/sells">Mis Pedidos</RouterLink>
         </li>
+        <li>
+          <RouterLink :to="{ name: 'create-product' }"
+            >Agregar Productos</RouterLink
+          >
+        </li>
       </ul>
     </aside>
   </div>

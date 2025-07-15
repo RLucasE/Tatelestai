@@ -19,6 +19,12 @@ export default [
         path: "sells",
         component: () => import("@/components/layouts/seller/Ventas.vue"),
       },
+      {
+        name: "create-product",
+        path: "create-product",
+        component: () =>
+          import("@/components/layouts/seller/CreateProduct.vue"),
+      },
     ],
     meta: {
       requiresAuth: true,
