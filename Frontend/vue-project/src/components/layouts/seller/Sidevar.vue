@@ -22,6 +22,9 @@
             >Agregar Productos</RouterLink
           >
         </li>
+        <li>
+          <RouterLink :to="{ name: 'my-products' }">Mis Productos</RouterLink>
+        </li>
       </ul>
     </aside>
   </div>

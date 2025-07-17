@@ -32,7 +32,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:' . UserState::REGISTERING->value]);
     Route::middleware('user.state:' . UserState::ACTIVE->value)->group(function () {
-        Route::post('/product', [ProductController::class, 'store']);
+        Route::post('/product',  [ProductController::class, 'store']);
+        Route::get('/products',  [ProductController::class, 'show']);
+        Route::patch('/products/{id}',  [ProductController::class, 'update']);
+        Route::delete('/products/{id}',  [ProductController::class, 'destroy']);
     });
 });
 

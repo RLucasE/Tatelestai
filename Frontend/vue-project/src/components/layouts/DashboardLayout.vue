@@ -35,7 +35,8 @@ import Sidevar from "./seller/Sidevar.vue";
   row-gap: 0rem;
   column-gap: 0rem;
   padding: 16px;
-  height: 100vh;
+  min-height: 100vh;
+  height: 100%;
 }
 
 nav {
