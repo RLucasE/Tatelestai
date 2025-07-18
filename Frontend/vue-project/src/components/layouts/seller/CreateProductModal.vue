@@ -1,13 +1,9 @@
 <template>
   <div v-if="visible" class="modal-overlay">
     <div class="product-modal">
-      <h2>{{ mode === "edit" ? "Editar Producto" : "Eliminar Producto" }}</h2>
+      <h2>Crear Nuevo Producto</h2>
 
-      <form
-        v-if="mode === 'edit'"
-        @submit.prevent="handleSubmit"
-        class="product-form"
-      >
+      <form @submit.prevent="handleSubmit" class="product-form">
         <div class="form-group">
           <label for="name">Nombre del Producto</label>
           <input
@@ -15,7 +11,7 @@
             id="name"
             v-model="productData.name"
             required
-            placeholder="Nombre del producto"
+            placeholder="Ingrese el nombre del producto"
           />
         </div>
 
@@ -24,102 +20,63 @@
           <textarea
             id="description"
             v-model="productData.description"
-            placeholder="Descripción del producto"
+            placeholder="Describa el producto"
           ></textarea>
         </div>
 
         <div class="modal-actions">
           <button type="submit" :disabled="loading">
-            {{ loading ? "Guardando..." : "Guardar Cambios" }}
+            {{ loading ? "Creando..." : "Crear Producto" }}
           </button>
           <button type="button" @click="closeModal" class="cancel-button">
             Cancelar
           </button>
         </div>
       </form>
-
-      <div v-else class="delete-confirmation">
-        <p>¿Estás seguro de eliminar "{{ productData.name }}"?</p>
-        <div class="modal-actions">
-          <button
-            @click="handleDelete"
-            :disabled="loading"
-            class="delete-button"
-          >
-            {{ loading ? "Eliminando..." : "Eliminar" }}
-          </button>
-          <button @click="closeModal" class="cancel-button">Cancelar</button>
-        </div>
-      </div>
+      <div v-if="error" class="error-message">{{ error }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import axiosInstance from "@/lib/axios";
 
 const props = defineProps({
   visible: Boolean,
-  product: Object,
-  mode: { type: String, default: "edit" }, // 'edit' or 'delete'
 });
 
 const emit = defineEmits(["update:visible", "success"]);
 
 const productData = ref({
-  id: null,
   name: "",
   description: "",
 });
 
-watch(
-  () => props.product,
-  (newProduct) => {
-    if (newProduct) {
-      productData.value = {
-        id: newProduct.id,
-        name: newProduct.name,
-        description: newProduct.description,
-      };
-    }
-  },
-  { immediate: true, deep: true } // Añade estas opciones
-);
-
 const loading = ref(false);
+const error = ref(null);
 
 const closeModal = () => {
   emit("update:visible", false);
+  // Resetear el formulario al cerrar
+  productData.value = {
+    name: "",
+    description: "",
+  };
+  error.value = null;
 };
 
 const handleSubmit = async () => {
   loading.value = true;
-  let response;
-  try {
-    response = await axiosInstance.patch(
-      `/products/${productData.value.id}`,
-      productData.value
-    );
-    console.log("Respuesta del servidor:", response.data.product);
-    emit("success", { ...response.data.product }, "edit");
-    closeModal();
-  } catch (error) {
-    console.error("Error al actualizar el producto:", error);
-  } finally {
-    loading.value = false;
-  }
-};
+  error.value = null;
 
-const handleDelete = async () => {
-  loading.value = true;
-  let response;
   try {
-    response = await axiosInstance.delete(`/products/${productData.value.id}`);
-    console.log(response.data);
+    const response = await axiosInstance.post("/product", productData.value);
+    console.log("Producto creado:", response.data);
+    emit("success", response.data.product, "create");
     closeModal();
-  } catch (error) {
-    console.error("Error al eliminar el producto:", error);
+  } catch (err) {
+    error.value = err.response?.data?.message || "Error al crear el producto";
   } finally {
     loading.value = false;
   }
@@ -206,23 +163,20 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button[type="submit"] {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+}
+
 .cancel-button {
   background-color: var(--color-secondary);
   color: var(--color-text);
   border: 1px solid var(--color-primary);
 }
 
-.delete-button {
-  background-color: var(--color-darkest);
-  color: white;
-}
-
-.delete-confirmation {
+.error-message {
+  color: #ff4444;
+  margin-top: 1rem;
   text-align: center;
-}
-
-.delete-confirmation p {
-  color: var(--color-text);
-  margin-bottom: 2rem;
 }
 </style>

@@ -1,4 +1,11 @@
 <template>
+  <CreateProductModal
+    :visible="createModalVisivility"
+    @update:visible="changeCreateModalVisibility"
+    @success="handleProductsChange"
+  >
+  </CreateProductModal>
+
   <ProductModal
     :product="{ ...product }"
     :mode="modalMode"
@@ -9,12 +16,12 @@
 
   <div class="product-list-container">
     <div class="actions">
-      <RouterLink to="/seller/create-product" class="add-button">
+      <!-- <RouterLink to="/seller/create-product" class="add-button">
         Agregar Nuevo Producto
-      </RouterLink>
-      <RouterLink to="/seller/create-product" class="add-button">
-        Agregar Nuevo Producto
-      </RouterLink>
+      </RouterLink> -->
+      <button @click="changeCreateModalVisibility" class="add-button">
+        Agregar Otro Producto
+      </button>
     </div>
 
     <div v-if="loading" class="loading">Cargando productos...</div>
@@ -50,6 +57,7 @@
 import { ref, onMounted } from "vue";
 import axiosInstance from "@/lib/axios";
 import ProductModal from "./ProductModal.vue";
+import CreateProductModal from "./CreateProductModal.vue";
 
 const products = ref([]);
 const product = ref({});
@@ -57,6 +65,7 @@ const loading = ref(true);
 const error = ref(null);
 const modalMode = ref("");
 const modalVisivility = ref(false);
+const createModalVisivility = ref(false);
 
 const fetchProducts = async () => {
   try {
@@ -71,6 +80,11 @@ const fetchProducts = async () => {
 };
 
 const handleProductsChange = (product, mode) => {
+  if (!product) return null;
+
+  if (mode === "create") {
+    products.value.unshift(product);
+  }
   if (mode === "edit") {
     const index = products.value.findIndex((p) => p.id === product.id);
     if (index !== -1) {
@@ -83,6 +97,10 @@ const handleProductsChange = (product, mode) => {
       products.value.splice(index, 1);
     }
   }
+};
+
+const changeCreateModalVisibility = (value) => {
+  createModalVisivility.value = value;
 };
 
 const editProduct = (selected) => {
@@ -133,6 +151,7 @@ h2 {
 .products-grid {
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 2rem;
   overflow-x: auto;
   padding-bottom: 1rem;
@@ -140,6 +159,7 @@ h2 {
 
 .product-card {
   min-width: 300px;
+  max-width: 30%;
   flex: 0 0 auto;
   background-color: var(--color-secondary);
   border-radius: 8px;
