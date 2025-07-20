@@ -1,17 +1,14 @@
 <?php
 
 use App\Enums\UserState;
+use App\Http\Controllers\OfferController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Offer;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\UserManagement;
-use App\Models\EstablishmentType;
-use GuzzleHttp\Middleware;
-use Illuminate\Support\Facades\Log;
+
 
 
 
@@ -36,6 +33,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::get('/products',  [ProductController::class, 'show']);
         Route::patch('/products/{id}',  [ProductController::class, 'update']);
         Route::delete('/products/{id}',  [ProductController::class, 'destroy']);
+        Route::post('/offer', [OfferController::class, 'store']);
     });
 });
 

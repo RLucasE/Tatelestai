@@ -201,14 +201,14 @@ const handleSubmit = async () => {
       total_price: totalOfferPrice.value,
       expiration_date: offerData.value.expirationDate,
       products: selectedProducts.value.map((product) => ({
-        product_id: product.id,
+        id: product.id,
         quantity: product.quantity,
         price: product.price,
       })),
     };
 
-    // const response = await axiosInstance.post("/offers", offerPayload);
-    console.log("Oferta creada:", offerPayload);
+    const response = await axiosInstance.post("/offer", offerPayload);
+    console.log("Oferta creada:", response.data);
     //emit("success", response.data.offer, "create");
     //closeModal();
   } catch (error) {
