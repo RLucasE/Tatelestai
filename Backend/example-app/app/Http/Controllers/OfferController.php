@@ -36,6 +36,7 @@ class OfferController extends SellerController
                     'title' => $request->string('title'),
                     'description' => $request->string('description'),
                     'expiration_date' => $request->date('expiration_date')->toDateString(),
+                    'time' => $request->date('expiration_date')->toTimeString(),
                     'food_establishment_id' => $this->userEstablishment->id,
                     'created_at' => now(),
                     'updated_at' => now(),
