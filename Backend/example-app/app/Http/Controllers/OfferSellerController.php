@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class OfferSellerController extends OfferController
+{
+    // /**
+    //  * Constructor - Aplicar middleware de autenticación
+    //  */
+    // public function __construct()
+    // {
+    //     $this->middleware('auth');
+    // }
+
+    /**
+     * Crear una nueva oferta
+     */
+    public function store(Request $request)
+    {
+        $request->validate($this->getOfferValidationRules());
+
+        $products = $request->array('products');
+        $productIDs = $this->productsToProductsIDs($products);
+
+        if (!$this->validateProductOwnership($productIDs)) {
+            return $this->invalidProductsResponse();
+        }
+
+        try {
+            $offer = $this->createOfferWithProducts($request);
+
+            return response()->json([
+                'message' => 'Oferta creada exitosamente',
+                'offer' => $offer,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Uno a más productos no pertenecen a tu stablecimiento'
+            ], 403);
+        }
+    }
+}

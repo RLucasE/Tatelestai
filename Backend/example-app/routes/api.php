@@ -2,6 +2,7 @@
 
 use App\Enums\UserState;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::get('/products',  [ProductController::class, 'show']);
         Route::patch('/products/{id}',  [ProductController::class, 'update']);
         Route::delete('/products/{id}',  [ProductController::class, 'destroy']);
-        Route::post('/offer', [OfferController::class, 'store']);
+        Route::post('/offer', [OfferSellerController::class, 'store']);
     });
 });
 
