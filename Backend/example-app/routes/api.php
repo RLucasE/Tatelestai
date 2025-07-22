@@ -1,25 +1,22 @@
 <?php
 
 use App\Enums\UserState;
-use App\Http\Controllers\OfferController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\Offer;
 use App\Http\Controllers\UserManagement;
+use App\Http\Controllers\OfferCustomerController;
 
 
 
 
 Route::middleware(['auth:sanctum', 'role:default'])->post('/select-role', [UserManagement::class, 'chooseRole']);
 
-Route::middleware(['auth:sanctum', 'role:customer'])->get('/offers', function (Request $request) {
-    return Offer::with('categories')
-        ->latest()
-        ->take(10) // Limita a 10 resultados
-        ->get();
+Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
+    Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
+        Route::get('/offers', [OfferCustomerController::class, 'index']);
+    });
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {

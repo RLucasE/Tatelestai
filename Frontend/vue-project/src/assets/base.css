@@ -36,11 +36,11 @@
   --section-gap: 160px;
 
   --color-text: #ffffff;     
-  --color-bg: #afadab;        /* Zinc 900 */
-  --color-primary: #6f6c69;   /* Indigo 500 */
-  --color-secondary: #5f5c59;    /* Fuchsia 400 */
+  --color-bg: #afadab;        
+  --color-primary: #6f6c69;   
+  --color-secondary: #5f5c59; 
   --color-focus: #3e3b39;
-  --color-darkest:  #22201f  ;  /* Cyan 300 */
+  --color-darkest:  #22201f  ;  
 
   --border-radius: 0.5rem;
 }

@@ -48,6 +48,9 @@ class OfferController extends Controller
 
     protected function createOfferWithProducts(Request $request): Offer
     {
+        /**
+         * @var FoodEstablishment $establishment
+         */
         $establishment = $this->getUserEstablishment();
 
         if (!$establishment) {
@@ -59,7 +62,8 @@ class OfferController extends Controller
             'description' => $request->string('description'),
             'expiration_date' => $request->date('expiration_date')->toDateString(),
             'time' => $request->date('expiration_date')->toTimeString(),
-            'food_establishment_id' => $establishment->id,
+            'expiration_datetime' => $request->date('expiration_date')->toDateTimeString(),
+            'food_establishment_id' => $establishment->getAttribute('id'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
