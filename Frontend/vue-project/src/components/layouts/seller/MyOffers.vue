@@ -1,7 +1,10 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import axiosInstance from "@/lib/axios";
 import OfferSellerCard from "./OfferSellerCard.vue";
+
+const router = useRouter();
 
 const offers = ref([]);
 const loading = ref(true);
@@ -21,6 +24,10 @@ const fetchOffers = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleOfferClick = (offer) => {
+  router.push({ name: "edit-offer", params: { id: offer.id } });
 };
 
 onMounted(() => {
@@ -59,7 +66,13 @@ onMounted(() => {
 
     <!-- Offers Grid -->
     <div v-else class="offers-grid">
-      <OfferSellerCard v-for="offer in offers" :key="offer.id" :offer="offer" />
+      <OfferSellerCard 
+        v-for="offer in offers" 
+        :key="offer.id" 
+        :offer="offer" 
+        @click="handleOfferClick(offer)"
+        class="clickable-card"
+      />
     </div>
   </div>
 </template>
@@ -104,6 +117,16 @@ onMounted(() => {
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   margin-top: 20px;
+}
+
+.clickable-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(34, 32, 31, 0.5);
 }
 
 /* Responsive Design */
@@ -245,15 +268,5 @@ onMounted(() => {
   opacity: 0.8;
   max-width: 400px;
   line-height: 1.5;
-}
-
-/* Hover effects for cards */
-.offers-grid .customer-card {
-  transition: all 0.3s ease;
-}
-
-.offers-grid .customer-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(34, 32, 31, 0.5);
 }
 </style>

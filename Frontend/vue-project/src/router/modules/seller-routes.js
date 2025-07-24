@@ -15,6 +15,12 @@ export default [
         component: () => import("@/components/layouts/seller/MyOffers.vue"),
       },
       {
+        name: "edit-offer",
+        path: "edit-offer/:id",
+        component: () => import("@/components/layouts/seller/EditOffer.vue"),
+        props: true,
+      },
+      {
         name: "sells",
         path: "sells",
         component: () => import("@/components/layouts/seller/Ventas.vue"),

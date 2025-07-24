@@ -66,9 +66,7 @@ class OfferSellerController extends OfferController
         }
 
         if ($this->offerBelongTo($offer, Auth::user())) {
-            return response()->json([
-                'offer' => $offer,
-            ]);
+            return response()->json($offer);
         }
 
         return response()->json([
