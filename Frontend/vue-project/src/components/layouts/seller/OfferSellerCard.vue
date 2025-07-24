@@ -25,6 +25,9 @@ export default {
   <div class="customer-card">
     <div class="card-header" :class="{ expired: isExpired }">
       <h3 class="offer-title">{{ offer.title }}</h3>
+      <div v-if="isExpired">
+        <span class="expired-label">Oferta expirada !</span>
+      </div>
     </div>
 
     <div class="card-content" :class="{ expired: isExpired }">
