@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OfferSellerController extends OfferController
 {
@@ -40,5 +41,16 @@ class OfferSellerController extends OfferController
                 'message' => 'Uno a más productos no pertenecen a tu stablecimiento'
             ], 403);
         }
+    }
+
+    public function show(Request $request)
+    {
+        $userID = Auth::user()->id;
+        $offers = $this->userOffers($userID);
+
+
+        return response()->json(
+            $offers
+        );
     }
 }

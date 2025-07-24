@@ -104,6 +104,12 @@ class OfferController extends Controller
         ], 403);
     }
 
+    protected function userOffers(int $userID)
+    {
+        $establishment = $this->getUserEstablishment();
+        return Offer::where('food_establishment_id', $establishment->id)->orderBy('expiration_datetime', 'desc')->get();
+    }
+
     // public function store(Request $request)
     // {
     //     $request->validate([

@@ -1,7 +1,7 @@
 <script setup>
 import axiosInstance from "@/lib/axios";
 import CustomerCard from "./CustomerCard.vue";
-import OfferModal from "./OfferModal.vue";
+import OfferModal from "../../common/OfferModal.vue";
 import { ref, onMounted } from "vue";
 
 const offers = ref([]);
