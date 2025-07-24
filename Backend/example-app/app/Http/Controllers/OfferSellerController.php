@@ -53,4 +53,26 @@ class OfferSellerController extends OfferController
             $offers
         );
     }
+
+
+    public function offer($offerID)
+    {
+        $offer = $this->getOffer($offerID);
+
+        if (!$offer) {
+            return response()->json([
+                'message' => 'Oferta no encontrada'
+            ], 404);
+        }
+
+        if ($this->offerBelongTo($offer, Auth::user())) {
+            return response()->json([
+                'offer' => $offer,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'No tienes permiso para acceder a esta oferta',
+        ], 403);
+    }
 }

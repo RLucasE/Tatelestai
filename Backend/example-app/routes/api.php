@@ -33,6 +33,8 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::delete('/products/{id}',  [ProductController::class, 'destroy']);
         Route::post('/offer', [OfferSellerController::class, 'store']);
         Route::get('my-offers', [OfferSellerController::class, 'show']);
+        Route::get('/offer/{offerID}', [OfferSellerController::class, 'offer']);
+        Route::patch('/offer/{offerID}', [OfferSellerController::class, 'update']);
     });
 });
 

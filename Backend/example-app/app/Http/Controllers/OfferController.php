@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Offer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\FoodEstablishment;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 
 class OfferController extends Controller
@@ -44,6 +46,21 @@ class OfferController extends Controller
             ->count();
 
         return $validProductsCount === count($productIds);
+    }
+
+    protected function offerBelongTo(Offer $offer, User $user)
+    {
+        $establishment = $this->getUserEstablishment();
+
+        if (!$establishment || !$user) {
+            return false;
+        }
+
+        if ($offer->food_establishment_id !== $establishment->id) {
+            return false;
+        }
+
+        return true;
     }
 
     protected function createOfferWithProducts(Request $request): Offer
@@ -108,6 +125,16 @@ class OfferController extends Controller
     {
         $establishment = $this->getUserEstablishment();
         return Offer::where('food_establishment_id', $establishment->id)->orderBy('expiration_datetime', 'desc')->get();
+    }
+
+    protected function getOffer($offerID): null|Offer
+    {
+        $offer = Offer::find($offerID);
+
+        if (!$offer) {
+            return null;
+        }
+        return Offer::find($offerID);
     }
 
     // public function store(Request $request)
