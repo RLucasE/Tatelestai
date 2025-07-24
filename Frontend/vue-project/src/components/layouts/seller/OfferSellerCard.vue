@@ -60,6 +60,10 @@ export default {
   border: 2px solid transparent;
   cursor: pointer;
   color: var(--color-text);
+  /* Agregar flexbox */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .customer-card:hover {
@@ -74,6 +78,8 @@ export default {
   padding: 20px 20px 10px;
   border-bottom: 1px solid var(--color-focus);
   background: var(--color-secondary);
+  /* Mantener tamaño fijo */
+  flex-shrink: 0;
 }
 
 .card-header.expired {
@@ -98,6 +104,8 @@ export default {
 /* Content */
 .card-content {
   padding: 15px 20px;
+  /* Hacer que crezca para ocupar el espacio disponible */
+  flex-grow: 1;
 }
 
 .card-content.expired {
@@ -165,6 +173,9 @@ export default {
   justify-content: space-between;
   align-items: center;
   background: var(--color-darkest);
+  /* Mantener en la parte inferior */
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .expiration-info {
