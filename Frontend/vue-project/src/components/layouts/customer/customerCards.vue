@@ -1,11 +1,14 @@
 <script setup>
 import axiosInstance from "@/lib/axios";
 import CustomerCard from "./CustomerCard.vue";
+import OfferModal from "./OfferModal.vue";
 import { ref, onMounted } from "vue";
 
 const offers = ref([]);
 const loading = ref(true);
 const error = ref(null);
+const selectedOffer = ref({});
+const isVisible = ref(false);
 
 const getOffers = async () => {
   try {
@@ -21,6 +24,15 @@ const getOffers = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleOfferClick = (offer) => {
+  selectedOffer.value = offer;
+  isVisible.value = true;
+};
+
+const handleCloseOffer = () => {
+  isVisible.value = false;
 };
 
 onMounted(() => {
@@ -56,6 +68,12 @@ onMounted(() => {
         @click="handleOfferClick(offer)"
       />
     </div>
+
+    <OfferModal
+      :isVisible="isVisible"
+      :offer="selectedOffer"
+      @close="handleCloseOffer"
+    />
   </div>
 </template>
 
