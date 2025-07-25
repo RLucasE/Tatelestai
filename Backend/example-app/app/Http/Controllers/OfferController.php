@@ -10,7 +10,7 @@ use App\Models\FoodEstablishment;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 class OfferController extends Controller
 {
@@ -129,12 +129,17 @@ class OfferController extends Controller
 
     protected function getOffer($offerID): null|Offer
     {
-        $offer = Offer::find($offerID);
-
-        if (!$offer) {
-            return null;
-        }
         return Offer::find($offerID);
+    }
+
+    protected function getFullOffer(Offer $offer): null | Offer
+    {
+        $offer = Offer::with(['products' => function ($query) {
+            $query->select('products.id', 'products.name', 'products.description')
+                ->withPivot('price', 'quantity');
+        }])->find($offer->id);
+
+        return $offer;
     }
 
     // public function store(Request $request)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Casts\Json;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -65,12 +66,19 @@ class OfferSellerController extends OfferController
             ], 404);
         }
 
-        if ($this->offerBelongTo($offer, Auth::user())) {
-            return response()->json($offer);
+        if (!$this->offerBelongTo($offer, Auth::user())) {
+            return response()->json([
+                'message' => 'No tienes permiso para acceder a esta oferta',
+            ], 403);
         }
 
-        return response()->json([
-            'message' => 'No tienes permiso para acceder a esta oferta',
-        ], 403);
+        $jsonResponse = $this->getFullOffer($offer);
+
+        return response()->json(
+            $jsonResponse,
+            200
+        );
     }
+
+    public function update(Request $request, $offerID) {}
 }

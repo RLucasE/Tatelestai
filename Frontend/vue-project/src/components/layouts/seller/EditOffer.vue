@@ -53,6 +53,7 @@ const fetchOffer = async () => {
       expiration_datetime: offerData.expiration_datetime
         ? toLocalISOString(new Date(offerData.expiration_datetime))
         : "",
+      products: offerData.products || [],
     };
     console.log(offer);
   } catch (err) {
@@ -159,6 +160,19 @@ onMounted(() => {
         ✅ Oferta actualizada exitosamente
       </div>
 
+      <div class="products-conainer">
+        <div v-for="product in offer.products" :key="product.id">
+          <div class="product">
+            <div class="leftDetail textContainer">
+              {{ product.name }} x{{ product.pivot.quantity }}
+            </div>
+            <div class="rightDetail textContainer">
+              ${{ product.pivot.price }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <form @submit.prevent="updateOffer" class="edit-form">
         <!-- Title Field -->
         <div class="form-group">
@@ -243,7 +257,40 @@ onMounted(() => {
   text-align: center;
 }
 
-.back-btn {
+.products-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.product {
+  height: 3rem;
+  margin: 2rem 0;
+  justify-content: space-between;
+  display: flex;
+  background-color: var(--color-darkest);
+  border-radius: 8px;
+}
+
+.product .leftDetail {
+  text-align: start;
+  display: inline-block;
+  width: 65%;
+}
+
+.product .rightDetail {
+  display: inline-block;
+  width: 25%;
+}
+
+.product .textContainer {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ack-btn {
   display: inline-flex;
   align-items: center;
   padding: 8px 16px;
