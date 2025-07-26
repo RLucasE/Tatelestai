@@ -215,6 +215,7 @@ const handleSubmit = async () => {
     console.error("Error al crear la oferta:", error);
     alert("Error al crear la oferta. Por favor, inténtalo de nuevo.");
   } finally {
+    closeModal();
     loading.value = false;
   }
 };

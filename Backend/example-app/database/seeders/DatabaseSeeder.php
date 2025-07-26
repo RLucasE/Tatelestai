@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserState;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -19,6 +20,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Lucas',
             'last_name' => 'Ricalde',
             'email' => 'lucascabjnmro2@gmail.com',
+            'state' => UserState::SELECTING,
             'password' => 12345678,
         ]);
         $this->call(PermissionSeeder::class);
@@ -27,7 +29,7 @@ class DatabaseSeeder extends Seeder
         $this->call(FoodEstablishmentSeeder::class);
         $this->call(ProductSeeder::class);
         $this->call(ProductCategorySeeder::class);
-        $this->call(OfferSeeder::class);
-        $this->call(ProductOfferSeeder::class);
+        //$this->call(OfferSeeder::class);
+        //$this->call(ProductOfferSeeder::class);
     }
 }
