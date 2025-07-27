@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\UserCart;
 
 class User extends Authenticatable
 {
@@ -51,5 +52,10 @@ class User extends Authenticatable
     public function foodEstablishment()
     {
         return $this->hasOne(FoodEstablishment::class);
+    }
+
+    public function carts()
+    {
+        return $this->hasMany(UserCart::class);
     }
 }
