@@ -18,6 +18,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
     Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
         Route::get('customer-cart', [CustomerCartController::class, 'customerCart']);
+        Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
     });
 });
 

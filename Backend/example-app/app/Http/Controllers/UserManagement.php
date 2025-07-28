@@ -6,12 +6,15 @@ use App\Enums\UserState;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Http\Controllers\CustomerCartController;
 
 class UserManagement extends Controller
 {
-    //
+
+
     public function chooseRole(Request $request)
     {
+
 
         $request->validate([
             'role' => 'required|in:seller,customer',
@@ -21,6 +24,8 @@ class UserManagement extends Controller
         $user = Auth::user();
         $role = $request->input('role');
         $changed = false;
+        $CartController = new CustomerCartController();
+
 
         if ($role === 'seller') {
             $user->syncRoles(["seller"]); // De momento solo le asignamos el rol, falta implementar la lógica de asignación de nuevos vendedores
@@ -32,6 +37,7 @@ class UserManagement extends Controller
             $user->syncRoles(["customer"]);
             $user->state = UserState::ACTIVE;
             $user->save();
+            $CartController->asingFirstCart($user);
             $changed = true;
         }
 

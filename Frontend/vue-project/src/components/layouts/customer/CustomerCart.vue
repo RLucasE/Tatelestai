@@ -19,17 +19,15 @@
 </template>
 
 <script setup>
-import axios from "axios";
 import axiosInstance from "@/lib/axios";
 import { onMounted } from "vue";
 import SellerSection from "./SellerSection.vue";
 
 const getCart = async () => {
-  const response = null;
   const loading = true;
 
   try {
-    response = await axiosInstance.get("/customer-cart");
+    const response = await axiosInstance.get("/customer-cart");
     console.log(response.data);
   } catch (error) {
     console.log(error);

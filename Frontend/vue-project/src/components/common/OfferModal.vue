@@ -113,7 +113,7 @@
           Cerrar
         </button>
         <button class="action-button primary" @click="handleOfferAction">
-          Solicitar Oferta
+          Carrito
         </button>
       </div>
     </div>

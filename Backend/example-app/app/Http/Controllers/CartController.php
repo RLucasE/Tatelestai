@@ -5,10 +5,29 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Enums\CartState;
 use App\Models\UserCart;
+use App\Http\Controllers\OfferController;
+use App\Models\Offer;
+use App\Models\OfferCart;
+use Illuminate\Support\Facades\Auth;
+
+
 
 class CartController extends Controller
 {
 
+    protected function addOfferToCart(Offer|int $offer, int $quantity): OfferCart
+    {
+        $OfferController = new OfferController();
+        $offer = $OfferController->resolveOffer($offer);
+
+        $offerCart = OfferCart::create([
+            'offer_id' => $offer->id,
+            'user_cart_id' => $this->getLastActiveCart(Auth::id())->id,
+            'quantity' => $quantity,
+        ]);
+
+        return $offerCart;
+    }
     protected function resolveUser(User|int $userOrId): User
     {
         return is_int($userOrId)
@@ -26,7 +45,7 @@ class CartController extends Controller
     }
 
 
-    public function deactivateCart(User|int $userOrId): bool
+    protected function deactivateCart(User|int $userOrId): bool
     {
         $user = $this->resolveUser($userOrId);
         $activeCart = $this->getLastActiveCart($user);
@@ -40,9 +59,7 @@ class CartController extends Controller
     }
 
 
-
-
-    public function newCart(User|int $userOrId): UserCart | null
+    protected function newCart(User|int $userOrId): UserCart | null
     {
         $user = $this->resolveUser($userOrId);
 

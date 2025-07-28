@@ -28,6 +28,21 @@ class OfferController extends Controller
         ];
     }
 
+    public function resolveOffer(Offer|int $offer): Offer
+    {
+        return is_int($offer)
+            ? Offer::findOrFail($offer)
+            : $offer;
+    }
+
+    public function validateExpiration(Offer|int $offer): bool|Offer
+    {
+        $offer = $this->resolveOffer($offer);
+
+        if ($offer->expiration_datetime < now()) return false; // Offer has expired
+        else return $offer;
+    }
+
     protected function getUserEstablishment(): ?FoodEstablishment
     {
         return FoodEstablishment::where('user_id', Auth::id())->first();

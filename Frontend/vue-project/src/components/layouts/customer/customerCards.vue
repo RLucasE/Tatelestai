@@ -26,6 +26,24 @@ const getOffers = async () => {
   }
 };
 
+const addOfferToCart = async (offer) => {
+  const offerPayload = {
+    offer_id: offer.id,
+    quantity: 1, // Assuming a default quantity of 1
+  };
+
+  try {
+    const response = await axiosInstance.post("/add-to-cart", offerPayload);
+    console.log(response);
+  } catch (error) {
+    console.log(error);
+    if (error.status === 400) {
+      alert("La oferta ya está expirada");
+      window.location.reload();
+    }
+  }
+};
+
 const handleOfferClick = (offer) => {
   selectedOffer.value = offer;
   isVisible.value = true;
@@ -73,6 +91,7 @@ onMounted(() => {
       :isVisible="isVisible"
       :offer="selectedOffer"
       @close="handleCloseOffer"
+      @offerAction="addOfferToCart"
     />
   </div>
 </template>
