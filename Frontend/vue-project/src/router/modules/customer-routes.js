@@ -24,6 +24,12 @@ export default [
           requiresCustomer: true,
         },
       },
+      {
+        path: "carrito",
+        name: "cart",
+        component: () =>
+          import("@/components/layouts/customer/CustomerCart.vue"),
+      },
     ],
     meta: {
       requiresAuth: true,

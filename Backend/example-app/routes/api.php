@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserState;
+use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
@@ -16,6 +17,7 @@ Route::middleware(['auth:sanctum', 'role:default'])->post('/select-role', [UserM
 Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
     Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
+        Route::get('customer-cart', [CustomerCartController::class, 'customerCart']);
     });
 });
 
