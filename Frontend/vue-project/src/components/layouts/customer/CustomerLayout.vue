@@ -26,6 +26,7 @@ import { useAuthStore } from "@/stores/auth";
         to="/customer/profile"
         >Perfil</RouterLink
       >
+      <RouterLink to="/customer/carrito"> Carrito </RouterLink>
     </div>
   </nav>
   <main class="customer-cards-box">
