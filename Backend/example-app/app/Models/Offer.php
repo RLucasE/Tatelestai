@@ -29,11 +29,16 @@ class Offer extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'product_offers', 'offer_id', 'product_id');
+        return $this->belongsToMany(Product::class, 'product_offers')
+            ->withPivot(['price', 'quantity']);
     }
 
     public function productOffer()
     {
         return $this->hasMany(ProductOffer::class);
+    }
+    public function offerCarts()
+    {
+        return $this->hasMany(OfferCart::class);
     }
 }

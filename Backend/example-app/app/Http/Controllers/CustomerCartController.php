@@ -6,6 +6,9 @@ use App\Models\Offer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use App\Models\OfferCart;
+
 
 
 
@@ -39,7 +42,57 @@ class CustomerCartController extends CartController
             return response()->json(['message' => 'No active cart found.'], status: 404);
         }
 
-        return response()->json(['cart' => $cart], status: 200);
+
+            /*  $offers = DB::select(
+            "
+            SELECT
+                ofs.id as offer_id,
+                ofs.food_establishment_id as estalishment_id,
+                ofs.title as offer_title,
+                ofs.description as offer_description,
+                ofc.quantity as quantity,
+                po.name as product_name,
+                pof.price as product_price,
+                pof.quantity as product_quantity
+            FROM
+                offers ofs
+                INNER JOIN product_offers pof ON ofs.id = pof.offer_id
+                INNER JOIN products po ON pof.product_id = po.id
+                INNER JOIN offer_carts ofc ON ofs.id = ofc.offer_id
+            WHERE
+                ofc.user_cart_id = :userCartId
+            ",
+            ['userCartId' => $cart->id]
+        ) */;
+
+        $offers = OfferCart::with(['offer.products', 'offer'])
+            ->where('user_cart_id', $cart->id)
+            ->get()
+            ->map(function ($offerCart) {
+                return [
+                    'offer_id' => $offerCart->offer->id,
+                    'establishment_id' => $offerCart->offer->food_establishment_id,
+                    'offer_title' => $offerCart->offer->title,
+                    'offer_description' => $offerCart->offer->description,
+                    'quantity' => $offerCart->quantity,
+                    'products' => $offerCart->offer->products->map(function ($product) {
+                        return [
+                            'product_name' => $product->name,
+                            'product_price' => $product->pivot->price,
+                            'product_quantity' => $product->pivot->quantity,
+                        ];
+                    })->toArray(),
+                ];
+            });
+
+        $groupedOffers = $offers->groupBy('establishment_id')->values();
+
+
+
+        return response()->json(
+            $groupedOffers,
+            status: 200
+        );
     }
 
 
