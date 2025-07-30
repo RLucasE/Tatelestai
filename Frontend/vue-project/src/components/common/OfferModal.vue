@@ -109,6 +109,18 @@
 
       <!-- Footer del modal -->
       <div class="modal-footer">
+        <div class="quantity-section">
+          <label for="quantity">Cantidad:</label>
+          <input
+            id="quantity"
+            type="number"
+            min="1"
+            placeholder="1"
+            v-model.number="quantity"
+            @input="validateQuantity"
+            @blur="handleBlur"
+          />
+        </div>
         <button class="action-button secondary" @click="closeModal">
           Cerrar
         </button>
@@ -121,7 +133,9 @@
 </template>
 
 <script setup>
-import { computed, defineEmits } from "vue";
+import { computed, defineEmits, ref } from "vue";
+
+const quantity = ref(1);
 
 const props = defineProps({
   offer: {
@@ -135,6 +149,18 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "offerAction"]);
+
+const validateQuantity = () => {
+  if (quantity.value < 0) {
+    quantity.value = 1;
+  }
+};
+
+const handleBlur = () => {
+  if (quantity.value <= 0) {
+    quantity.value = 1;
+  }
+};
 
 const formattedDate = computed(() => {
   if (!props.offer.expiration_date && !props.offer.expiration_datetime)
@@ -172,7 +198,7 @@ const closeModal = () => {
 };
 
 const handleOfferAction = () => {
-  emit("offerAction", props.offer);
+  emit("offerAction", { id: props.offer.id, quantity: quantity.value });
 };
 </script>
 
@@ -475,5 +501,25 @@ const handleOfferAction = () => {
   .action-button {
     width: 100%;
   }
+}
+
+/* Añadir estilos para la sección de cantidad */
+.quantity-section {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quantity-section input {
+  width: 60px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-focus);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 </style>

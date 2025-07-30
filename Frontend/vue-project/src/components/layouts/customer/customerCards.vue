@@ -26,13 +26,14 @@ const getOffers = async () => {
   }
 };
 
-const addOfferToCart = async (offer) => {
+const addOfferToCart = async ({ id, quantity }) => {
   const offerPayload = {
-    offer_id: offer.id,
-    quantity: 1, // Assuming a default quantity of 1
+    offer_id: id,
+    quantity: quantity || 1, // Assuming a default quantity of 1
   };
 
   try {
+    console.log(offerPayload);
     const response = await axiosInstance.post("/add-to-cart", offerPayload);
     console.log(response);
   } catch (error) {
@@ -41,7 +42,6 @@ const addOfferToCart = async (offer) => {
       if ((error.data = "OfferQuantityExceded")) {
         alert("Ya no se pueden agregar más unidades de esta oferta");
       }
-      //window.location.reload();
     }
   }
 };
