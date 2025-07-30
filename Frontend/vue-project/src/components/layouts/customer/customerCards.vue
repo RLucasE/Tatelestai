@@ -38,8 +38,10 @@ const addOfferToCart = async (offer) => {
   } catch (error) {
     console.log(error);
     if (error.status === 400) {
-      alert("La oferta ya está expirada");
-      window.location.reload();
+      if ((error.data = "OfferQuantityExceded")) {
+        alert("Ya no se pueden agregar más unidades de esta oferta");
+      }
+      //window.location.reload();
     }
   }
 };

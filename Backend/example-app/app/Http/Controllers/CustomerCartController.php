@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+
+use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Actions\Cart\AddToCartAction;
 use App\Actions\Cart\AssignFirstCartAction;
 use App\Actions\Cart\GetCustomerCartAction;
@@ -41,10 +43,22 @@ class CustomerCartController extends CartController
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $offerCart = app(AddToCartAction::class)->handle(
-            $request->offer_id,
-            $request->quantity
-        );
+        try {
+            $offerCart = app(AddToCartAction::class)->handle(
+                $request->offer_id,
+                $request->quantity
+            );
+        } catch (OfferQuantityExceededException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'requested_quantity' => $e->context()['requested_quantity'] ?? null,
+                'available_quantity' => $e->context()['available_quantity'] ?? null,
+                'already_in_cart' => $e->context()['already_in_cart'] ?? null,
+                'error' => $e->context()['error'] ?? null,
+            ], 400);
+        }
+
+
 
         if (!$offerCart) {
             return response()->json(['message' => 'Offer has expired.'], status: 400);
