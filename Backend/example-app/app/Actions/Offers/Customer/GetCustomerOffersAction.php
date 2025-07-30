@@ -28,27 +28,6 @@ class GetCustomerOffersAction
             }])
             ->where("offers.expiration_datetime", ">=", now())
             ->get()
-            ->map(function ($offer) {
-                return [
-                    'id' => $offer->id,
-                    'offer_quantity' => $offer->offer_quantity,
-                    'title' => $offer->title,
-                    'description' => $offer->description,
-                    'expiration_datetime' => $offer->expiration_datetime,
-                    'food_establishment_id' => $offer->food_establishment_id,
-                    'products' => $offer->products->map(function ($product) {
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'description' => $product->description,
-                            'pivot' => [
-                                'price' => $product->price,
-                                'quantity' => $product->product_quantity
-                            ]
-                        ];
-                    })
-                ];
-            })
             ->toArray();
     }
 }
