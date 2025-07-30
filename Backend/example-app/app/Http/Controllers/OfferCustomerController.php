@@ -14,6 +14,7 @@ class OfferCustomerController extends Controller
     {
         $offers = Offer::select([
             'offers.id',
+            'offers.quantity as offer_quantity',
             'offers.title',
             'offers.description',
             'offers.expiration_datetime',
@@ -35,6 +36,7 @@ class OfferCustomerController extends Controller
 
             return [
                 'id' => $firstOffer->id,
+                'offer_quantity' => $firstOffer->offer_quantity,
                 'title' => $firstOffer->title,
                 'description' => $firstOffer->description,
                 'expiration_datetime' => $firstOffer->expiration_datetime,
@@ -43,12 +45,13 @@ class OfferCustomerController extends Controller
                     /**
                      * @var object{
                      *     id: int,
+                     *     offer_quantity: int,
                      *     title: string,
                      *     description: string,
                      *     expiration_datetime: string,
                      *     food_establishment_id: int,
                      *     price: float,
-                     *     quantity: int,
+                     *     product_quantity: int,
                      *     product_id: int,
                      *     product_name: string,
                      *     product_description: string
