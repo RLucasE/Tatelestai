@@ -10,12 +10,10 @@ use App\Models\Offer;
 use App\Models\OfferCart;
 use Illuminate\Support\Facades\Auth;
 
-
-
 class CartController extends Controller
 {
-
-    protected function addOfferToCart(Offer|int $offer, int $quantity): OfferCart
+    // Cambiamos los métodos de protected a public para que las Actions puedan accederlos
+    public function addOfferToCart(Offer|int $offer, int $quantity): OfferCart
     {
         $OfferController = new OfferController();
         $offer = $OfferController->resolveOffer($offer);
@@ -28,14 +26,15 @@ class CartController extends Controller
 
         return $offerCart;
     }
-    protected function resolveUser(User|int $userOrId): User
+
+    public function resolveUser(User|int $userOrId): User
     {
         return is_int($userOrId)
             ? User::findOrFail($userOrId)
             : $userOrId;
     }
 
-    protected function getLastActiveCart(User|int $userOrId): UserCart | null
+    public function getLastActiveCart(User|int $userOrId): UserCart | null
     {
         $user = $this->resolveUser($userOrId);
 
@@ -44,8 +43,7 @@ class CartController extends Controller
         return !$cart ? null : $cart;
     }
 
-
-    protected function deactivateCart(User|int $userOrId): bool
+    public function deactivateCart(User|int $userOrId): bool
     {
         $user = $this->resolveUser($userOrId);
         $activeCart = $this->getLastActiveCart($user);
@@ -58,8 +56,7 @@ class CartController extends Controller
         return $activeCart->save();
     }
 
-
-    protected function newCart(User|int $userOrId): UserCart | null
+    public function newCart(User|int $userOrId): UserCart | null
     {
         $user = $this->resolveUser($userOrId);
 
