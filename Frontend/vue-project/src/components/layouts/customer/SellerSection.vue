@@ -2,36 +2,41 @@
   <div class="seller-section">
     <div class="seller-header">
       <h3>Vendedor {{ offers[0].establishment_id }}</h3>
+      <div class="seller-total">Total: ${{ sellerTotal }}</div>
     </div>
     <div class="offers-container">
-      <div v-for="offer in offers" class="offer-conainer">
+      <div v-for="offer in offers" class="offer-container">
         <div class="offer-title">{{ offer.offer_title }}</div>
         <div class="offer-description">{{ offer.offer_description }}</div>
-        <div class="products">
-          <div v-for="product in offer.products">
-            <div class="product">
-              <div class="product-name">
-                {{ product.product_name }}
-              </div>
-              <div class="product-quantity">
-                x {{ product.product_quantity }}
-              </div>
-              <div class="product-description">
-                ${{ product.product_price }}
-              </div>
+        <div class="products-grid">
+          <div v-for="product in offer.products" class="product-card">
+            <div class="product-header">
+              <h5 class="product-name">{{ product.product_name }}</h5>
+              <span class="product-quantity">x{{ product.product_quantity }}</span>
+            </div>
+            <div class="product-footer">
+              <span class="product-price">${{ product.product_price }}</span>
             </div>
           </div>
         </div>
+        <div class="offer-total">
+          <span class="total-label">Total de la oferta:</span>
+          <span class="total-amount">${{ calculateOfferTotal(offer) }}</span>
+        </div>
       </div>
     </div>
-    <div class="buy-button-container">
-      <button class="buy-button">Comprar</button>
+    <div class="action-footer">
+      <div class="cart-total">
+        <span class="total-label">Total del carrito:</span>
+        <span class="total-amount">${{ sellerTotal }}</span>
+      </div>
+      <button class="action-button">Comprar</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { defineProps } from "vue";
+import { defineProps, computed } from "vue";
 
 const props = defineProps({
   offers: {
@@ -39,142 +44,277 @@ const props = defineProps({
     default: () => [],
   },
 });
+
+// Función para calcular el total de una oferta
+const calculateOfferTotal = (offer) => {
+  return offer.products.reduce((total, product) => {
+    return total + (product.product_price * product.product_quantity);
+  }, 0).toFixed(2);
+};
+
+// Calcular el total del vendedor (todas las ofertas)
+const sellerTotal = computed(() => {
+  return props.offers.reduce((total, offer) => {
+    const offerTotal = offer.products.reduce((sum, product) => {
+      return sum + (product.product_price * product.product_quantity);
+    }, 0);
+    return total + offerTotal;
+  }, 0).toFixed(2);
+});
 </script>
 
 <style scoped>
 .seller-section {
   display: flex;
   flex-direction: column;
-  border: 1.5px solid var(--color-border);
-  border-radius: calc(var(--border-radius) * 1.5);
-  margin-bottom: 5rem;
-  padding: 2rem 2.5rem;
-  position: relative;
-  background-color: var(--color-primary);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
-  will-change: transform, box-shadow;
+  background: var(--color-primary);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 100%; /* Asegura que ocupe todo el ancho disponible */
+  max-width: 1400px; /* Aumentado de 1200px típico a 1400px */
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .seller-section:hover {
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
-  transform: translateY(-4px);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
 
 .seller-header {
-  margin-bottom: 1.5rem;
-  border-bottom: 3px solid var(--color-focus);
-  padding-bottom: 0.75rem;
+  padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
+  background: var(--color-secondary);
+  border-bottom: 2px solid var(--color-focus);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .seller-header h3 {
-  font-size: 1.75rem;
-  font-weight: 800;
   margin: 0;
+  font-size: 1.75rem; /* Aumentado el tamaño */
+  font-weight: 700;
   color: var(--color-text);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.seller-total {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-darkest);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 2px solid var(--color-focus);
 }
 
 .offers-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+  padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
+  width: 100%;
 }
 
-.offer-conainer {
-  background-color: var(--color-secondary);
-  border-radius: calc(var(--border-radius) * 1.2);
-  padding: 1.25rem 1.5rem;
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.07);
-  color: var(--color-text);
-  transition: background-color 0.3s ease;
+.offer-container {
+  background: var(--color-secondary);
+  border-radius: 12px;
+  padding: 1.5rem 2rem; /* Aumentado el padding */
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-focus);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.offer-container:hover {
+  border-color: var(--color-text);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .offer-title {
-  font-size: 1.3rem;
+  font-size: 1.4rem; /* Aumentado el tamaño */
   font-weight: 700;
-  color: var(--color-darkest);
-  margin-bottom: 0.5rem;
-  text-transform: capitalize;
-  letter-spacing: 0.03em;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
 }
 
 .offer-description {
-  font-size: 1rem;
-  font-weight: 400;
+  font-size: 1.1rem; /* Aumentado el tamaño */
+  line-height: 1.5;
   color: var(--color-text);
-  opacity: 0.85;
-  line-height: 1.4;
-  margin-bottom: 1rem;
+  opacity: 0.9;
+  margin-bottom: 1.25rem;
 }
 
-.products {
-  margin-top: 1rem;
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Aumentado el ancho mínimo de las columnas */
+  gap: 1.25rem; /* Aumentado el espacio entre elementos */
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.product-card {
+  background: var(--color-focus);
+  border-radius: 10px;
+  padding: 1.25rem; /* Aumentado el padding */
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  width: 100%;
+}
+
+.product-card:hover {
+  background: var(--color-darkest);
+  border-color: var(--color-text);
+  transform: translateY(-3px);
+}
+
+.product-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  width: 100%;
 }
 
-.products > div {
-  background-color: var(--color-focus);
-  padding: 0.4rem 1rem;
-  border-radius: calc(var(--border-radius) * 1.2);
-  font-size: 1rem;
+.product-name {
+  margin: 0;
+  font-size: 1.1rem; /* Aumentado el tamaño */
   font-weight: 600;
   color: var(--color-text);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: background-color 0.3s ease;
 }
 
-.products > div:hover {
-  background-color: var(--color-darkest);
-  cursor: pointer;
+.product-quantity {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  padding: 0.3rem 0.6rem; /* Aumentado el padding */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.buy-button-container {
+.product-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 1.5rem;
+  width: 100%;
 }
 
-.buy-button {
-  background-color: var(--color-focus);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: calc(var(--border-radius) * 1.5);
-  cursor: pointer;
-  font-size: 1.1rem;
+.product-price {
+  background: var(--color-darkest);
   color: var(--color-text);
+  padding: 0.6rem 1rem; /* Aumentado el padding */
+  border-radius: 8px;
   font-weight: 700;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  transition: background-color 0.3s ease, transform 0.25s ease;
+  font-size: 1.1rem; /* Aumentado el tamaño */
 }
 
-.buy-button:hover {
-  background-color: var(--color-darkest);
-  transform: scale(1.1);
+.offer-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-focus);
+}
+
+.total-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-right: 1rem;
+}
+
+.total-amount {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  border: 2px solid var(--color-focus);
+}
+
+.action-footer {
+  padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
+  background: var(--color-secondary);
+  border-top: 2px solid var(--color-focus);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.cart-total {
+  display: flex;
+  align-items: center;
+}
+
+.action-button {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  border: none;
+  padding: 0.9rem 2rem; /* Aumentado el padding */
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem; /* Aumentado el tamaño */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid var(--color-focus);
+  min-width: 150px; /* Asegura un ancho mínimo para el botón */
+}
+
+.action-button:hover {
+  background: var(--color-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 992px) { /* Ajustado el breakpoint */
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
-  .seller-section {
+  .seller-header,
+  .offers-container,
+  .action-footer {
     padding: 1.25rem 1.5rem;
   }
+  
+  .seller-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
   .seller-header h3 {
     font-size: 1.4rem;
   }
-  .offer-conainer {
-    padding: 1rem 1.25rem;
+  
+  .offer-title {
+    font-size: 1.2rem;
   }
-  .products > div {
-    font-size: 0.95rem;
-    padding: 0.3rem 0.8rem;
+  
+  .products-grid {
+    grid-template-columns: 1fr;
   }
-  .buy-button {
-    font-size: 1rem;
-    padding: 0.6rem 1.25rem;
+  
+  .action-footer {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .cart-total {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .action-button {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
   }
 }
 </style>
