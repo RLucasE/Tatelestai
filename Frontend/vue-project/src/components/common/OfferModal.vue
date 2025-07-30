@@ -45,6 +45,16 @@
           <p>{{ offer.description }}</p>
         </div>
 
+        <div
+          class="offer-availability"
+          v-if="offer.offer_quantity !== undefined"
+        >
+          <p class="availability-info">
+            <span class="quantity-label">Cantidad disponible: </span>
+            <span class="quantity-value">{{ offer.offer_quantity }}</span>
+          </p>
+        </div>
+
         <!-- Lista de productos -->
         <div
           class="products-section"
@@ -159,6 +169,10 @@ const validateQuantity = () => {
 const handleBlur = () => {
   if (quantity.value <= 0) {
     quantity.value = 1;
+  }
+
+  if (quantity.value > props.offer.offer_quantity) {
+    quantity.value = props.offer.offer_quantity;
   }
 };
 
@@ -307,6 +321,10 @@ const handleOfferAction = () => {
   line-height: 1.6;
   color: var(--color-text);
   opacity: 0.9;
+}
+
+.offer-availability {
+  margin-bottom: 2rem;
 }
 
 /* Products */

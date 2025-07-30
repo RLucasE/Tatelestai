@@ -18,59 +18,42 @@ class OfferCustomerController extends Controller
             'offers.title',
             'offers.description',
             'offers.expiration_datetime',
-            'offers.food_establishment_id',
-            'product_offers.price',
-            'product_offers.quantity',
-            'products.id as product_id',
-            'products.name as product_name',
-            'products.description as product_description'
+            'offers.food_establishment_id'
         ])
-            ->join('product_offers', 'offers.id', '=', 'product_offers.offer_id')
-            ->join('products', 'product_offers.product_id', '=', 'products.id')
+            ->with(['products' => function ($query) {
+                $query->select(
+                    'products.id',
+                    'products.name',
+                    'products.description',
+                    'product_offers.price',
+                    'product_offers.quantity as product_quantity',
+                    'product_offers.offer_id'
+                );
+            }])
             ->where("offers.expiration_datetime", ">=", now())
-            ->get();
+            ->get()
+            ->map(function ($offer) {
+                return [
+                    'id' => $offer->id,
+                    'offer_quantity' => $offer->offer_quantity,
+                    'title' => $offer->title,
+                    'description' => $offer->description,
+                    'expiration_datetime' => $offer->expiration_datetime,
+                    'food_establishment_id' => $offer->food_establishment_id,
+                    'products' => $offer->products->map(function ($product) {
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'description' => $product->description,
+                            'pivot' => [
+                                'price' => $product->price,
+                                'quantity' => $product->product_quantity
+                            ]
+                        ];
+                    })
+                ];
+            });
 
-        // Agrupar por oferta
-        $groupedOffers = $offers->groupBy('id')->map(function ($offerGroup) {
-            $firstOffer = $offerGroup->first();
-
-            return [
-                'id' => $firstOffer->id,
-                'offer_quantity' => $firstOffer->offer_quantity,
-                'title' => $firstOffer->title,
-                'description' => $firstOffer->description,
-                'expiration_datetime' => $firstOffer->expiration_datetime,
-                'food_establishment_id' => $firstOffer->food_establishment_id,
-                'products' => $offerGroup->map(function (Offer $item) {
-                    /**
-                     * @var object{
-                     *     id: int,
-                     *     offer_quantity: int,
-                     *     title: string,
-                     *     description: string,
-                     *     expiration_datetime: string,
-                     *     food_establishment_id: int,
-                     *     price: float,
-                     *     product_quantity: int,
-                     *     product_id: int,
-                     *     product_name: string,
-                     *     product_description: string
-                     * } $item
-                     */
-
-                    return [
-                        'id' => $item->product_id,
-                        'name' => $item->product_name,
-                        'description' => $item->product_description,
-                        'pivot' => [
-                            'price' => $item->price,
-                            'quantity' => $item->quantity
-                        ]
-                    ];
-                })
-            ];
-        })->values();
-
-        return $groupedOffers;
+        return $offers;
     }
 }
