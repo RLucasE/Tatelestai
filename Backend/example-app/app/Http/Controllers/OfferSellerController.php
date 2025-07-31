@@ -26,11 +26,9 @@ class OfferSellerController extends OfferController
         $products = $request->array('products');
         $productIDs = $this->productsToProductsIDs($products);
 
-        if (!$this->validateProductOwnershipAction->execute($productIDs)) {
-            return $this->invalidProductsResponse();
-        }
 
         try {
+            $this->validateProductOwnershipAction->execute($productIDs);
             $offer = $this->createOfferAction->execute($request);
 
             return response()->json([
@@ -39,7 +37,8 @@ class OfferSellerController extends OfferController
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Uno a más productos no pertenecen a tu stablecimiento'
+                'message' => 'Uno a más productos no pertenecen a tu stablecimiento',
+                'error' => $e
             ], 403);
         }
     }
