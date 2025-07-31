@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Casts\Json;
+use App\Actions\Offers\GetUserOffersAction;
+use App\Actions\Offers\GetOfferAction;
+use App\Actions\Offers\ValidateOfferOwnershipAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Actions\Offers\ValidateProductOwnershipAction;
+use App\Actions\Offers\CreateOfferAction;
 
 class OfferSellerController extends OfferController
 {
-    // /**
-    //  * Constructor - Aplicar middleware de autenticación
-    //  */
-    // public function __construct()
-    // {
-    //     $this->middleware('auth');
-    // }
-
-    /**
-     * Crear una nueva oferta
-     */
+    public function __construct(
+        private GetUserOffersAction $getUserOffers,
+        private GetOfferAction $getOffer,
+        private ValidateOfferOwnershipAction $validateOfferOwnership,
+        private ValidateProductOwnershipAction $validateProductOwnershipAction,
+        private CreateOfferAction $createOfferAction
+    ) {}
     public function store(Request $request)
     {
         $request->validate($this->getOfferValidationRules());
@@ -26,12 +26,12 @@ class OfferSellerController extends OfferController
         $products = $request->array('products');
         $productIDs = $this->productsToProductsIDs($products);
 
-        if (!$this->validateProductOwnership($productIDs)) {
+        if (!$this->validateProductOwnershipAction->execute($productIDs)) {
             return $this->invalidProductsResponse();
         }
 
         try {
-            $offer = $this->createOfferWithProducts($request);
+            $offer = $this->createOfferAction->execute($request);
 
             return response()->json([
                 'message' => 'Oferta creada exitosamente',
@@ -46,19 +46,15 @@ class OfferSellerController extends OfferController
 
     public function show(Request $request)
     {
-        $userID = Auth::user()->id;
-        $offers = $this->userOffers($userID);
-
-
         return response()->json(
-            $offers
+            $this->getUserOffers->execute()
         );
     }
 
 
     public function offer($offerID)
     {
-        $offer = $this->getOffer($offerID);
+        $offer = $this->getOffer->execute($offerID);
 
         if (!$offer) {
             return response()->json([
@@ -66,13 +62,13 @@ class OfferSellerController extends OfferController
             ], 404);
         }
 
-        if (!$this->offerBelongTo($offer, Auth::user())) {
+        if (!$this->validateOfferOwnership->execute($offer, Auth::user())) {
             return response()->json([
                 'message' => 'No tienes permiso para acceder a esta oferta',
             ], 403);
         }
-
-        $jsonResponse = $this->getFullOffer($offer);
+        $withProducts = true;
+        $jsonResponse = $this->getOffer->execute($offer->id, $withProducts);
 
         return response()->json(
             $jsonResponse,

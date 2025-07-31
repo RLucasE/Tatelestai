@@ -2,34 +2,38 @@
 
 namespace App\Actions\Cart;
 
+use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Models\OfferCart;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Auth;
+use App\Actions\Offers\GetOfferAction;
 
 class AddToCartAction
 {
-    protected $offerController;
-    protected $cartController;
 
-    public function __construct(OfferController $offerController, CartController $cartController)
-    {
-        $this->offerController = $offerController;
-        $this->cartController = $cartController;
-    }
+
+    public function __construct(
+        private OfferController $offerController,
+        private CartController $cartController,
+        private ValidateOfferExpirationAction $validateOfferExpiration,
+        private GetOfferAction $getOfferAction
+    ) {}
 
     public function handle(int $offerId, int $quantity)
     {
-        $offer = $this->offerController->validateExpiration($offerId);
 
-        if (!$offer) {
+
+        if (!$this->validateOfferExpiration->execute($offerId)) {
             return null;
         }
 
         if ($this->offerIsInCart($offerId)) {
             return $this->updateOfferQuantity($offerId, $quantity);
         }
+
+        $offer = $this->getOfferAction->execute($offerId);
 
         return $this->cartController->addOfferToCart($offer, $quantity);
     }

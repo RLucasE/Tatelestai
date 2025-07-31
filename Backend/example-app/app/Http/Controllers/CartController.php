@@ -12,11 +12,12 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-    // Cambiamos los métodos de protected a public para que las Actions puedan accederlos
+    public function __construct(
+        private OfferController $offerController
+    ) {}
     public function addOfferToCart(Offer|int $offer, int $quantity): OfferCart
     {
-        $OfferController = new OfferController();
-        $offer = $OfferController->resolveOffer($offer);
+        $offer = $this->offerController->resolveOffer($offer);
 
         $offerCart = OfferCart::create([
             'offer_id' => $offer->id,
