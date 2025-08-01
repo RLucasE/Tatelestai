@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Actions\Offers\ValidateProductOwnershipAction;
 use App\Actions\Offers\CreateOfferAction;
+use App\Exceptions\Product\ProductOwnershipException;
 
 class OfferSellerController extends OfferController
 {
@@ -35,11 +36,13 @@ class OfferSellerController extends OfferController
                 'message' => 'Oferta creada exitosamente',
                 'offer' => $offer,
             ], 201);
-        } catch (\Exception $e) {
+        } catch (ProductOwnershipException $e) {
             return response()->json([
-                'message' => 'Uno a más productos no pertenecen a tu stablecimiento',
-                'error' => $e
-            ], 403);
+                'message' => $e->getMessage(),
+                'product_ids' => $e->context()['product_ids'],
+                'establishment_id' => $e->context()['establishment_id'],
+                'error' => $e->context()['error'],
+            ], $e->getCode());
         }
     }
 

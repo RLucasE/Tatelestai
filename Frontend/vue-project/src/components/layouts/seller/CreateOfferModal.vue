@@ -209,8 +209,8 @@ const handleSubmit = async () => {
 
     const response = await axiosInstance.post("/offer", offerPayload);
     console.log("Oferta creada:", response.data);
-    //emit("success", response.data.offer, "create");
-    //closeModal();
+    emit("success", response.data.offer, "create");
+    closeModal();
   } catch (error) {
     console.error("Error al crear la oferta:", error);
     alert("Error al crear la oferta. Por favor, inténtalo de nuevo.");

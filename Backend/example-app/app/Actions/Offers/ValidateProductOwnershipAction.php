@@ -30,16 +30,8 @@ class ValidateProductOwnershipAction
             ->count();
 
         if ($validProductsCount !== count($productIds)) {
-            // Obtener los IDs de productos que no pertenecen al establecimiento
-            $validProductIds = Product::where('food_establishment_id', $establishment->id)
-                ->whereIn('id', $productIds)
-                ->pluck('id')
-                ->toArray();
-            
-            $invalidProductIds = array_diff($productIds, $validProductIds);
-            
             throw (new ProductOwnershipException())
-                ->setContext($invalidProductIds, $establishment->id);
+                ->setContext($productIds, $establishment->id);
         }
 
         return true;
