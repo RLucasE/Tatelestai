@@ -40,6 +40,21 @@
           >
         </div>
 
+        <div class="form-group">
+          <label for="offerQuantity">Cantidad de Ofertas</label>
+          <input
+            type="number"
+            id="offerQuantity"
+            v-model.number="offerData.quantity"
+            min="1"
+            placeholder="1"
+            required
+          />
+          <small class="field-hint"
+            >Número de ofertas disponibles para venta</small
+          >
+        </div>
+
         <!-- Sección de productos -->
         <div class="form-group">
           <div class="products-header">
@@ -129,6 +144,7 @@ const offerData = ref({
   title: "",
   description: "",
   expirationDate: "",
+  quantity: 0,
 });
 
 const selectedProducts = ref([]);
@@ -167,6 +183,7 @@ const resetForm = () => {
     title: "",
     description: "",
     expirationDate: "",
+    quantity: 0,
   };
   selectedProducts.value = [];
 };
@@ -200,22 +217,22 @@ const handleSubmit = async () => {
       description: offerData.value.description,
       total_price: totalOfferPrice.value,
       expiration_date: offerData.value.expirationDate,
+      quantity: offerData.value.quantity,
       products: selectedProducts.value.map((product) => ({
         id: product.id,
         quantity: product.quantity,
         price: product.price,
       })),
     };
-
     const response = await axiosInstance.post("/offer", offerPayload);
     console.log("Oferta creada:", response.data);
     emit("success", response.data.offer, "create");
     closeModal();
   } catch (error) {
     console.error("Error al crear la oferta:", error);
-    alert("Error al crear la oferta. Por favor, inténtalo de nuevo.");
+    //alert("Error al crear la oferta. Por favor, inténtalo de nuevo.");
   } finally {
-    closeModal();
+    //closeModal();
     loading.value = false;
   }
 };

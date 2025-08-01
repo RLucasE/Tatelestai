@@ -23,15 +23,11 @@ class OfferSellerController extends OfferController
     public function store(Request $request)
     {
         $request->validate($this->getOfferValidationRules());
-
         $products = $request->array('products');
         $productIDs = $this->productsToProductsIDs($products);
-
-
         try {
             $this->validateProductOwnershipAction->execute($productIDs);
             $offer = $this->createOfferAction->execute($request);
-
             return response()->json([
                 'message' => 'Oferta creada exitosamente',
                 'offer' => $offer,
@@ -57,13 +53,11 @@ class OfferSellerController extends OfferController
     public function offer($offerID)
     {
         $offer = $this->getOffer->execute($offerID);
-
         if (!$offer) {
             return response()->json([
                 'message' => 'Oferta no encontrada'
             ], 404);
         }
-
         if (!$this->validateOfferOwnership->execute($offer, Auth::user())) {
             return response()->json([
                 'message' => 'No tienes permiso para acceder a esta oferta',

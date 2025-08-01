@@ -17,6 +17,7 @@ class OfferController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'expiration_date' => 'required|date',
+            'quantity' => 'required|integer|min:1',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|integer|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
