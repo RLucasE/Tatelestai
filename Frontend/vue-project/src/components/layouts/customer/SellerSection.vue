@@ -12,7 +12,9 @@
           <div v-for="product in offer.products" class="product-card">
             <div class="product-header">
               <h5 class="product-name">{{ product.product_name }}</h5>
-              <span class="product-quantity">x{{ product.product_quantity }}</span>
+              <span class="product-quantity"
+                >x{{ product.product_quantity }}</span
+              >
             </div>
             <div class="product-footer">
               <span class="product-price">${{ product.product_price }}</span>
@@ -30,13 +32,16 @@
         <span class="total-label">Total del carrito:</span>
         <span class="total-amount">${{ sellerTotal }}</span>
       </div>
-      <button class="action-button">Comprar</button>
+      <button class="action-button" @click="handlePurchase" :disabled="loading">
+        {{ loading ? "Procesando..." : "Comprar" }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { defineProps, computed } from "vue";
+import { defineProps, computed, ref } from "vue";
+import axiosInstance from "@/lib/axios";
 
 const props = defineProps({
   offers: {
@@ -45,22 +50,56 @@ const props = defineProps({
   },
 });
 
+const loading = ref(false);
+
 // Función para calcular el total de una oferta
 const calculateOfferTotal = (offer) => {
-  return offer.products.reduce((total, product) => {
-    return total + (product.product_price * product.product_quantity);
-  }, 0).toFixed(2);
+  return offer.products
+    .reduce((total, product) => {
+      return total + product.product_price * product.product_quantity;
+    }, 0)
+    .toFixed(2);
 };
 
 // Calcular el total del vendedor (todas las ofertas)
 const sellerTotal = computed(() => {
-  return props.offers.reduce((total, offer) => {
-    const offerTotal = offer.products.reduce((sum, product) => {
-      return sum + (product.product_price * product.product_quantity);
-    }, 0);
-    return total + offerTotal;
-  }, 0).toFixed(2);
+  return props.offers
+    .reduce((total, offer) => {
+      const offerTotal = offer.products.reduce((sum, product) => {
+        return sum + product.product_price * product.product_quantity;
+      }, 0);
+      return total + offerTotal;
+    }, 0)
+    .toFixed(2);
 });
+
+// Función para procesar la compra
+const handlePurchase = async () => {
+  if (loading.value) return;
+  try {
+    loading.value = true;
+    const purchaseData = {
+      establishment_id: props.offers[0].establishment_id,
+      offers: props.offers.map((offer) => ({
+        offer_id: offer.offer_id,
+        quantity: offer.quantity, // Por defecto 1, se puede modificar si se necesita
+        products: offer.products.map((product) => ({
+          product_id: product.id,
+          quantity: product.product_quantity,
+          price: product.product_price,
+        })),
+      })),
+    };
+    await axiosInstance.post("/purchase", purchaseData);
+    alert("¡Compra realizada con éxito!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error al procesar la compra:", error);
+    alert("Error al procesar la compra. Por favor, intente nuevamente.");
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -150,7 +189,10 @@ const sellerTotal = computed(() => {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Aumentado el ancho mínimo de las columnas */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(300px, 1fr)
+  ); /* Aumentado el ancho mínimo de las columnas */
   gap: 1.25rem; /* Aumentado el espacio entre elementos */
   width: 100%;
   margin-bottom: 1.5rem;
@@ -265,13 +307,20 @@ const sellerTotal = computed(() => {
   min-width: 150px; /* Asegura un ancho mínimo para el botón */
 }
 
-.action-button:hover {
+.action-button:hover:not(:disabled) {
   background: var(--color-focus);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
 
-@media (max-width: 992px) { /* Ajustado el breakpoint */
+.action-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: var(--color-focus);
+}
+
+@media (max-width: 992px) {
+  /* Ajustado el breakpoint */
   .products-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
@@ -283,35 +332,35 @@ const sellerTotal = computed(() => {
   .action-footer {
     padding: 1.25rem 1.5rem;
   }
-  
+
   .seller-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .seller-header h3 {
     font-size: 1.4rem;
   }
-  
+
   .offer-title {
     font-size: 1.2rem;
   }
-  
+
   .products-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .action-footer {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .cart-total {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .action-button {
     width: 100%;
     padding: 0.75rem 1.25rem;
