@@ -16,14 +16,8 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        $user = User::factory()->create([
-            'name' => 'Lucas',
-            'last_name' => 'Ricalde',
-            'email' => 'lucascabjnmro2@gmail.com',
-            'state' => UserState::SELECTING,
-            'password' => 12345678,
-        ]);
         $this->call(PermissionSeeder::class);
+        $this->call(UserSeeder::class);
         $this->call(CategorySeeder::class);
         $this->call(EstablishmentTypeSeeder::class);
         $this->call(FoodEstablishmentSeeder::class);
