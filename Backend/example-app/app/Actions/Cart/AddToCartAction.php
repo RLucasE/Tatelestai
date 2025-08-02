@@ -21,6 +21,9 @@ class AddToCartAction
         private GetOfferAction $getOfferAction
     ) {}
 
+    /**
+     * @throws OfferQuantityExceededException
+     */
     public function handle(int $offerId, int $quantity)
     {
 
@@ -28,12 +31,18 @@ class AddToCartAction
         if (!$this->validateOfferExpiration->execute($offerId)) {
             return null;
         }
+        try {
+            if ($this->offerIsInCart($offerId)) {
+                return $this->updateOfferQuantity($offerId, $quantity);
+            }
 
-        if ($this->offerIsInCart($offerId)) {
-            return $this->updateOfferQuantity($offerId, $quantity);
+            $offer = $this->getOfferAction->execute($offerId);
+            $this->validQuantity($offer->quantity,0,$quantity);
+        }catch (OfferQuantityExceededException $exception) {
+            $exception->setOfferId($offerId);
+            throw $exception;
         }
 
-        $offer = $this->getOfferAction->execute($offerId);
 
         return $this->cartController->addOfferToCart($offer, $quantity);
     }
@@ -52,6 +61,9 @@ class AddToCartAction
             ->exists();
     }
 
+    /**
+     * @throws OfferQuantityExceededException
+     */
     protected function updateOfferQuantity(int $offerId, int $quantity)
     {
         $activeCart = $this->cartController->getLastActiveCart(Auth::id());
@@ -70,16 +82,19 @@ class AddToCartAction
 
 
         if ($offerCart) {
-            $newQuantity = $offerCart->quantity + $quantity;
-            if ($newQuantity > $offer->quantity) {
-                $exeption = new OfferQuantityExceededException();
-                $exeption->setContext($offerId, $quantity, $offer->quantity, $offer->quantity);
-                throw $exeption;
-            }
-            $offerCart->quantity = $newQuantity;
+            $this->validQuantity($offer->quantity, $offerCart->quantity, $quantity);
+            $offerCart->quantity += $quantity;
             $offerCart->save();
         }
 
         return $offerCart;
+    }
+
+    /**
+     * @throws OfferQuantityExceededException
+     */
+    protected function validQuantity(int $offerQuantity, int $quantityInCart, int $newQuantity): bool
+    {
+        if ($offerQuantity < $quantityInCart + $newQuantity) throw (new OfferQuantityExceededException())->setContext(0,$newQuantity,$offerQuantity,$quantityInCart); else return true;
     }
 }

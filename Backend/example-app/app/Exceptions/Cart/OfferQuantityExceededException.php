@@ -49,4 +49,8 @@ class OfferQuantityExceededException extends Exception
         $this->alreadyInCart = $alreadyInCart;
         return $this;
     }
+
+    public function setOfferId(int $offerId){
+        $this->offerId = $offerId;
+    }
 }
