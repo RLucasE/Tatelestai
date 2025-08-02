@@ -45,16 +45,6 @@
           <p>{{ offer.description }}</p>
         </div>
 
-        <div
-          class="offer-availability"
-          v-if="offer.offer_quantity !== undefined"
-        >
-          <p class="availability-info">
-            <span class="quantity-label">Cantidad disponible: </span>
-            <span class="quantity-value">{{ offer.offer_quantity }}</span>
-          </p>
-        </div>
-
         <!-- Lista de productos -->
         <div
           class="products-section"
@@ -119,6 +109,15 @@
 
       <!-- Footer del modal -->
       <div class="modal-footer">
+        <div
+          class="offer-availability"
+          v-if="offer.offer_quantity !== undefined"
+        >
+          <p class="availability-info">
+            <span class="quantity-label">Cantidad disponible: </span>
+            <span class="quantity-value">{{ offer.offer_quantity }}</span>
+          </p>
+        </div>
         <div class="quantity-section">
           <label for="quantity">Cantidad:</label>
           <input
@@ -324,7 +323,7 @@ const handleOfferAction = () => {
 }
 
 .offer-availability {
-  margin-bottom: 2rem;
+  align-content: center;
 }
 
 /* Products */
@@ -539,5 +538,12 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Remove spinner buttons for all browsers */
+input[type="number"] {
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 </style>
