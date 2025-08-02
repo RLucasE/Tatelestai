@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserState;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\CustomerCartController;
@@ -12,23 +14,19 @@ class UserManagement extends Controller
 {
 
 
-    public function chooseRole(Request $request)
+    public function chooseRole(Request $request):JsonResponse
     {
-
 
         $request->validate([
             'role' => 'required|in:seller,customer',
         ]);
 
-        /** @var \App\Models\User */
-        $user = Auth::user();
+        $user = User::find(Auth::id());
         $role = $request->input('role');
         $changed = false;
-        $CartController = new CustomerCartController();
-
 
         if ($role === 'seller') {
-            $user->syncRoles(["seller"]); // De momento solo le asignamos el rol, falta implementar la lógica de asignación de nuevos vendedores
+            $user->syncRoles(["seller"]);
             $user->state = UserState::REGISTERING;
             $user->save();
             $changed = true;
@@ -37,7 +35,7 @@ class UserManagement extends Controller
             $user->syncRoles(["customer"]);
             $user->state = UserState::ACTIVE;
             $user->save();
-            $CartController->asingFirstCart($user);
+            app(CustomerCartController::class)->asingFirstCart($user);
             $changed = true;
         }
 

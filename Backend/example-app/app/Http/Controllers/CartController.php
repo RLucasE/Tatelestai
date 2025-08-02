@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Offers\ResolveOfferAction;
 use App\Models\User;
 use App\Enums\CartState;
 use App\Models\UserCart;
@@ -13,19 +14,20 @@ use Illuminate\Support\Facades\Auth;
 class CartController extends Controller
 {
     public function __construct(
-        private OfferController $offerController
-    ) {}
+    )
+    {
+    }
     public function addOfferToCart(Offer|int $offer, int $quantity): OfferCart
     {
-        $offer = $this->offerController->resolveOffer($offer);
+        $offer = app(ResolveOfferAction::class)($offer);
 
-        $offerCart = OfferCart::create([
+        return  OfferCart::create([
             'offer_id' => $offer->id,
             'user_cart_id' => $this->getLastActiveCart(Auth::id())->id,
             'quantity' => $quantity,
         ]);
 
-        return $offerCart;
+
     }
 
     public function resolveUser(User|int $userOrId): User

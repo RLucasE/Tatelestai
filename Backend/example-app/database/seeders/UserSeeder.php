@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
             'state' => UserState::SELECTING,
             'password' => 12345678,
         ]);
-        $user->assignRole('customer');
+        $user->assignRole('default');
         $user = User::factory()->create([
             'name' => 'Lucas',
             'last_name' => 'Ricalde',
@@ -30,6 +30,6 @@ class UserSeeder extends Seeder
             'state' => UserState::SELECTING,
             'password' => 12345678,
         ]);
-        $user->assignRole('seller');
+        $user->assignRole('default');
     }
 }
