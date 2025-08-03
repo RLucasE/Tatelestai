@@ -23,8 +23,12 @@ class CustomerCartController extends CartController
 
     public function customerCart()
     {
-        $user = Auth::user();
-        $groupedOffers = app(GetCustomerCartAction::class)->handle($user);
+        try {
+            !$groupedOffers =  app(GetCustomerCartAction::class)->handle(Auth::user());
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], status: 404);
+        }
+
 
         if (!$groupedOffers) {
             return response()->json(['message' => 'No active cart found.'], status: 404);
