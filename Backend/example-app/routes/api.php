@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
+use App\Http\Controllers\SellController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserManagement;
 use App\Http\Controllers\OfferCustomerController;
@@ -19,6 +20,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
         Route::get('customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
+        Route::post('/buy-offers',[SellController::class, 'buyOffers']);
     });
 });
 

@@ -79,18 +79,13 @@ const handlePurchase = async () => {
   try {
     loading.value = true;
     const purchaseData = {
-      establishment_id: props.offers[0].establishment_id,
       offers: props.offers.map((offer) => ({
-        offer_id: offer.offer_id,
-        quantity: offer.quantity, // Por defecto 1, se puede modificar si se necesita
-        products: offer.products.map((product) => ({
-          product_id: product.id,
-          quantity: product.product_quantity,
-          price: product.product_price,
-        })),
+        id: offer.offer_id,
+        quantity: offer.quantity,
       })),
+      food_establishment_id: props.offers[0].establishment_id,
     };
-    await axiosInstance.post("/purchase", purchaseData);
+    await axiosInstance.post("/buy-offers", purchaseData);
     alert("¡Compra realizada con éxito!");
     window.location.reload();
   } catch (error) {

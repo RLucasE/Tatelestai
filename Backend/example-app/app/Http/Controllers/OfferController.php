@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Offer;
 use App\Actions\Offers\GetUserEstablishmentAction;
+use App\Actions\Offers\ResolveOfferAction;
+use App\Actions\Product\MapProductsToIdsAction;
 
 
 class OfferController extends Controller
 {
-    public function __construct(
-        private GetUserEstablishmentAction $getUserEstablishment,
-    ) {}
+    public function __construct() {}
     protected function getOfferValidationRules(): array
     {
         return [
@@ -27,9 +27,7 @@ class OfferController extends Controller
 
     public function resolveOffer(Offer|int $offer): Offer
     {
-        return is_int($offer)
-            ? Offer::findOrFail($offer)
-            : $offer;
+        return app(ResolveOfferAction::class)($offer);
     }
 
 
