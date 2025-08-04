@@ -106,7 +106,6 @@
           </div>
         </div>
       </div>
-
       <!-- Footer del modal -->
       <div class="modal-footer">
         <div

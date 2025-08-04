@@ -2,6 +2,7 @@
 
 namespace App\Actions\Offers\Customer;
 
+use App\Enums\OfferState;
 use App\Models\Offer;
 
 class GetCustomerOffersAction
@@ -26,6 +27,7 @@ class GetCustomerOffersAction
                     'product_offers.offer_id'
                 );
             }])
+            ->where("offers.state", OfferState::ACTIVE)
             ->where("offers.expiration_datetime", ">=", now())
             ->get()
             ->toArray();

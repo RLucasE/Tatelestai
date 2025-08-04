@@ -3,6 +3,8 @@
 namespace App\Actions\Cart;
 
 use App\Actions\Offers\ValidateOfferExpirationAction;
+use App\Actions\Offers\ValidateOfferStateAction;
+use App\Enums\OfferState;
 use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Models\OfferCart;
 use App\Http\Controllers\OfferController;
@@ -18,32 +20,33 @@ class AddToCartAction
         private OfferController $offerController,
         private CartController $cartController,
         private ValidateOfferExpirationAction $validateOfferExpiration,
-        private GetOfferAction $getOfferAction
+        private GetOfferAction $getOfferAction,
+        private ValidateOfferStateAction $validateOfferState,
     ) {}
 
     /**
      * @throws OfferQuantityExceededException
+     * @throws \Exception
      */
     public function handle(int $offerId, int $quantity)
     {
-
-
         if (!$this->validateOfferExpiration->execute($offerId)) {
             return null;
         }
         try {
+            $this->validateOfferState->execute($offerId,OfferState::ACTIVE->value);
             if ($this->offerIsInCart($offerId)) {
                 return $this->updateOfferQuantity($offerId, $quantity);
             }
-
             $offer = $this->getOfferAction->execute($offerId);
             $this->validQuantity($offer->quantity,0,$quantity);
         }catch (OfferQuantityExceededException $exception) {
             $exception->setOfferId($offerId);
             throw $exception;
         }
-
-
+        catch (\Exception $exception) {
+            throw new \Exception("Error al agregar la oferta al carrito, " . $exception->getMessage());
+        }
         return $this->cartController->addOfferToCart($offer, $quantity);
     }
 

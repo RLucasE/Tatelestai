@@ -60,6 +60,8 @@ class CustomerCartController extends CartController
                 'already_in_cart' => $e->context()['already_in_cart'] ?? null,
                 'error' => $e->context()['error'] ?? null,
             ], 400);
+        }catch (\Exception $exception){
+            return response()->json(['error' => $exception->getMessage()], status: 400);
         }
 
 
