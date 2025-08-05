@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::get('my-offers', [OfferSellerController::class, 'show']);
         Route::get('/offer/{offerID}', [OfferSellerController::class, 'offer']);
         Route::patch('/offer/{offerID}', [OfferSellerController::class, 'update']);
+        Route::get('/sells', [SellController::class, 'sellerSells']);
     });
 });
 

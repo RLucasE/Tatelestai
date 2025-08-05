@@ -8,6 +8,7 @@ use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\SellValidationRules;
 use App\Models\FoodEstablishment;
+use App\Models\Sell;
 use App\Models\UserCart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,6 @@ class SellController
         private readonly ValidateOfferExpirationAction $validateOfferExpiration,
         private readonly OfferIsFromFoodEstablishmentAction $offerIsFromFoodEstablishmentAction,
         private readonly makeSellAction $makeSellAction,
-
     ) {}
     public function buyOffers(Request $request)
     {
@@ -41,6 +41,20 @@ class SellController
         } catch (\Exception $exception) {
             return response()->json([
                 $exception->getMessage(),
+            ], 500);
+        }
+    }
+    public function sellerSells(Request $request)
+    {
+        try {
+            $foodEstablishment = FoodEstablishment::where('user_id', Auth::id())->firstOrFail();
+            $sells = Sell::with(['sellDetails.offer'])
+                ->where('sold_by', $foodEstablishment->id)
+                ->orderBy('created_at','desc')->get();
+            return response()->json($sells->toArray());
+        }catch (\Exception $exception){
+            return response()->json([
+                'error' => $exception->getMessage(),
             ], 500);
         }
     }

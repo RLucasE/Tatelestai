@@ -7,4 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SellDetail extends Model
 {
     protected $guarded = ['id'];
+    public function offer() {
+        return $this->belongsTo(Offer::class);
+    }
 }
