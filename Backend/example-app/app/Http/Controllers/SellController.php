@@ -31,7 +31,7 @@ class SellController
             $this->offerIsFromFoodEstablishmentAction->execute($request->get('offers'), $request->get('food_establishment_id'));
             $offers = $request->get('offers');
             $bought_by = Auth::id();
-            $sold_by = FoodEstablishment::findOrFail($request->get('food_establishment_id'))->user_id;
+            $sold_by = FoodEstablishment::findOrFail($request->get('food_establishment_id'))->id;
             $result = $this->makeSellAction->execute($offers,$bought_by, $sold_by);
             $userCart = UserCart::with('offerCarts')->where('user_id', $bought_by)->first();
             foreach ($userCart->offerCarts as $offerCart) {

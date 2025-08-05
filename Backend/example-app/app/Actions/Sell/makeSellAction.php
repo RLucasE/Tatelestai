@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sell;
 
+use App\Actions\Offers\GetOfferAction;
 use App\Models\Offer;
 use App\Models\Sell;
 use App\Models\SellDetail;
@@ -12,9 +13,12 @@ use Illuminate\Support\Facades\DB;
  * -Offers belong to $sold_by
  * -Offers are not expired
  * -Offers belong to $sold_by's food_establishment
+ * -Offers exist
  */
-class makeSellAction
-{
+class makeSellAction{
+    public function __construct(private GetOfferAction $getOfferAction)
+    {
+    }
 
     public function execute(array $offers, int $bought_by, int $sold_by): array
     {
@@ -27,19 +31,23 @@ class makeSellAction
 
 
             foreach ($offers as $offerData) {
-                $offer = Offer::findOrFail($offerData['id']);
+                $offer = $this->getOfferAction->execute($offerData['id'],true);
 
 
                 if ($offer->quantity < $offerData['quantity']) {
                     throw new \Exception("No hay suficiente stock disponible para la oferta: {$offer->title}");
                 }
-
-                SellDetail::create([
-                    'sell_id' => $sell->id,
-                    'offer_id' => $offer->id,
-                    'quantity' => $offerData['quantity'],
-                    'price' => $this->calculateOfferPrice($offer),
-                ]);
+                foreach ($offer->products as $productData) {
+                    SellDetail::create([
+                        'sell_id' => $sell->id,
+                        'offer_id' => $offer->id,
+                        'offer_quantity' => $offerData['quantity'],
+                        'product_quantity' => $productData['pivot']['quantity'],
+                        'product_price' => $productData['pivot']['price'],
+                        'product_name' => $productData['name'],
+                        'product_description' => $productData['description'] ?? null,
+                    ]);
+                }
 
 
                 $offer->update([
