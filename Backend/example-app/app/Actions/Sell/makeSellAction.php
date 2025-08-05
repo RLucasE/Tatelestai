@@ -3,6 +3,7 @@
 namespace App\Actions\Sell;
 
 use App\Actions\Offers\GetOfferAction;
+use App\Enums\OfferState;
 use App\Models\Offer;
 use App\Models\Sell;
 use App\Models\SellDetail;
@@ -55,7 +56,7 @@ class makeSellAction{
                 ]);
 
                 if($offer->quantity == 0){
-                    //Desactivar la oferta para que ya no pueda ser comprada por nadie
+                    $offer->update(['state' =>OfferState::PURCHASED]);
                 }
             }
 
