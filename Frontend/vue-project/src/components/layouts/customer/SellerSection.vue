@@ -2,11 +2,12 @@
   <div class="seller-section">
     <div class="seller-header">
       <h3>Vendedor {{ offers[0].establishment_id }}</h3>
-      <div class="seller-total">Total: ${{ sellerTotal }}</div>
     </div>
     <div class="offers-container">
       <div v-for="offer in offers" class="offer-container">
-        <div class="offer-title">{{ offer.offer_title }}</div>
+        <div class="offer-title">
+          {{ offer.offer_title }} X {{ offer.quantity }}
+        </div>
         <div class="offer-description">{{ offer.offer_description }}</div>
         <div class="products-grid">
           <div v-for="product in offer.products" class="product-card">
@@ -22,14 +23,14 @@
           </div>
         </div>
         <div class="offer-total">
-          <span class="total-label">Total de la oferta:</span>
+          <span class="total-label">SubTotal:</span>
           <span class="total-amount">${{ calculateOfferTotal(offer) }}</span>
         </div>
       </div>
     </div>
     <div class="action-footer">
       <div class="cart-total">
-        <span class="total-label">Total del carrito:</span>
+        <span class="total-label">SubTotal:</span>
         <span class="total-amount">${{ sellerTotal }}</span>
       </div>
       <button class="action-button" @click="handlePurchase" :disabled="loading">
@@ -68,12 +69,11 @@ const sellerTotal = computed(() => {
       const offerTotal = offer.products.reduce((sum, product) => {
         return sum + product.product_price * product.product_quantity;
       }, 0);
-      return total + offerTotal;
+      return total + offerTotal * offer.quantity;
     }, 0)
     .toFixed(2);
 });
 
-// Función para procesar la compra
 const handlePurchase = async () => {
   if (loading.value) return;
   try {
@@ -106,7 +106,9 @@ const handlePurchase = async () => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   margin-bottom: 2rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   width: 100%; /* Asegura que ocupe todo el ancho disponible */
   max-width: 1400px; /* Aumentado de 1200px típico a 1400px */
   margin-left: auto;
