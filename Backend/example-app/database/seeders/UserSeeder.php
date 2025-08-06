@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Cart\GetCustomerCartAction;
 use App\Enums\UserState;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Http\Controllers\CustomerCartController;
 class UserSeeder extends Seeder
@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         //
-        $customerCartController = new CustomerCartController();
+        $customerCartController = new CustomerCartController(app(GetCustomerCartAction::class));
         $user = User::factory()->create([
             'name' => 'Lucas',
             'last_name' => 'Ricalde',

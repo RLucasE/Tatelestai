@@ -50,7 +50,6 @@ class CustomerCartController extends CartController
             'offer_id' => 'required|integer|exists:offers,id',
             'quantity' => 'required|integer|min:1',
         ]);
-
         try {
             $offerCart = app(AddToCartAction::class)->handle(
                 $request->offer_id,
@@ -67,23 +66,26 @@ class CustomerCartController extends CartController
         }catch (\Exception $exception){
             return response()->json(['error' => $exception->getMessage()], status: 400);
         }
-
-
-
         if (!$offerCart) {
             return response()->json(['message' => 'Offer has expired.'], status: 400);
         }
-
         return response()->json($offerCart, status: 200);
     }
 
     public function removeFromCart(string $offerId)
     {
-        $lastActiveCart = $this->getLastActiveCart(Auth::id());
-        $offerCart = OfferCart::where('user_cart_id', $lastActiveCart->id)
-            ->where('offer_id', $offerId)
-            ->first();
+        try {
+            $lastActiveCart = $this->getLastActiveCart(Auth::id());
+            if (!$lastActiveCart) {
+                return response()->json(['message' => 'No active cart found.'], status: 404);
+            }
+            $offerCart = OfferCart::where('user_cart_id', $lastActiveCart->id)
+                ->where('offer_id', $offerId)
+                ->first();
+            $offerCart->delete();
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], status: 404);
+        }
         return response()->json(['deleted' => $offerCart]);
-        //return ['deleted' => $offerCart->softDelete()];
     }
 }
