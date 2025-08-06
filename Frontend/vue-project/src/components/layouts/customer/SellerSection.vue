@@ -62,7 +62,7 @@ const calculateOfferTotal = (offer) => {
     .toFixed(2);
 };
 
-// Calcular el total del vendedor (todas las ofertas)
+// Calcular el total del vendedor (todas las ofertas * offer_quantity)
 const sellerTotal = computed(() => {
   return props.offers
     .reduce((total, offer) => {
