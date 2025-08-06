@@ -15,6 +15,16 @@ const getCart = async () => {
   }
 };
 
+const handleRemoveOffer = async ($index) => {
+  console.log("removeOffer", $index);
+  try {
+    await axiosInstance.delete(`/customer-cart/${$index}`);
+    await getCart();
+  } catch (error) {
+    console.error("Error removing offer:", error);
+  }
+};
+
 onMounted(() => {
   getCart();
 });
@@ -22,7 +32,11 @@ onMounted(() => {
 
 <template>
   <div class="customer-cart-container">
-    <SellerSection v-for="offers in establishments" :offers="offers" />
+    <SellerSection
+        v-for="offers in establishments"
+        :offers="offers"
+        @offerRemoved="handleRemoveOffer"
+    />
   </div>
 </template>
 

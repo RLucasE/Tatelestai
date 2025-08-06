@@ -38,6 +38,7 @@ class GetCustomerCartAction
                     'products' => $offerCart->offer->products->map(function ($product) {
                         return [
                             'product_name' => $product->name,
+                            'product_description' => $product->description,
                             'product_price' => $product->pivot->price,
                             'product_quantity' => $product->pivot->quantity,
                         ];

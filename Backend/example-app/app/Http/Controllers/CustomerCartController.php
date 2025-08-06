@@ -7,12 +7,16 @@ use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Actions\Cart\AddToCartAction;
 use App\Actions\Cart\AssignFirstCartAction;
 use App\Actions\Cart\GetCustomerCartAction;
+use App\Models\OfferCart;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CustomerCartController extends CartController
 {
+    public function __construct(private readonly GetCustomerCartAction $customerCartAction)
+    {
+    }
     public function asingFirstCart(User | int $userOrId)
     {
         $user = $this->resolveUser($userOrId);
@@ -24,7 +28,7 @@ class CustomerCartController extends CartController
     public function customerCart()
     {
         try {
-            !$groupedOffers =  app(GetCustomerCartAction::class)->handle(Auth::user());
+            !$groupedOffers =  $this->customerCartAction->handle(Auth::user());
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 404);
         }
@@ -71,5 +75,15 @@ class CustomerCartController extends CartController
         }
 
         return response()->json($offerCart, status: 200);
+    }
+
+    public function removeFromCart(string $offerId)
+    {
+        $lastActiveCart = $this->getLastActiveCart(Auth::id());
+        $offerCart = OfferCart::where('user_cart_id', $lastActiveCart->id)
+            ->where('offer_id', $offerId)
+            ->first();
+        return response()->json(['deleted' => $offerCart]);
+        //return ['deleted' => $offerCart->softDelete()];
     }
 }

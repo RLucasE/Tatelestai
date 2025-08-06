@@ -4,18 +4,44 @@
       <h3>Vendedor {{ offers[0].establishment_id }}</h3>
     </div>
     <div class="offers-container">
-      <div v-for="offer in offers" class="offer-container">
-        <div class="offer-title">
-          {{ offer.offer_title }} X {{ offer.quantity }}
+      <div
+        v-for="(offer, index) in offers"
+        :key="offer.offer_id"
+        class="offer-container"
+      >
+        <div class="offer-header">
+          <div class="offer-title">{{ offer.offer_title }}</div>
+          <div class="offer-actions">
+            <div class="offer-quantity">
+              <span>x{{ offer.quantity }}</span>
+            </div>
+            <button
+              class="delete-offer-btn"
+              @click="removeOffer(offer.offer_id)"
+              type="button"
+            >
+              <i class="fas fa-trash"></i> Eliminar
+            </button>
+          </div>
         </div>
         <div class="offer-description">{{ offer.offer_description }}</div>
         <div class="products-grid">
-          <div v-for="product in offer.products" class="product-card">
+          <div
+            v-for="product in offer.products"
+            :key="product.product_id"
+            class="product-card"
+          >
             <div class="product-header">
               <h5 class="product-name">{{ product.product_name }}</h5>
               <span class="product-quantity"
                 >x{{ product.product_quantity }}</span
               >
+            </div>
+            <div
+              class="product-description"
+              v-if="product.product_description"
+            >
+              {{ product.product_description }}
             </div>
             <div class="product-footer">
               <span class="product-price">${{ product.product_price }}</span>
@@ -30,10 +56,14 @@
     </div>
     <div class="action-footer">
       <div class="cart-total">
-        <span class="total-label">SubTotal:</span>
+        <span class="total-label">Total:</span>
         <span class="total-amount">${{ sellerTotal }}</span>
       </div>
-      <button class="action-button" @click="handlePurchase" :disabled="loading">
+      <button
+        class="action-button"
+        @click="handlePurchase"
+        :disabled="loading || offers.length === 0"
+      >
         {{ loading ? "Procesando..." : "Comprar" }}
       </button>
     </div>
@@ -52,6 +82,7 @@ const props = defineProps({
 });
 
 const loading = ref(false);
+const emit = defineEmits(["offerRemoved"]);
 
 // Función para calcular el total de una oferta
 const calculateOfferTotal = (offer) => {
@@ -94,6 +125,12 @@ const handlePurchase = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// Función para eliminar una oferta
+const removeOffer = (index) => {
+  console.log("removeOffer", index);
+  emit("offerRemoved", index);
 };
 </script>
 
@@ -169,11 +206,47 @@ const handlePurchase = async () => {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
+.offer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
 .offer-title {
   font-size: 1.4rem; /* Aumentado el tamaño */
   font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 0.75rem;
+  margin: 0;
+}
+
+.offer-actions {
+  display: flex;
+  align-items: center;
+}
+
+.offer-quantity {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  padding: 0.3rem 0.6rem; /* Aumentado el padding */
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.delete-offer-btn {
+  background: transparent;
+  color: var(--color-darkest);
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.delete-offer-btn i {
+  margin-right: 0.3rem;
 }
 
 .offer-description {
@@ -234,6 +307,10 @@ const handlePurchase = async () => {
   font-weight: 600;
 }
 
+.product-description {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
 .product-footer {
   display: flex;
   justify-content: flex-end;
