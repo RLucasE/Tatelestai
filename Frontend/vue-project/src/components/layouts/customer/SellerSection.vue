@@ -5,7 +5,7 @@
     </div>
     <div class="offers-container">
       <div
-        v-for="(offer, index) in offers"
+        v-for="offer in offers"
         :key="offer.offer_id"
         class="offer-container"
       >
@@ -218,16 +218,6 @@ const updateQuantity = (offer, value) => {
   text-transform: uppercase;
 }
 
-.seller-total {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--color-text);
-  background: var(--color-darkest);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 2px solid var(--color-focus);
-}
-
 .offers-container {
   padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
   width: 100%;
@@ -315,12 +305,6 @@ const updateQuantity = (offer, value) => {
 .quantity-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
-
-.max-quantity {
-  font-size: 0.8rem;
-  color: var(--color-text);
-  margin-left: 0.5rem;
 }
 
 .delete-offer-btn {
@@ -459,7 +443,6 @@ const updateQuantity = (offer, value) => {
 .action-button {
   background: var(--color-darkest);
   color: var(--color-text);
-  border: none;
   padding: 0.9rem 2rem; /* Aumentado el padding */
   border-radius: 8px;
   font-weight: 700;
