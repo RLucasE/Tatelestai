@@ -12,8 +12,30 @@
         <div class="offer-header">
           <div class="offer-title">{{ offer.offer_title }}</div>
           <div class="offer-actions">
-            <div class="offer-quantity">
-              <span>x{{ offer.quantity }}</span>
+            <div class="offer-quantity-control">
+              <button
+                class="quantity-btn quantity-decrease"
+                @click="decreaseQuantity(offer)"
+                :disabled="offer.quantity <= 1"
+                type="button"
+              >
+                <i class="fas fa-minus">-</i>
+              </button>
+              <input
+                type="number"
+                :value="offer.quantity"
+                min="1"
+                @input="updateQuantity(offer, $event.target.value)"
+                class="quantity-input"
+              />
+              <button
+                class="quantity-btn quantity-increase"
+                @click="increaseQuantity(offer)"
+                type="button"
+                :disabled="offer.quantity >= offer.offer_max_quantity"
+              >
+                <i class="fas fa-plus">+</i>
+              </button>
             </div>
             <button
               class="delete-offer-btn"
@@ -82,9 +104,8 @@ const props = defineProps({
 });
 
 const loading = ref(false);
-const emit = defineEmits(["offerRemoved"]);
+const emit = defineEmits(["offerRemoved", "quantityUpdated"]);
 
-// Función para calcular el total de una oferta
 const calculateOfferTotal = (offer) => {
   return offer.products
     .reduce((total, product) => {
@@ -93,7 +114,6 @@ const calculateOfferTotal = (offer) => {
     .toFixed(2);
 };
 
-// Calcular el total del vendedor (todas las ofertas * offer_quantity)
 const sellerTotal = computed(() => {
   return props.offers
     .reduce((total, offer) => {
@@ -127,10 +147,32 @@ const handlePurchase = async () => {
   }
 };
 
-// Función para eliminar una oferta
 const removeOffer = (index) => {
   console.log("removeOffer", index);
   emit("offerRemoved", index);
+};
+
+const increaseQuantity = (offer) => {
+  if(offer.quantity < offer.offer_max_quantity) {
+    emit("quantityUpdated", offer, offer.quantity + 1);
+  }
+};
+
+const decreaseQuantity = (offer) => {
+  if (offer.quantity > 1) {
+    emit("quantityUpdated", offer, offer.quantity - 1);
+  }
+};
+
+const updateQuantity = (offer, value) => {
+  const newValue = parseInt(value);
+  if (isNaN(newValue) || newValue < 1) {
+    emit("quantityUpdated", offer, 1);
+  } else if (newValue > offer.offer_max_quantity) {
+    emit("quantityUpdated", offer, offer.offer_max_quantity);
+  } else {
+    emit("quantityUpdated", offer, newValue);
+  }
 };
 </script>
 
@@ -226,12 +268,59 @@ const removeOffer = (index) => {
   align-items: center;
 }
 
-.offer-quantity {
+.offer-quantity-control {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+}
+
+.quantity-btn {
   background: var(--color-darkest);
   color: var(--color-text);
-  padding: 0.3rem 0.6rem; /* Aumentado el padding */
-  border-radius: 6px;
+  border: none;
+  cursor: pointer;
   font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-decrease {
+  margin-right: 0.5rem;
+}
+
+.quantity-input {
+  width: 60px;
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 0.3rem;
+  border: 1px solid var(--color-focus);
+  border-radius: 6px;
+  background: var(--color-secondary);
+  color: var(--color-text);
+  margin-right: 0.5rem;
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.max-quantity {
+  font-size: 0.8rem;
+  color: var(--color-text);
+  margin-left: 0.5rem;
 }
 
 .delete-offer-btn {

@@ -9,6 +9,7 @@ use App\Actions\Cart\AssignFirstCartAction;
 use App\Actions\Cart\GetCustomerCartAction;
 use App\Models\OfferCart;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,7 +18,8 @@ class CustomerCartController extends CartController
     public function __construct(private readonly GetCustomerCartAction $customerCartAction)
     {
     }
-    public function asingFirstCart(User | int $userOrId)
+
+    public function asingFirstCart(User|int $userOrId)
     {
         $user = $this->resolveUser($userOrId);
         $cart = app(AssignFirstCartAction::class)->handle($user);
@@ -28,8 +30,8 @@ class CustomerCartController extends CartController
     public function customerCart()
     {
         try {
-            !$groupedOffers =  $this->customerCartAction->handle(Auth::user());
-        } catch (\Exception $exception) {
+            !$groupedOffers = $this->customerCartAction->handle(Auth::user());
+        } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 404);
         }
 
@@ -63,7 +65,7 @@ class CustomerCartController extends CartController
                 'already_in_cart' => $e->context()['already_in_cart'] ?? null,
                 'error' => $e->context()['error'] ?? null,
             ], 400);
-        }catch (\Exception $exception){
+        } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 400);
         }
         if (!$offerCart) {
@@ -83,9 +85,20 @@ class CustomerCartController extends CartController
                 ->where('offer_id', $offerId)
                 ->first();
             $offerCart->delete();
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 404);
         }
         return response()->json(['deleted' => $offerCart]);
+    }
+
+    public function updateCart(Request $request, int $offerId)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1',
+        ]);
+        $offerCart = OfferCart::where('offer_id', $offerId)
+            ->where('user_cart_id', $this->getLastActiveCart(Auth::id())->id)
+            ->update(['quantity' => $request->quantity]);
+        return response()->json(['updated' => $offerCart]);
     }
 }

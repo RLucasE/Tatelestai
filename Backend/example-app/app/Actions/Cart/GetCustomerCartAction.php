@@ -27,6 +27,7 @@ class GetCustomerCartAction
 
         $offers = OfferCart::with(['offer.products', 'offer'])
             ->where('user_cart_id', $cart->id)
+            ->orderByDesc('created_at')
             ->get()
             ->map(function ($offerCart) {
                 return [
@@ -34,6 +35,7 @@ class GetCustomerCartAction
                     'establishment_id' => $offerCart->offer->food_establishment_id,
                     'offer_title' => $offerCart->offer->title,
                     'offer_description' => $offerCart->offer->description,
+                    'offer_max_quantity' => $offerCart->offer->quantity,
                     'quantity' => $offerCart->quantity,
                     'products' => $offerCart->offer->products->map(function ($product) {
                         return [

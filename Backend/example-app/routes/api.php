@@ -22,6 +22,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
         Route::post('/buy-offers',[SellController::class, 'buyOffers']);
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);
+        Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
     });
 });
 

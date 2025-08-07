@@ -1,6 +1,6 @@
 <script setup>
 import SellerSection from "./SellerSection.vue";
-import { ref, onMounted } from "vue";
+import {ref, onMounted} from "vue";
 import axiosInstance from "@/lib/axios";
 
 const establishments = ref([]);
@@ -25,6 +25,36 @@ const handleRemoveOffer = async ($index) => {
   }
 };
 
+function debounce(func, wait) {
+  let timeout;
+  return function () {
+    const context = this;
+    const args = arguments;
+
+    clearTimeout(timeout);
+
+    timeout = setTimeout(() => {
+      func.apply(context, args);
+    }, wait);
+  };
+}
+
+const updateOfferQuantity = (offer, quantity) => {
+  offer.quantity = quantity;
+};
+const updateQuantity = async (offer,quantity) => {
+  try {
+    await axiosInstance.put(`/customer-cart/${offer.offer_id}`, {quantity});
+    await getCart();
+  } catch (error) {
+    console.error("Error updating quantity:", error);
+  }
+};
+const handleQuantityChange = async (offer, quantity) => {
+  updateOfferQuantity(offer, quantity);
+  debounceUpdateQuantity(offer, quantity);
+};
+const debounceUpdateQuantity = debounce(updateQuantity, 500);
 onMounted(() => {
   getCart();
 });
@@ -36,6 +66,7 @@ onMounted(() => {
         v-for="offers in establishments"
         :offers="offers"
         @offerRemoved="handleRemoveOffer"
+        @quantityUpdated="handleQuantityChange"
     />
   </div>
 </template>
@@ -80,7 +111,7 @@ onMounted(() => {
     padding: 1.5rem;
     width: 98%; /* Aumenta el ancho en pantallas medianas */
   }
-  
+
   .customer-cart-container::before {
     font-size: 2rem;
   }
@@ -91,7 +122,7 @@ onMounted(() => {
     padding: 1rem;
     width: 100%; /* Ocupa todo el ancho en móviles */
   }
-  
+
   .customer-cart-container::before {
     font-size: 1.75rem;
     margin-bottom: 1rem;
@@ -102,7 +133,7 @@ onMounted(() => {
   .customer-cart-container {
     padding: 0.75rem;
   }
-  
+
   .customer-cart-container::before {
     font-size: 1.5rem;
   }
