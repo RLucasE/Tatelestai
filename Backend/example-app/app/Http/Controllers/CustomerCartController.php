@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 
+use App\Actions\Cart\ClearCustomerCartAction;
 use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Actions\Cart\AddToCartAction;
 use App\Actions\Cart\AssignFirstCartAction;
@@ -101,4 +102,19 @@ class CustomerCartController extends CartController
             ->update(['quantity' => $request->quantity]);
         return response()->json(['updated' => $offerCart]);
     }
+
+    /**
+     * @throws \Throwable
+     */
+    public function clearByEstablishment($establishment_id, ClearCustomerCartAction $clearCart)
+    {
+        $deleted = $clearCart(
+            Auth::id(),
+            $establishment_id
+        );
+
+        return response()->json(['deleted' => $deleted]);
+    }
+
 }
+

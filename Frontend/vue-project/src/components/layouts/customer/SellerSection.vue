@@ -2,6 +2,13 @@
   <div class="seller-section">
     <div class="seller-header">
       <h3>Vendedor {{ offers[0].establishment_id }}</h3>
+      <button
+        class="delete-all-offers-btn"
+        @click="confirmRemoveAllOffers"
+        type="button"
+      >
+        <i class="fas fa-trash"></i> Eliminar todas las ofertas de este vendedor
+      </button>
     </div>
     <div class="offers-container">
       <div
@@ -72,7 +79,7 @@
         </div>
         <div class="offer-total">
           <span class="total-label">SubTotal:</span>
-          <span class="total-amount">${{ calculateOfferTotal(offer) }}</span>
+          <span class="total-amount">${{ calculateOfferTotal(offer) * offer.quantity}}</span>
         </div>
       </div>
     </div>
@@ -104,7 +111,7 @@ const props = defineProps({
 });
 
 const loading = ref(false);
-const emit = defineEmits(["offerRemoved", "quantityUpdated"]);
+const emit = defineEmits(["offerRemoved", "quantityUpdated","removeAllOffers"]);
 
 const calculateOfferTotal = (offer) => {
   return offer.products
@@ -174,6 +181,14 @@ const updateQuantity = (offer, value) => {
     emit("quantityUpdated", offer, newValue);
   }
 };
+
+const confirmRemoveAllOffers = () => {
+  const confirmed = confirm("¿Estás seguro de que deseas eliminar todas las ofertas de este vendedor?");
+  if (confirmed) {
+    console.log("Removing all offers for establishment", props.offers[0].establishment_id);
+    emit("removeAllOffers", props.offers[0].establishment_id ?? null);
+  }
+};
 </script>
 
 <style scoped>
@@ -188,8 +203,8 @@ const updateQuantity = (offer, value) => {
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
-  width: 100%; /* Asegura que ocupe todo el ancho disponible */
-  max-width: 1400px; /* Aumentado de 1200px típico a 1400px */
+  width: 100%;
+  max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -216,6 +231,32 @@ const updateQuantity = (offer, value) => {
   color: var(--color-text);
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.delete-all-offers-btn {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  border: 1px solid var(--color-focus);
+}
+
+.delete-all-offers-btn:hover {
+  background: var(--color-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.delete-all-offers-btn i {
+  margin-right: 0.5rem;
 }
 
 .offers-container {

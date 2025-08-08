@@ -51,8 +51,24 @@ const updateQuantity = async (offer,quantity) => {
   }
 };
 const handleQuantityChange = async (offer, quantity) => {
-  updateOfferQuantity(offer, quantity);
-  debounceUpdateQuantity(offer, quantity);
+  const oldQuantity = offer.quantity;
+  try{
+    updateOfferQuantity(offer, quantity);
+    debounceUpdateQuantity(offer, quantity);
+  }catch(error){
+    alert("Hubo un error al actualizar la cantidad del producto");
+    updateOfferQuantity(offer,oldQuantity);
+  }
+};
+
+const removeEstablishmentOffers = async (establishmentId) => {
+  try {
+    console.log("removeEstablishmentOffers", establishmentId);
+    await axiosInstance.delete(`/customer-cart/establishment/${establishmentId}`);
+    await getCart();
+  } catch (error) {
+    console.error("Error removing establishment offers:", error);
+  }
 };
 const debounceUpdateQuantity = debounce(updateQuantity, 500);
 onMounted(() => {
@@ -67,6 +83,7 @@ onMounted(() => {
         :offers="offers"
         @offerRemoved="handleRemoveOffer"
         @quantityUpdated="handleQuantityChange"
+        @removeAllOffers="removeEstablishmentOffers"
     />
   </div>
 </template>
@@ -77,8 +94,8 @@ onMounted(() => {
   flex-direction: column;
   gap: 2rem;
   padding: 2rem;
-  max-width: 1800px; /* Aumentado de 1500px a 1800px */
-  width: 95%; /* Asegura que ocupe el 95% del ancho disponible */
+  max-width: 1800px;
+  width: 95%;
   margin: 0 auto;
   background-color: var(--color-bg);
   min-height: 100vh;
@@ -109,7 +126,7 @@ onMounted(() => {
 @media (max-width: 992px) {
   .customer-cart-container {
     padding: 1.5rem;
-    width: 98%; /* Aumenta el ancho en pantallas medianas */
+    width: 98%;
   }
 
   .customer-cart-container::before {
