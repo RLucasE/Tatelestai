@@ -1,8 +1,4 @@
 <script setup>
-import axiosInstance from "@/lib/axios";
-import { ref } from "vue";
-import CustomerCard from "./CustomerCard.vue";
-import { useAuthStore } from "@/stores/auth";
 </script>
 
 <template>
@@ -47,8 +43,6 @@ import { useAuthStore } from "@/stores/auth";
   background-color: var(--color-bg);
   justify-content: center;
   align-items: center;
-  row-gap: 0rem;
-  column-gap: 0rem;
   padding: 16px;
   height: 100%;
 }
