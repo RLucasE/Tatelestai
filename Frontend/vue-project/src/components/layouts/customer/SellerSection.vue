@@ -265,7 +265,6 @@ const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
 .delete-all-offers-btn {
   background: var(--color-darkest);
   color: var(--color-text);
-  border: none;
   cursor: pointer;
   font-size: 0.95rem;
   padding: 0.5rem 1rem;
@@ -275,7 +274,6 @@ const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
   justify-content: center;
   transition: all 0.3s ease;
   font-weight: 600;
-  border: 1px solid var(--color-focus);
 }
 
 .delete-all-offers-btn:hover {
