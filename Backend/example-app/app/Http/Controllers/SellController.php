@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Actions\Offers\OfferIsFromFoodEstablishmentAction;
 use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Actions\Sell\makeSellAction;
+use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\SellValidationRules;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
@@ -21,6 +22,7 @@ class SellController
     public function __construct(
         private readonly ValidateOfferExpirationAction $validateOfferExpiration,
         private readonly OfferIsFromFoodEstablishmentAction $offerIsFromFoodEstablishmentAction,
+        private readonly getCustomerSellsAction $getCustomerSellsAction,
         private readonly makeSellAction $makeSellAction,
     ) {}
     public function buyOffers(Request $request)
@@ -53,6 +55,22 @@ class SellController
                 ->orderBy('created_at','desc')->get();
             return response()->json($sells->toArray());
         }catch (\Exception $exception){
+            return response()->json([
+                'error' => $exception->getMessage(),
+            ], 500);
+        }
+    }
+    public function customerPurchases(Request $request)
+    {
+        try {
+            $customerId = Auth::id();
+
+            $customerSells = $this->getCustomerSellsAction->execute($customerId);
+
+            return response()->json([
+                'data' => $customerSells
+            ]);
+        } catch (\Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
             ], 500);

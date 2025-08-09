@@ -23,6 +23,12 @@ import { useAuthStore } from "@/stores/auth";
 
       <RouterLink
         class="py-2 px-4 leading-normal customer-nav-link"
+        to="/customer/purchases"
+        >Compras</RouterLink
+      >
+
+      <RouterLink
+        class="py-2 px-4 leading-normal customer-nav-link"
         to="/customer/profile"
         >Perfil</RouterLink
       >
