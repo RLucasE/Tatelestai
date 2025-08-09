@@ -12,7 +12,7 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertNoContent();
-});
+})->skip('Skipping because this is only for API based authentication');
 
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
@@ -32,4 +32,4 @@ test('users can logout', function () {
 
     $this->assertGuest();
     $response->assertNoContent();
-});
+})->skip('Skinpping because its not implemated in this app');

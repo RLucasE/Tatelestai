@@ -83,7 +83,6 @@ test('customer can retrieve their purchases successfully', function () {
 
     // Verificar respuesta exitosa
     $response->assertStatus(200);
-    dump($response->json());
     $response->assertJsonStructure([
         'data' => [
             '*' => [

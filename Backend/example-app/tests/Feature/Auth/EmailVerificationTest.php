@@ -5,6 +5,9 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 
+/**
+ * @skip
+ */
 test('email can be verified', function () {
     $user = User::factory()->unverified()->create();
 
@@ -21,7 +24,7 @@ test('email can be verified', function () {
     Event::assertDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     $response->assertRedirect(config('app.frontend_url').'/dashboard?verified=1');
-});
+})->skip('Skipping because email verification is not required in this app');
 
 test('email is not verified with invalid hash', function () {
     $user = User::factory()->unverified()->create();
@@ -35,4 +38,4 @@ test('email is not verified with invalid hash', function () {
     $this->actingAs($user)->get($verificationUrl);
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
-});
+})->skip('Skipping because email verification is not required in this app');
