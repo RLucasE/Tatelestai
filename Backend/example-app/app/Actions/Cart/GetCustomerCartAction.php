@@ -36,6 +36,8 @@ class GetCustomerCartAction
                     'offer_title' => $offerCart->offer->title,
                     'offer_description' => $offerCart->offer->description,
                     'offer_max_quantity' => $offerCart->offer->quantity,
+                    'offer_state' => $offerCart->offer->state,
+                    'offer_expiration_datetime' => $offerCart->offer->expiration_datetime,
                     'quantity' => $offerCart->quantity,
                     'products' => $offerCart->offer->products->map(function ($product) {
                         return [

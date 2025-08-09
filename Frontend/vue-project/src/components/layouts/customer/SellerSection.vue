@@ -17,13 +17,20 @@
         class="offer-container"
       >
         <div class="offer-header">
-          <div class="offer-title">{{ offer.offer_title }}</div>
+          <div class="offer-title">
+            {{ offer.offer_title }}
+            <span class="offer-badges">
+              <span v-if="isSoldOut(offer)" class="offer-badge badge-soldout">Agotada / Comprada</span>
+              <span v-if="isExpired(offer)" class="offer-badge badge-expired">Expirada</span>
+              <span v-if="quantityExceedsMax(offer)" class="offer-badge badge-exceeded">Cantidad excede el máximo disponible</span>
+            </span>
+          </div>
           <div class="offer-actions">
             <div class="offer-quantity-control">
               <button
                 class="quantity-btn quantity-decrease"
                 @click="decreaseQuantity(offer)"
-                :disabled="offer.quantity <= 1"
+                :disabled="offer.quantity <= 1 || isUnavailable(offer)"
                 type="button"
               >
                 <i class="fas fa-minus">-</i>
@@ -33,13 +40,14 @@
                 :value="offer.quantity"
                 min="1"
                 @input="updateQuantity(offer, $event.target.value)"
+                :disabled="isUnavailable(offer)"
                 class="quantity-input"
               />
               <button
                 class="quantity-btn quantity-increase"
                 @click="increaseQuantity(offer)"
                 type="button"
-                :disabled="offer.quantity >= offer.offer_max_quantity"
+                :disabled="offer.quantity >= offer.offer_max_quantity || isUnavailable(offer) || quantityExceedsMax(offer)"
               >
                 <i class="fas fa-plus">+</i>
               </button>
@@ -54,6 +62,10 @@
           </div>
         </div>
         <div class="offer-description">{{ offer.offer_description }}</div>
+        <div v-if="isUnavailable(offer)" class="offer-status">
+          <span v-if="isSoldOut(offer)">Esta oferta no tiene stock o ya fue comprada.</span>
+          <span v-if="isExpired(offer)">Esta oferta ha expirado.</span>
+        </div>
         <div class="products-grid">
           <div
             v-for="product in offer.products"
@@ -189,6 +201,23 @@ const confirmRemoveAllOffers = () => {
     emit("removeAllOffers", props.offers[0].establishment_id ?? null);
   }
 };
+
+const isExpired = (offer) => {
+  if (!offer?.offer_expiration_datetime) return false;
+  const now = new Date();
+  const expiration = new Date(offer.offer_expiration_datetime);
+  return expiration.getTime() < now.getTime();
+};
+
+const isSoldOut = (offer) => {
+  return offer?.offer_state === 'purchased' || Number(offer?.offer_max_quantity ?? 0) === 0;
+};
+
+const quantityExceedsMax = (offer) => {
+  return offer.quantity > offer.offer_max_quantity;
+};
+
+const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
 </script>
 
 <style scoped>
@@ -294,6 +323,38 @@ const confirmRemoveAllOffers = () => {
   margin: 0;
 }
 
+.offer-badges {
+  margin-left: 0.75rem;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.offer-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.badge-exceeded {
+  background: var(--color-darkest);
+  border-color: var(--color-focus);
+  color: var(--color-text);
+}
+
+.badge-expired {
+  background: var(--color-secondary);
+  border-color: var(--color-focus);
+  color: var(--color-text);
+}
+
+.badge-expired {
+  background: var(--color-secondary);
+  border-color: var(--color-focus);
+  color: var(--color-text);
+}
+
 .offer-actions {
   display: flex;
   align-items: center;
@@ -339,6 +400,7 @@ const confirmRemoveAllOffers = () => {
   background: var(--color-secondary);
   color: var(--color-text);
   margin-right: 0.5rem;
+  appearance: textfield; /* estándar */
   -moz-appearance: textfield; /* Firefox */
 }
 
@@ -369,6 +431,17 @@ const confirmRemoveAllOffers = () => {
   color: var(--color-text);
   opacity: 0.9;
   margin-bottom: 1.25rem;
+}
+
+.offer-status {
+  margin: 0.5rem 0 1rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-left: 3px solid var(--color-focus);
+  padding-left: 0.5rem;
 }
 
 .products-grid {
