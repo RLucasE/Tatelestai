@@ -17,7 +17,20 @@ class EstablishmentTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->randomElement([
+                'Restaurante',
+                'Pizzería',
+                'Cafetería',
+                'Panadería',
+                'Heladería',
+                'Bar',
+                'Comida Rápida',
+                'Pastelería',
+                'Marisquería',
+                'Asadero'
+            ]),
+            'slug' => $this->faker->unique()->slug(),
+            'description' => $this->faker->sentence(10),
         ];
     }
 }
