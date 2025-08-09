@@ -3,28 +3,31 @@ import { RouterLink, RouterView } from "vue-router";
 </script>
 
 <template class="p-0">
-  <header class="">
-    <div
-      class="bg-state-100 bg-white shadow-lg dark:bg-gray-800 dark:shadow-none flex justify-center items-center"
-    >
-      <nav class="container">
-        <div class="flex items-center justify-between">
-          <RouterLink to="/" class="text-zinc-200 m-4">Home</RouterLink>
-          <div class="flex space-x-2">
-            <RouterLink to="/register" class="text-zinc-200 m-4"
-              >Register</RouterLink
+  <header>
+    <div class="bg-[var(--color-background)]/80 backdrop-blur border-b border-[var(--color-border)]">
+      <nav class="max-w-6xl mx-auto px-4">
+        <div class="flex items-center justify-between h-14">
+          <RouterLink to="/" class="text-[var(--color-heading)] font-semibold">Home</RouterLink>
+          <div class="flex items-center gap-2">
+            <RouterLink
+              to="/register"
+              class="px-3 py-1.5 rounded-lg text-sm text-[var(--color-heading)] hover:bg-[var(--color-background-soft)]"
+              >Registrarse</RouterLink
             >
-            <RouterLink to="/login" class="text-zinc-200 m-4">Login</RouterLink>
+            <RouterLink
+              to="/login"
+              class="px-3 py-1.5 rounded-lg text-sm text-[var(--color-text)] bg-[var(--color-primary)] hover:bg-[var(--color-secondary)]"
+              >Iniciar sesión</RouterLink
+            >
           </div>
         </div>
       </nav>
     </div>
   </header>
-  <main
-    class="max-w-screen flex items-center justify-center bg-state-100 h-screen dark:bg-slate-900"
-  >
-    <div class="max-w-full">
-      <RouterView></RouterView>
+
+  <main class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-[var(--color-bg)]">
+    <div class="w-full">
+      <RouterView />
     </div>
   </main>
 </template>

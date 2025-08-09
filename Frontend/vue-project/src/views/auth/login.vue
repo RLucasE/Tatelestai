@@ -1,6 +1,5 @@
 <script setup>
-import { reactive } from "vue";
-import Button from "@/components/Button.vue";
+import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
@@ -12,77 +11,86 @@ const form = reactive({
   password: "",
 });
 
-const login = async (data) => {
+const loading = ref(false);
+const errorMessage = ref("");
+
+const handleLogin = async () => {
+  loading.value = true;
+  errorMessage.value = "";
   try {
-    await authStore.login(data);
+    await authStore.login(form);
     window.location.reload();
-
-    // switch (true) {
-    //   case authStore.isCustomer():
-    //     try {
-    //       router.push({ name: "customer" });
-    //     } catch (error) {
-    //       console.log(error);
-    //     }
-
-    //     break;
-    //   case authStore.isAdmin():
-    //     router.push("/admin");
-    //     break;
-    //   case authStore.isSeller():
-    //     router.push("/seller");
-    //     break;
-    //   case authStore.isUnknowknChoice():
-    //     router.push("/select-role");
-    //     break;
-    //   default:
-    //     console.error("Unknown user role");
-    // }
   } catch (error) {
     console.error("Login failed:", error);
-    throw error;
+    errorMessage.value = "No pudimos iniciar sesión. Verifica tus credenciales e inténtalo nuevamente.";
+  } finally {
+    loading.value = false;
   }
 };
 </script>
 
 <template>
-  <form
-    @submit.prevent="login(form)"
-    class="max-w-sm mx-auto mx-w-auto min-w-2xs p-4 bg-white rounded-lg shadow-lg dark:bg-gray-800 dark:shadow-none"
-  >
-    <div class="mb-5">
-      <label
-        for="email"
-        class="block mb-5 text-sm font-medium text-gray-900 dark:text-white"
-        >Your email</label
-      >
-      <input
-        type="email"
-        id="email"
-        v-model="form.email"
-        autocomplete="email"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        placeholder="example@gmail.com"
-        required
-      />
-    </div>
-    <div class="mb-5">
-      <label
-        for="password"
-        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-        >Your password</label
-      >
-      <input
-        type="password"
-        id="password"
-        v-model="form.password"
-        autocomplete="current-password"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        required
-      />
-    </div>
-    <Button button-type="submit" button-text="Login"></Button>
-  </form>
+  <main class="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
+    <section
+      class="w-full max-w-md bg-[var(--color-background)] text-[var(--color-heading)] rounded-xl shadow-lg border border-[var(--color-border)] p-6"
+    >
+      <header class="mb-5">
+        <h1 class="text-2xl font-semibold">Iniciar sesión</h1>
+        <p class="text-[var(--color-heading)]/70 text-sm mt-1">
+          Accede a tu cuenta para continuar.
+        </p>
+      </header>
+
+      <form @submit.prevent="handleLogin" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="email">Correo</label>
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            autocomplete="email"
+            placeholder="example@gmail.com"
+            required
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] placeholder-[var(--color-text)]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="password">Contraseña</label>
+          <input
+            id="password"
+            v-model="form.password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+        </div>
+
+        <div class="pt-2 flex items-center gap-3">
+          <p v-if="errorMessage" class="text-red-400 text-sm">{{ errorMessage }}</p>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="ml-auto inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <svg
+              v-if="loading"
+              class="animate-spin -ml-1 mr-2 h-5 w-5 text-[var(--color-text)]"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            {{ loading ? "Ingresando..." : "Ingresar" }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+  
 </template>
 
 <style scoped></style>

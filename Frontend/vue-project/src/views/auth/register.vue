@@ -1,6 +1,5 @@
 <script setup>
 import { reactive, ref } from "vue";
-import Button from "@/components/Button.vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
@@ -22,127 +21,135 @@ const errors = reactive({
   password: [],
 });
 
-const register = async (data) => {
-  for (const error in errors) {
-    errors[error] = [];
-  }
+const loading = ref(false);
+const errorMessage = ref("");
+
+const handleRegister = async () => {
+  Object.keys(errors).forEach((key) => (errors[key] = []));
+  errorMessage.value = "";
+  loading.value = true;
   try {
-    await authStore.register(data); // Llama a registerLogic con los datos del formulario
-    router.push("/customer"); // Redirige al usuario después de un registro exitoso
+    await authStore.register(form);
+    router.push("/customer");
   } catch (error) {
     console.error("Register failed:", error);
-    errors.name = error.response.data.errors.name;
-    errors.last_name = error.response.data.errors.last_name;
-    errors.email = error.response.data.errors.email;
-    errors.password = error.response.data.errors.password;
+    errorMessage.value = "No pudimos crear tu cuenta. Revisa los campos e inténtalo de nuevo.";
+    if (error?.response?.data?.errors) {
+      errors.name = error.response.data.errors.name || [];
+      errors.last_name = error.response.data.errors.last_name || [];
+      errors.email = error.response.data.errors.email || [];
+      errors.password = error.response.data.errors.password || [];
+    }
+  } finally {
+    loading.value = false;
   }
 };
 </script>
 
 <template>
-  <form
-    @submit.prevent="register(form)"
-    class="max-w-sm mx-auto mx-w-auto min-w-2xs p-4 bg-white rounded-lg shadow-lg dark:bg-gray-800 dark:shadow-none"
-  >
-    <div class="mb-5">
-      <label
-        for="name"
-        class="block mb-5 text-sm font-medium text-gray-900 dark:text-white"
-        >Name</label
-      >
-      <input
-        type="name"
-        id="name"
-        v-model="form.name"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        placeholder="Name"
-      />
+  <main class="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
+    <section
+      class="w-full max-w-md bg-[var(--color-background)] text-[var(--color-heading)] rounded-xl shadow-lg border border-[var(--color-border)] p-6"
+    >
+      <header class="mb-5">
+        <h1 class="text-2xl font-semibold">Crear cuenta</h1>
+        <p class="text-[var(--color-heading)]/70 text-sm mt-1">
+          Regístrate para comenzar a utilizar la plataforma.
+        </p>
+      </header>
 
-      <template v-if="Array.isArray(errors.name) && errors.name.length">
-        <span v-for="error in errors.name" :key="error" class="text-red-500">{{
-          error
-        }}</span>
-      </template>
-    </div>
-    <div class="mb-5">
-      <label
-        for="last_name"
-        class="block mb-5 text-sm font-medium text-gray-900 dark:text-white"
-        >Last name</label
-      >
-      <input
-        type="last_name"
-        id="last_name"
-        v-model="form.last_name"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        placeholder="Name"
-      />
+      <form @submit.prevent="handleRegister" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="name">Nombre</label>
+          <input
+            id="name"
+            v-model="form.name"
+            type="text"
+            placeholder="Tu nombre"
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] placeholder-[var(--color-text)]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+          <template v-if="Array.isArray(errors.name) && errors.name.length">
+            <p v-for="error in errors.name" :key="error" class="text-red-400 text-sm mt-1">{{ error }}</p>
+          </template>
+        </div>
 
-      <template v-if="Array.isArray(errors.name) && errors.name.length">
-        <span v-for="error in errors.name" :key="error" class="text-red-500">{{
-          error
-        }}</span>
-      </template>
-    </div>
-    <div class="mb-5">
-      <label
-        for="email"
-        class="block mb-5 text-sm font-medium text-gray-900 dark:text-white"
-        >Your email</label
-      >
-      <input
-        type="email"
-        id="email"
-        v-model="form.email"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        placeholder="example@gmail.com"
-        required
-      />
-      <template v-if="Array.isArray(errors.email) && errors.email.length">
-        <span v-for="error in errors.email" :key="error" class="text-red-500">{{
-          error
-        }}</span>
-      </template>
-    </div>
-    <div class="mb-5">
-      <label
-        for="password"
-        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-        >Your password</label
-      >
-      <input
-        type="password"
-        id="password"
-        v-model="form.password"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        required
-      />
-      <template v-if="Array.isArray(errors.password) && errors.password.length">
-        <span
-          v-for="error in errors.password"
-          :key="error"
-          class="text-red-500"
-        >
-          {{ error }}
-        </span>
-      </template>
-    </div>
-    <div class="mb-5">
-      <label
-        for="password_confirmation"
-        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-        >Password Confirmation</label
-      >
-      <input
-        type="password"
-        id="password_confirmation"
-        v-model="form.password_confirmation"
-        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 dark:shadow-xs-light"
-        required
-      />
-    </div>
-    <Button buttonText="Registrarse" buttonType="submit"></Button>
-  </form>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="last_name">Apellido</label>
+          <input
+            id="last_name"
+            v-model="form.last_name"
+            type="text"
+            placeholder="Tu apellido"
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] placeholder-[var(--color-text)]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+          <template v-if="Array.isArray(errors.last_name) && errors.last_name.length">
+            <p v-for="error in errors.last_name" :key="error" class="text-red-400 text-sm mt-1">{{ error }}</p>
+          </template>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="email">Correo</label>
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            placeholder="example@gmail.com"
+            required
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] placeholder-[var(--color-text)]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+          <template v-if="Array.isArray(errors.email) && errors.email.length">
+            <p v-for="error in errors.email" :key="error" class="text-red-400 text-sm mt-1">{{ error }}</p>
+          </template>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="password">Contraseña</label>
+          <input
+            id="password"
+            v-model="form.password"
+            type="password"
+            required
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+          <template v-if="Array.isArray(errors.password) && errors.password.length">
+            <p v-for="error in errors.password" :key="error" class="text-red-400 text-sm mt-1">{{ error }}</p>
+          </template>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="password_confirmation">Confirmar contraseña</label>
+          <input
+            id="password_confirmation"
+            v-model="form.password_confirmation"
+            type="password"
+            required
+            class="mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-primary)]/30 text-[var(--color-text)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          />
+        </div>
+
+        <div class="pt-2 flex items-center gap-3">
+          <p v-if="errorMessage" class="text-red-400 text-sm">{{ errorMessage }}</p>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="ml-auto inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <svg
+              v-if="loading"
+              class="animate-spin -ml-1 mr-2 h-5 w-5 text-[var(--color-text)]"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            {{ loading ? "Creando cuenta..." : "Crear cuenta" }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
 </template>
 
 <style scoped></style>
