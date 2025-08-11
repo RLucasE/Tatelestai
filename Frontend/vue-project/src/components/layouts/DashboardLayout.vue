@@ -41,10 +41,7 @@ const isSidebarOpen = ref(false);
   background-color: var(--color-bg);
   justify-content: center;
   align-items: center;
-  row-gap: 0rem;
-  column-gap: 0rem;
-  padding: 16px;
-  padding-top: 4.5rem; /* espacio para el navbar fijo */
+  padding: 4.5rem 16px 16px;
   min-height: 100vh;
   height: 100%;
 }
@@ -100,7 +97,6 @@ nav {
 }
 .nav-toggle.open span:nth-child(2) {
   opacity: 0;
-  width: 0%;
 }
 .nav-toggle.open span:nth-child(3) {
   transform: translateY(-8px) rotate(-45deg);

@@ -111,7 +111,7 @@ onMounted(fetchEstablishmentTypes);
                 :disabled="loading || !isValid"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[var(--color-text)] bg-[var(--color-darkest)] border border-[var(--color-focus)] hover:bg-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed transition"
               >
-                <svg v-if="loading" class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg v-if="loading" class="animate-spin" width="16" height="16" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4" />
                   <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" />
                 </svg>
