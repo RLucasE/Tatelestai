@@ -35,10 +35,6 @@ class SellController
             $bought_by = Auth::id();
             $sold_by = FoodEstablishment::findOrFail($request->get('food_establishment_id'))->id;
             $result = $this->makeSellAction->execute($offers,$bought_by, $sold_by);
-            $userCart = UserCart::with('offerCarts')->where('user_id', $bought_by)->first();
-            foreach ($userCart->offerCarts as $offerCart) {
-                $offerCart->delete();
-            }
             return response()->json($result, 201);
         } catch (\Exception $exception) {
             return response()->json([

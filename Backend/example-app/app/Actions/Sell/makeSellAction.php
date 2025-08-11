@@ -3,10 +3,13 @@
 namespace App\Actions\Sell;
 
 use App\Actions\Offers\GetOfferAction;
+use App\Enums\CartState;
 use App\Enums\OfferState;
 use App\Models\Offer;
+use App\Models\OfferCart;
 use App\Models\Sell;
 use App\Models\SellDetail;
+use App\Models\UserCart;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -34,7 +37,6 @@ class makeSellAction{
             foreach ($offers as $offerData) {
                 $offer = $this->getOfferAction->execute($offerData['id'],true);
 
-
                 if ($offer->quantity < $offerData['quantity']) {
                     throw new \Exception("No hay suficiente stock disponible para la oferta: {$offer->title}");
                 }
@@ -50,10 +52,17 @@ class makeSellAction{
                     ]);
                 }
 
-
                 $offer->update([
                     'quantity' => $offer->quantity - $offerData['quantity']
                 ]);
+
+                $userCart = UserCart::where('user_id', $bought_by)
+                    ->where('state',CartState::ACTIVE)->firstOrFail();
+
+                OfferCart::where('offer_id', $offer->id)
+                    ->where('user_cart_id', $userCart->id)
+                    ->delete();
+
 
                 if($offer->quantity == 0){
                     $offer->update(['state' =>OfferState::PURCHASED]);
