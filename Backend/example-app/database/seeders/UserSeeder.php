@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Actions\Cart\GetCustomerCartAction;
+use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -33,5 +34,13 @@ class UserSeeder extends Seeder
             'password' => 12345678,
         ]);
         $user->assignRole('seller');
+
+        User::factory()->withRole(UserRole::ADMIN->value)->create([
+            'name' => 'Admin',
+            'last_name' => 'Admin',
+            'email' => 'admin@gmail.com',
+            'state' => UserState::ACTIVE->value,
+            'password' => 12345678,
+        ]);
     }
 }
