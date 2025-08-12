@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+import { ref } from "vue";
+import { RouterLink, RouterView } from "vue-router";
 
 const isSidebarOpen = ref(false);
 </script>
