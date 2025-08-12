@@ -5,30 +5,33 @@
   <nav class="flex justify-between items-center pl-6 pr-6 h-16">
     <div>
       <RouterLink
-        class="py-2 px-4 leading-normal customer-nav-link"
-        to="/customer"
-        >Logotipo</RouterLink
+          class="py-2 px-4 leading-normal customer-nav-link"
+          to="/customer/offers"
+      >Logotipo
+      </RouterLink
+      >
+      <RouterLink
+          class="py-2 px-4 leading-normal customer-nav-link"
+          to="/customer/profile"
+      >Perfil
+      </RouterLink
       >
     </div>
     <div>
       <RouterLink
-        class="py-2 px-4 leading-normal customer-nav-link"
-        to="/customer/offers"
-        >Ofertas</RouterLink
+          class="py-2 px-4 leading-normal customer-nav-link"
+          to="/customer/offers"
+      >Ofertas
+      </RouterLink
       >
 
       <RouterLink
-        class="py-2 px-4 leading-normal customer-nav-link"
-        to="/customer/purchases"
-        >Compras</RouterLink
+          class="py-2 px-4 leading-normal customer-nav-link"
+          to="/customer/purchases"
+      >Compras
+      </RouterLink
       >
-
-      <RouterLink
-        class="py-2 px-4 leading-normal customer-nav-link"
-        to="/customer/profile"
-        >Perfil</RouterLink
-      >
-      <RouterLink to="/customer/carrito"> Carrito </RouterLink>
+      <RouterLink to="/customer/carrito"> Carrito</RouterLink>
     </div>
   </nav>
   <main class="customer-cards-box">

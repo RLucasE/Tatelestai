@@ -37,6 +37,14 @@ const isInactive = computed(() => {
   return offer.value?.state === "inactive";
 });
 
+const isActive = computed(() => {
+  return offer.value?.state === "active" && !isExpired.value;
+});
+
+const isPurchased = computed(() => {
+  return offer.value?.state === "purchased";
+});
+
 const offerStateText = computed(() => {
   if (isInactive.value) return "Inactiva";
   if (isExpired.value) return "Expirada";
@@ -87,7 +95,7 @@ const onDeleteOffer = async () => {
   try {
     deleting.value = true;
     await axiosInstance.delete(`/offer/${offer.value.id}`);
-    await router.push({ name: "my-offers" });
+    fetchOffer();
   } catch (err) {
     console.error("Error al eliminar la oferta:", err);
     alert("No se pudo eliminar la oferta");
@@ -129,7 +137,8 @@ const onDeleteOffer = async () => {
           <h2 class="offer-title">{{ offer.title }}</h2>
           <span v-if="isInactive" class="badge badge-inactive">Inactiva</span>
           <span v-else-if="isExpired" class="badge badge-expired">Expirada</span>
-          <span v-else class="badge badge-active">Activa</span>
+          <span v-else-if="isActive" class="badge badge-active">Activa</span>
+          <span v-else class="badge badge-purchased">Agotada</span>
         </div>
         <p class="offer-description">{{ offer.description }}</p>
 
@@ -345,6 +354,12 @@ export default {
 }
 
 .badge-inactive {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  border: 1px solid var(--color-focus);
+}
+
+.badge-purchased {
   background: var(--color-darkest);
   color: var(--color-text);
   border: 1px solid var(--color-focus);
