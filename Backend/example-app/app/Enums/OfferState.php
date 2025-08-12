@@ -6,4 +6,5 @@ enum OfferState: string
 {
     case ACTIVE = "active";
     case PURCHASED = "purchased";
+    case INACTIVE = "inactive";
 }

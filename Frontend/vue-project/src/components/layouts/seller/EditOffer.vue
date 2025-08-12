@@ -1,547 +1,430 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import axiosInstance from "@/lib/axios";
-import { computed } from "vue";
 
-const route = useRoute();
-const router = useRouter();
-
-// Props
 const props = defineProps({
   id: {
-    type: String,
+    type: [String, Number],
     required: true,
   },
 });
 
-const toLocalISOString = (date) => {
-  const offset = date.getTimezoneOffset() * 40000; // offset en milisegundos
-  const localDate = new Date(date.getTime() - offset);
-  return localDate.toISOString().slice(0, 16);
-};
-
-const minDate = computed(() => {
-  let date = new Date();
-  console.log(toLocalISOString(date));
-  return toLocalISOString(date);
-});
-
-// Reactive data
-const offer = ref({});
+const router = useRouter();
 
 const loading = ref(true);
-const saving = ref(false);
 const error = ref(null);
-const success = ref(false);
+const offer = ref(null);
+const deleting = ref(false);
 
-// Form validation
-const errors = ref({});
+const products = computed(() => (offer.value?.products ?? []));
 
-// Fetch offer data
+const totalOfferPrice = computed(() => {
+  const offerQty = Number(offer.value?.quantity ?? 0);
+  return (offer.value?.products ?? []).reduce((accumulated, product) => {
+    const price = Number(product.pivot?.price ?? 0);
+    const qty = Number(product.pivot?.quantity ?? 0);
+    return accumulated + price * qty * offerQty;
+  }, 0);
+});
+
+const isExpired = computed(() => {
+  if (!offer.value?.expiration_datetime) return false;
+  return new Date(offer.value.expiration_datetime) < new Date();
+});
+
+const isInactive = computed(() => {
+  return offer.value?.state === "inactive";
+});
+
+const offerStateText = computed(() => {
+  if (isInactive.value) return "Inactiva";
+  if (isExpired.value) return "Expirada";
+  return "Activa";
+});
+
+const offerStateClass = computed(() => {
+  if (isInactive.value) return "badge-inactive";
+  if (isExpired.value) return "badge-expired";
+  return "badge-active";
+});
+
+const formattedDate = computed(() => {
+  if (!offer.value?.expiration_datetime) return "-";
+  return new Date(offer.value.expiration_datetime).toLocaleDateString();
+});
+
+const formattedTime = computed(() => {
+  if (!offer.value?.expiration_datetime) return "-";
+  return new Date(offer.value.expiration_datetime).toLocaleTimeString();
+});
+
 const fetchOffer = async () => {
   try {
     loading.value = true;
-    error.value = null;
-
     const response = await axiosInstance.get(`/offer/${props.id}`);
-    const offerData = response.data.data || response.data;
-    console.log(offerData);
-    offer.value = {
-      title: offerData.title || "",
-      description: offerData.description || "",
-      expiration_datetime: offerData.expiration_datetime
-        ? toLocalISOString(new Date(offerData.expiration_datetime))
-        : "",
-      products: offerData.products || [],
-    };
-    console.log(offer);
+    offer.value = response.data?.data ?? response.data;
+    error.value = null;
   } catch (err) {
-    console.error("Error fetching offer:", err);
-    error.value = "Error al cargar la oferta";
+    console.error("Error al cargar la oferta:", err);
+    error.value = "No se pudo cargar la oferta";
+    offer.value = null;
   } finally {
     loading.value = false;
   }
 };
 
-// Validate form
-const validateForm = () => {
-  errors.value = {};
+const goBack = () => router.push({ name: "my-offers" });
 
-  if (!offer.value.title.trim()) {
-    errors.value.title = "El título es requerido";
-  }
+onMounted(fetchOffer);
 
-  if (!offer.value.description.trim()) {
-    errors.value.description = "La descripción es requerida";
-  }
-
-  if (!offer.value.expiration_datetime) {
-    errors.value.expiration_datetime = "La fecha de expiración es requerida";
-  } else {
-    const expirationDate = new Date(offer.value.expiration_datetime);
-    const now = new Date();
-    if (expirationDate <= now) {
-      errors.value.expiration_datetime =
-        "La fecha de expiración debe ser futura";
-    }
-  }
-
-  return Object.keys(errors.value).length === 0;
-};
-
-// Update offer
-const updateOffer = async () => {
-  if (!validateForm()) {
-    return;
-  }
-
+const onDeleteOffer = async () => {
+  if (!offer.value) return;
+  const confirmed = window.confirm(
+    "¿Seguro que quieres eliminar esta oferta? Esta acción no se puede deshacer."
+  );
+  if (!confirmed) return;
   try {
-    saving.value = true;
-    error.value = null;
-
-    const updateData = {
-      title: offer.value.title.trim(),
-      description: offer.value.description.trim(),
-      expiration_datetime: offer.value.expiration_datetime,
-    };
-
-    await axiosInstance.put(`/offers/${props.id}`, updateData);
-
-    success.value = true;
-    setTimeout(() => {
-      success.value = false;
-    }, 3000);
+    deleting.value = true;
+    await axiosInstance.delete(`/offer/${offer.value.id}`);
+    await router.push({ name: "my-offers" });
   } catch (err) {
-    console.error("Error updating offer:", err);
-    error.value =
-      err.response?.data?.message || "Error al actualizar la oferta";
+    console.error("Error al eliminar la oferta:", err);
+    alert("No se pudo eliminar la oferta");
   } finally {
-    saving.value = false;
+    deleting.value = false;
   }
 };
-
-// Navigation
-const goBack = () => {
-  router.push({ name: "my-offers" });
-};
-
-// Lifecycle
-onMounted(() => {
-  fetchOffer();
-});
 </script>
 
 <template>
   <div class="edit-offer-container">
-    <!-- Header -->
-    <div class="header-section">
-      <button @click="goBack" class="back-btn">← Volver a Mis Ofertas</button>
-      <h1 class="page-title">Editar Oferta</h1>
-      <p class="page-subtitle">Modifica los detalles de tu oferta</p>
+    <div class="header">
+      <button class="back-btn" @click="goBack">← Volver a mis ofertas</button>
+      <h1 class="title">Detalles de la oferta</h1>
+      <div class="spacer"></div>
+      <button class="danger-btn" @click="onDeleteOffer" :disabled="deleting">
+        {{ deleting ? 'Eliminando...' : 'Deshabilitar offerta' }}
+      </button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-container">
-      <div class="loading-spinner"></div>
+    <div v-if="loading" class="loading">
+      <div class="spinner"></div>
       <p>Cargando oferta...</p>
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="error-container">
+    <div v-else-if="error" class="error">
       <p>{{ error }}</p>
-      <button @click="fetchOffer" class="retry-btn">Reintentar</button>
+      <button class="retry-btn" @click="fetchOffer">Reintentar</button>
     </div>
 
-    <!-- Edit Form -->
-    <div v-else class="form-container">
-      <!-- Success Message -->
-      <div v-if="success" class="success-message">
-        ✅ Oferta actualizada exitosamente
-      </div>
+    <div v-else-if="!offer" class="empty">
+      <p>No se encontró la oferta</p>
+    </div>
 
-      <div class="products-conainer">
-        <div v-for="product in offer.products" :key="product.id">
-          <div class="product">
-            <div class="leftDetail textContainer">
-              {{ product.name }} x{{ product.pivot.quantity }}
-            </div>
-            <div class="rightDetail textContainer">
-              ${{ product.pivot.price }}
-            </div>
+    <div v-else class="content">
+      <!-- Info principal de la oferta -->
+      <section class="offer-info" :class="{ expired: isExpired }">
+        <div class="offer-header">
+          <h2 class="offer-title">{{ offer.title }}</h2>
+          <span v-if="isInactive" class="badge badge-inactive">Inactiva</span>
+          <span v-else-if="isExpired" class="badge badge-expired">Expirada</span>
+          <span v-else class="badge badge-active">Activa</span>
+        </div>
+        <p class="offer-description">{{ offer.description }}</p>
+
+        <div class="meta">
+          <div class="meta-item">
+            <span class="meta-label">Válida hasta</span>
+            <span class="meta-value">{{ formattedDate }} {{ formattedTime }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Cantidad</span>
+            <span class="meta-value">{{ offer.quantity ?? '-' }}</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <form @submit.prevent="updateOffer" class="edit-form">
-        <!-- Title Field -->
-        <div class="form-group">
-          <label for="title" class="form-label">Título de la Oferta</label>
-          <input
-            id="title"
-            v-model="offer.title"
-            type="text"
-            class="form-input"
-            :class="{ error: errors.title }"
-            placeholder="Ingresa el título de tu oferta"
-            maxlength="255"
-          />
-          <span v-if="errors.title" class="error-text">{{ errors.title }}</span>
+      <!-- Listado de productos -->
+      <section class="products">
+        <h3 class="section-title">Productos en la oferta</h3>
+
+        <div v-if="products.length === 0" class="empty-products">
+          <p>Esta oferta no tiene productos asociados.</p>
         </div>
 
-        <!-- Description Field -->
-        <div class="form-group">
-          <label for="description" class="form-label">Descripción</label>
-          <textarea
-            id="description"
-            v-model="offer.description"
-            class="form-textarea"
-            :class="{ error: errors.description }"
-            placeholder="Describe tu oferta en detalle"
-            rows="4"
-            maxlength="1000"
-          ></textarea>
-          <span v-if="errors.description" class="error-text">{{
-            errors.description
-          }}</span>
-        </div>
+        <div v-else class="product-list">
+          <div class="product-row header-row">
+            <div>Producto</div>
+            <div class="hide-sm">Descripción</div>
+            <div>Cantidad</div>
+            <div>Precio</div>
+            <div>Subtotal</div>
+          </div>
 
-        <!-- Expiration Date Field -->
-        <div class="form-group">
-          <label for="expiration" class="form-label">Fecha de Expiración</label>
-          <input
-            id="expiration"
-            v-model="offer.expiration_datetime"
-            :min="minDate"
-            type="datetime-local"
-            class="form-input"
-            :class="{ error: errors.expiration_datetime }"
-          />
-          <span v-if="errors.expiration_datetime" class="error-text">{{
-            errors.expiration_datetime
-          }}</span>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="form-actions">
-          <button
-            type="button"
-            @click="goBack"
-            class="cancel-btn"
-            :disabled="saving"
+          <div
+            class="product-row"
+            v-for="product in products"
+            :key="product.id"
           >
-            Cancelar
-          </button>
-          <button type="submit" class="submit-btn" :disabled="saving">
-            <span v-if="saving">Guardando...</span>
-            <span v-else>Actualizar Oferta</span>
-          </button>
+            <div class="product-name">{{ product.name }}</div>
+            <div class="product-description hide-sm">{{ product.description }}</div>
+            <div class="product-quantity">{{ product.pivot?.quantity ?? '-' }}</div>
+            <div class="product-price">{{ product.pivot?.price ?? '-' }}</div>
+            <div class="product-subtotal">{{ calcSubtotal(product.pivot?.price, product.pivot?.quantity, offer?.quantity) }}</div>
+          </div>
+          <div class="product-row footer-row">
+            <div></div>
+            <div class="hide-sm"></div>
+            <div></div>
+            <div class="total-label">Total oferta</div>
+            <div class="total-value">{{ totalOfferPrice }}</div>
+          </div>
         </div>
-      </form>
+      </section>
     </div>
   </div>
 </template>
 
+<script>
+export default {
+  methods: {
+    calcSubtotal(price, qty, offerQty) {
+      const p = Number(price ?? 0);
+      const q = Number(qty ?? 0);
+      const oq = Number(offerQty ?? 0);
+      return p * q * oq;
+    },
+  },
+};
+</script>
+
 <style scoped>
 .edit-offer-container {
   padding: 20px;
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto;
-  background-color: var(--color-bg);
-  min-height: 100vh;
-}
-
-/* Header Section */
-.header-section {
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-.products-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.product {
-  height: 3rem;
-  margin: 2rem 0;
-  justify-content: space-between;
-  display: flex;
-  background-color: var(--color-darkest);
-  border-radius: 8px;
-}
-
-.product .leftDetail {
-  text-align: start;
-  display: inline-block;
-  width: 65%;
-}
-
-.product .rightDetail {
-  display: inline-block;
-  width: 25%;
-}
-
-.product .textContainer {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.ack-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  background-color: var(--color-secondary);
   color: var(--color-text);
-  border: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.spacer { flex: 1; }
+
+.back-btn {
+  background: var(--color-secondary);
+  color: var(--color-text);
+  border: 1px solid var(--color-focus);
+  padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  margin-bottom: 20px;
-  text-decoration: none;
 }
 
 .back-btn:hover {
-  background-color: var(--color-focus);
-  transform: translateY(-2px);
+  background: var(--color-primary);
 }
 
-.page-title {
-  font-size: 2.5em;
-  font-weight: 700;
+.danger-btn {
+  background: var(--color-darkest);
   color: var(--color-text);
-  margin: 0 0 10px 0;
+  border: 1px solid var(--color-focus);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.danger-btn[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.danger-btn:hover:not([disabled]) {
+  background: var(--color-secondary);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
   background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.page-subtitle {
-  font-size: 1.1em;
-  color: var(--color-text);
-  opacity: 0.8;
-  margin: 0;
-  font-weight: 400;
-}
-
-/* Loading State */
-.loading-container {
+.loading,
+.error,
+.empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 40px;
-  text-align: center;
-  color: var(--color-text);
+  padding: 60px 20px;
+  background: var(--color-darkest);
+  border: 1px solid var(--color-focus);
+  border-radius: 12px;
 }
 
-.loading-spinner {
-  width: 50px;
-  height: 50px;
+.spinner {
+  width: 40px;
+  height: 40px;
   border: 4px solid var(--color-secondary);
   border-top: 4px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Error State */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 40px;
-  text-align: center;
-  color: var(--color-text);
-  background-color: var(--color-darkest);
-  border-radius: 16px;
-  margin: 20px;
-  border: 2px solid var(--color-secondary);
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .retry-btn {
-  padding: 12px 24px;
-  background-color: var(--color-primary);
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: var(--color-primary);
   color: var(--color-text);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  font-size: 1em;
-  margin-top: 15px;
 }
 
-.retry-btn:hover {
-  background-color: var(--color-focus);
-  transform: translateY(-2px);
-}
-
-/* Success Message */
-.success-message {
-  background-color: #10b981;
-  color: white;
-  padding: 15px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  text-align: center;
-  font-weight: 600;
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Form Container */
-.form-container {
-  background-color: var(--color-secondary);
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.edit-form {
+.content {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* Form Groups */
-.form-group {
+.offer-info {
+  background: var(--color-secondary);
+  border: 1px solid var(--color-focus);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.offer-info.expired {
+  background: var(--color-darkest);
+}
+
+.offer-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.offer-title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.badge-active {
+  background: var(--color-focus);
+  color: var(--color-text);
+}
+
+.badge-expired {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  border: 1px solid var(--color-focus);
+}
+
+.badge-inactive {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  border: 1px solid var(--color-focus);
+}
+
+.offer-description {
+  margin: 6px 0 12px;
+  line-height: 1.5;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.meta-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  background: var(--color-primary);
+  border: 1px solid var(--color-focus);
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
-.form-label {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 1em;
+.meta-label {
+  font-size: 0.8rem;
+  opacity: 0.8;
 }
 
-.form-input,
-.form-textarea {
-  padding: 12px 16px;
-  border: 2px solid var(--color-focus);
+.meta-value {
+  font-weight: 700;
+}
+
+.products {
+  background: var(--color-secondary);
+  border: 1px solid var(--color-focus);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+}
+
+.product-list {
+  width: 100%;
+}
+
+.product-row {
+  display: grid;
+  grid-template-columns: 2fr 3fr 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--color-focus);
+  align-items: center;
+}
+
+.header-row {
+  font-weight: 700;
+  background: var(--color-primary);
   border-radius: 8px;
-  background-color: var(--color-focus);
-  color: var(--color-text);
-  font-size: 1em;
-  transition: all 0.3s ease;
-  resize: vertical;
 }
 
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
-}
-
-.form-input.error,
-.form-textarea.error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
-.error-text {
-  color: #ef4444;
-  font-size: 0.875em;
-  font-weight: 500;
-}
-
-/* Form Actions */
-.form-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.cancel-btn,
-.submit-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.product-name {
   font-weight: 600;
-  font-size: 1em;
-  min-width: 120px;
 }
 
-.cancel-btn {
-  background-color: var(--color-darkest);
-  color: var(--color-text);
+.product-description {
+  opacity: 0.9;
 }
 
-.cancel-btn:hover:not(:disabled) {
-  background-color: var(--color-secondary);
-  transform: translateY(-2px);
+.product-price,
+.product-subtotal {
+  font-weight: 700;
 }
 
-.submit-btn {
-  background-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.submit-btn:hover:not(:disabled) {
-  background-color: var(--color-focus);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.submit-btn:disabled,
-.cancel-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
-  .edit-offer-container {
-    padding: 15px;
-  }
-
-  .form-container {
-    padding: 20px;
-  }
-
-  .page-title {
-    font-size: 2em;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .cancel-btn,
-  .submit-btn {
-    width: 100%;
-  }
+  .product-row { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  .hide-sm { display: none; }
 }
 </style>

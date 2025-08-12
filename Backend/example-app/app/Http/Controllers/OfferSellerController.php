@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Actions\Offers\GetUserOffersAction;
 use App\Actions\Offers\GetOfferAction;
 use App\Actions\Offers\ValidateOfferOwnershipAction;
+use App\Enums\OfferState;
+use App\Models\Offer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Actions\Offers\ValidateProductOwnershipAction;
 use App\Actions\Offers\CreateOfferAction;
 use App\Exceptions\Product\ProductOwnershipException;
+use Illuminate\Http\Response;
 
 class OfferSellerController extends OfferController
 {
@@ -73,4 +76,29 @@ class OfferSellerController extends OfferController
     }
 
     public function update(Request $request, $offerID) {}
+
+    public function destroy($offerID)
+    {
+        try {
+            $offer = $this->getOffer->execute($offerID);
+            !$this->validateOfferOwnership->execute($offer, Auth::user());
+        }catch (ProductOwnershipException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'product_ids' => $e->context()['product_ids'],
+                'establishment_id' => $e->context()['establishment_id'],
+                'error' => $e->context()['error'],
+            ], $e->getCode());
+        }catch (\Exception $e) {
+            return response()->json([
+                $e
+            ], 404);
+        }
+
+        $offer->state = OfferState::INACTIVE;
+        $offer->save();
+        return response()->json([
+            'message' => 'Oferta eliminada correctamente'
+        ], 200);
+    }
 }
