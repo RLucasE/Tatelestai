@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -16,10 +17,10 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         //
-        Role::create(['name' => 'default']);
-        Role::create(['name' => 'customer']);
-        Role::create(['name' => 'seller']);
-        Role::create(['name' => 'admin']);
+        Role::create(['name' => UserRole::DEFAULT->value]);
+        Role::create(['name' => UserRole::CUSTOMER->value]);
+        Role::create(['name' => UserRole::SELLER->value]);
+        Role::create(['name' => UserRole::ADMIN->value]);
         Role::create(['name' => 'super_admin']);
 
     }

@@ -14,7 +14,6 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        //
         $customerCartController = new CustomerCartController(app(GetCustomerCartAction::class));
         $user = User::factory()->create([
             'name' => 'Lucas',
@@ -25,6 +24,7 @@ class UserSeeder extends Seeder
         ]);
         $user->assignRole('customer');
         $customerCartController->asingFirstCart($user);
+
         $user = User::factory()->create([
             'name' => 'Lucas',
             'last_name' => 'Ricalde',
