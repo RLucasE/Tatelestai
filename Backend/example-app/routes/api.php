@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserState;
+use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
@@ -46,6 +47,12 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::patch('/offer/{offerID}', [OfferSellerController::class, 'update']);
         Route::delete('/offer/{offerID}', [OfferSellerController::class, 'destroy']);
         Route::get('/sells', [SellController::class, 'sellerSells']);
+    });
+});
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
+        Route::get('/users', [admUserController::class, 'index']);
     });
 });
 

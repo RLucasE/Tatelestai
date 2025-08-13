@@ -94,26 +94,39 @@ const isSidebarOpen = ref(false);
 .nav-toggle.open span:nth-child(2) { opacity: 0; }
 .nav-toggle.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
 
+/* Overlay que cubre pantalla (debajo del header), no desplaza contenido */
 .sidebar {
   position: fixed;
-  top: 56px;
+  top: 56px;         /* debajo del header para mantener accesible el botón */
   left: 0;
+  right: 0;
   bottom: 0;
-  width: 0;
+  z-index: 1200;     /* por encima del contenido */
+  background: transparent;
+  pointer-events: none;           /* deshabilitado cuando está cerrado */
   overflow: hidden;
-  background: color-mix(in oklab, var(--color-darkest), black 6%);
-  transition: width 0.25s ease;
+  transition: background 0.25s ease;
 }
 .sidebar.open {
-  width: 260px;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.35); /* backdrop */
+  pointer-events: auto;
 }
+
+/* Panel deslizante */
 .sidebar-panel {
   width: 260px;
   height: 100%;
   padding: 16px;
+  background: color-mix(in oklab, var(--color-darkest), black 6%);
   border-right: 1px solid var(--color-border);
+  box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
 }
+.sidebar.open .sidebar-panel {
+  transform: translateX(0);
+}
+
 .sidebar-title {
   margin: 0 0 8px;
   font-size: 12px;
@@ -147,6 +160,5 @@ const isSidebarOpen = ref(false);
 
 @media (min-width: 1024px) {
   .content { padding: 24px; margin-left: 0; }
-  .sidebar.open + .content { margin-left: 260px; }
 }
 </style>
