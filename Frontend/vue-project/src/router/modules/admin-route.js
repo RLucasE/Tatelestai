@@ -8,6 +8,11 @@ export default [
             path: "users",
             name: "admin-users",
             component: () => import('@/components/layouts/admin/Users.vue'),
+        },
+        {
+            path: "user/:id",
+            name: "admin-user-detail",
+            component: () => import('@/components/layouts/admin/UserDetail.vue'),
         }
     ],
     meta: {
