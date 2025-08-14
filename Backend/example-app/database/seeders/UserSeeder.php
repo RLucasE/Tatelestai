@@ -26,15 +26,15 @@ class UserSeeder extends Seeder
         $user->assignRole('customer');
         $customerCartController->asingFirstCart($user);
 
-        $user = User::factory()->create([
+        User::factory()->withRole(UserRole::SELLER->value)->create([
             'name' => 'Lucas',
             'last_name' => 'Ricalde',
             'email' => 'seller@gmail.com',
             'state' => UserState::ACTIVE->value,
             'password' => 12345678,
         ]);
-        $user->assignRole('seller');
 
+        User::factory()->withRole(UserRole::CUSTOMER->value)->create([]);
         User::factory()->withRole(UserRole::ADMIN->value)->create([
             'name' => 'Admin',
             'last_name' => 'Admin',

@@ -43,5 +43,13 @@ class UserFactory extends Factory
             $user->assignRole($role);
         });
     }
+
+    public function withCart(): static
+    {
+        return $this->afterCreating(function ($user) {
+            $customerCartController = app(\App\Http\Controllers\CustomerCartController::class);
+            $customerCartController->asingFirstCart($user);
+        });
+    }
 }
 
