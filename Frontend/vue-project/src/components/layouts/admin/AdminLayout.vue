@@ -28,7 +28,7 @@ const isSidebarOpen = ref(false);
         <h2 class="sidebar-title">Panel</h2>
         <ul class="menu">
           <li><RouterLink to="/adm/users" class="menu-link">Usuarios</RouterLink></li>
-          <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>
+          <li><RouterLink to="/adm/new-sellers" class="menu-link">Nuevos Vendedores</RouterLink></li>
           <li><RouterLink to="/adm/sells" class="menu-link">Ventas</RouterLink></li>
         </ul>
       </div>

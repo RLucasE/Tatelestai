@@ -59,7 +59,6 @@ class UserManagement extends Controller
             'establishment_type_id' => 'required|integer|exists:establishment_types,id',
         ]);
 
-        /** @var \App\Models\User */
         $user = Auth::user();
 
         if ($user->foodEstablishment()->exists()) {
@@ -69,6 +68,7 @@ class UserManagement extends Controller
         }
 
         $establishment = $user->foodEstablishment()->create([
+            'name' => $request->input('name'),
             'establishment_type_id' => $request->input('establishment_type_id'),
         ]);
 

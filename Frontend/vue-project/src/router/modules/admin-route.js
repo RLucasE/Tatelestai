@@ -13,7 +13,18 @@ export default [
             path: "user/:id",
             name: "admin-user-detail",
             component: () => import('@/components/layouts/admin/UserDetail.vue'),
+        },
+        {
+            path: "new-sellers",
+            name: "new-sellers",
+            component: () => import('@/components/layouts/admin/NewSellers.vue'),
+        },
+        {
+            path: "new-seller",
+            name: "new-seller",
+            component: () => import('@/components/layouts/admin/NewSeller.vue'),
         }
+
     ],
     meta: {
         requiresAuth: true,
