@@ -1,5 +1,8 @@
 <script setup>
-import { defineProps } from 'vue';
+import { defineProps, defineEmits } from 'vue';
+import axiosInstance from '@/lib/axios.js';
+
+const emit = defineEmits(['updated']);
 
 const props = defineProps({
   user: {
@@ -7,6 +10,15 @@ const props = defineProps({
     required: true
   }
 });
+
+const activarSeller = async () => {
+  try {
+    await axiosInstance.patch(`/users/${props.user.id}/activate-seller`);
+    emit('updated');
+  } catch (err) {
+    console.error('Error al activar seller:', err);
+  }
+};
 </script>
 
 <template>
@@ -15,8 +27,8 @@ const props = defineProps({
     <div class="seller-info">
       <div class="info-grid">
         <div class="info-item">
-          <span class="label">Estado del establecimiento</span>
-          <span class="value">Activo</span>
+          <span class="label">Estado del vendedor</span>
+          <span class="value">{{user.state || null}}</span>
         </div>
         <div class="info-item">
           <span class="label">Fecha de registro</span>
@@ -43,10 +55,7 @@ const props = defineProps({
       <div class="seller-actions">
         <h3 class="sub-title">Acciones disponibles</h3>
         <div class="actions-grid">
-          <button class="action-btn">Ver productos</button>
-          <button class="action-btn">Ver ofertas</button>
-          <button class="action-btn">Historial de ventas</button>
-          <button class="action-btn">Gestionar establecimiento</button>
+          <button class="action-btn" @click="activarSeller">Activar Seller</button>
         </div>
       </div>
     </div>

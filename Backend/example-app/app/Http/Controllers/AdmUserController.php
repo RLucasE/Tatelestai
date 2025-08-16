@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Enums\UserState;
 
 class AdmUserController extends Controller
 {
@@ -22,12 +23,37 @@ class AdmUserController extends Controller
 
     public function show(string $id)
     {
-        $user = User::select('id', 'name', 'last_name', 'email')
+        $user = User::select('id', 'name', 'last_name', 'email','state')
             ->with(['roles:name'])
             ->findOrFail($id);
 
         $user->roles = $user->roles->pluck('name')->toArray();
 
         return response()->json($user);
+    }
+
+    public function activateSeller(string $id)
+    {
+        $user = User::findOrFail($id);
+
+        if (!$user->hasRole('seller')) {
+            return response()->json([
+                'message' => 'El usuario no tiene rol seller.'
+            ], 422);
+        }
+
+        if ($user->state !== UserState::WAITING_FOR_CONFIRMATION->value) {
+            return response()->json([
+                'message' => 'El usuario no está esperando la confirmación de su establecimiento.'
+            ], 422);
+        }
+
+        $user->state = UserState::ACTIVE;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Seller activado correctamente.',
+            'user' => $user,
+        ]);
     }
 }
