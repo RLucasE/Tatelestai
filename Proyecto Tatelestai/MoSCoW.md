@@ -39,23 +39,26 @@ Hay que mejorar
     
     - **Requisitos importantes**: Añaden gran valor, pero el proyecto puede funcionar sin ellos a corto plazo.
 	    - [[Motor de búsqueda]] 
-		    - Administración 
-			    - Buscar una venta por numero de venta 
+			- Buscar una venta por numero de venta 
+			- Buscador de ofertas
 	    - Administrativas 
-			
+		    - Ver reclamos
+			    - Filtrar por tipo de reclamo
 		- Vendedores
 			- Confirmar y ocultar la venta 
 			- Editar un producto
 		- Compradores
 			- Poder filtrar las ofertas por tipo de establecimiento 
 			- Filtrar las ofertas por categoría 
+			- timer de 10 min para hacer la compra por efectivo
+			- Que los compradores tengan un % de compras concluidas
 		- Abrir un reclamo 
 			- Hacia un establecimiento 
 			- Hacia un comprador 
 			- En una oferta
 			- En una compra/venta
 		- Pasarela de Pago 
-			- El usuario puede reclamar 
+			- El usuario puede devolver el producto
 		
 3. **C - Could Have**  🔴
     
