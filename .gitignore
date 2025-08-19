@@ -33,3 +33,9 @@ Backend/example-app/.phpunit.result.cache
 # IDEs
 .vscode/
 .idea/
+
+# Obsidian Documents
+/Proyecto Tatelestai/.obsidian/appearance.json
+/Proyecto Tatelestai/.obsidian/core-plugins.json
+/Proyecto Tatelestai/.obsidian/workspace.json
+/Proyecto Tatelestai/.obsidian/app.json
