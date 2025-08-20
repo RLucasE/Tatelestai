@@ -11,6 +11,7 @@ Hay que mejorar
 	    - Administrativas
 			- Dar de alta un nuevo establecimiento 🟢
 			- Aprobar un cambio de dirección de un establecimiento 🔴
+			- Poder rechazar la solicitud de un vendedor 🔴
 			- Des-habilitar un customer/seller 🔴
 			- Ver las compras que de un customer 🔴 
 			- Ver las ventas de un seller 🔴
@@ -69,6 +70,7 @@ Hay que mejorar
 			- Editar motivos de sanción
 			- Poder seleccionar motivo de des-habilitación de oferta
 			- Agregar y quitar motivos  de des-habilitación de oferta
+			- Registro de los establecimientos de un vendedor
 	    - Geolocalización
 		    - Filtrar las ofertas cercanas
 		    - Ver locales registrados en mi localidad
