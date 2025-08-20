@@ -15,7 +15,7 @@ const activating = ref(false);
 const fetchSeller = async () => {
   try {
     loading.value = true;
-    const { data } = await axiosInstance.get(`/users/${sellerId}`);
+    const { data } = await axiosInstance.get(`/new-sellers/${sellerId}`);
     seller.value = data || null;
     error.value = null;
   } catch (err) {
@@ -61,7 +61,6 @@ onMounted(fetchSeller);
       <div class="header">
         <button class="back-btn" @click="goBack">← Volver</button>
         <h1 class="title">Solicitud de Vendedor</h1>
-        <p class="subtitle" v-if="seller">ID: {{ seller.id }}</p>
       </div>
 
       <div v-if="loading" class="loading">
@@ -79,6 +78,10 @@ onMounted(fetchSeller);
         <section class="card">
           <h2 class="section-title">Información del Usuario</h2>
           <div class="data-grid">
+            <div class="data-item">
+              <span class="label">Numero Usuario</span>
+              <span class="value">{{ seller.id }}</span>
+            </div>
             <div class="data-item">
               <span class="label">Nombre</span>
               <span class="value">{{ seller.name }}</span>
@@ -103,7 +106,7 @@ onMounted(fetchSeller);
                   :key="role"
                   class="role-chip"
                 >
-                  {{ role }}
+                  {{ role.name }}
                 </span>
               </div>
             </div>

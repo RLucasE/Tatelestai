@@ -20,7 +20,7 @@ export default [
             component: () => import('@/components/layouts/admin/NewSellers.vue'),
         },
         {
-            path: "new-seller",
+            path: "new-seller/:id",
             name: "new-seller",
             component: () => import('@/components/layouts/admin/NewSeller.vue'),
         }

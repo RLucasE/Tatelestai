@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/users/{id}', [AdmUserController::class, 'show']);
         Route::patch('/users/{id}/activate-seller', [AdmUserController::class, 'activateSeller']);
         Route::get('/new-sellers', [AdmUserController::class, 'newSellers']);
+        Route::get('/new-sellers/{id}', [AdmUserController::class, 'showNewSeller']);
     });
 });
 
