@@ -200,12 +200,6 @@ onMounted(fetchSeller);
   background-clip: text;
 }
 
-.subtitle {
-  font-size: 1rem;
-  opacity: 0.9;
-  color: var(--color-text);
-}
-
 .loading {
   display: flex;
   flex-direction: column;
