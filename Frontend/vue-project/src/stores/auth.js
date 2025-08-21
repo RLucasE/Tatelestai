@@ -48,6 +48,10 @@ export const useAuthStore = defineStore("auth", () => {
     return user && user.value.state === "active";
   }
 
+  function inactive() {
+    return user && user.value.state === "inactive";
+  }
+
   async function fetchUser() {
     try {
       const data = await axiosInstance.get("/user");
@@ -122,6 +126,7 @@ export const useAuthStore = defineStore("auth", () => {
     registeringEstablishment,
     waitingConfirmation,
     active,
+    inactive,
     heavyVerifySession,
     verifySession,
     isLoggedIn,

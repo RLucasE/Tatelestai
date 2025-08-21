@@ -29,6 +29,15 @@ export default [
       requiresAuth: true,
       requiresSeller: true,
       requiresWaitingConfirmation: true,
-    },
+    }
   },
+  {
+    path: "/inactive",
+    name: "inactive",
+    component: () => import("@/components/layouts/others/Inactive.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresInactive: true,
+    }
+  }
 ];

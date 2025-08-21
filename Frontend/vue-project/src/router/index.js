@@ -24,6 +24,7 @@ function redirectByRole(authStore) {
             return {name: "register-establishment"};
         if (authStore.waitingConfirmation())
             return {name: "waiting-confirmation"};
+        if (authStore.inactive()) return {name: "inactive"};
         return {name: "seller"};
     }
 
@@ -93,6 +94,9 @@ router.beforeEach(async (to, from, next) => {
                     }
                     break;
                 case to.meta.requiresAdmin && authStore.isAdmin():
+                    next();
+                    break;
+                case to.meta.requiresInactive && authStore.inactive():
                     next();
                     break;
                 default: {

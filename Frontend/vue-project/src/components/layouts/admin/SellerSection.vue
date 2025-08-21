@@ -19,6 +19,15 @@ const activarSeller = async () => {
     console.error('Error al activar seller:', err);
   }
 };
+
+const desactivarSeller = async () => {
+  try {
+    await axiosInstance.patch(`/users/${props.user.id}/deactivate-seller`);
+    emit('updated');
+  } catch (err) {
+    console.error('Error al desactivar seller:', err);
+  }
+};
 </script>
 
 <template>
@@ -55,7 +64,9 @@ const activarSeller = async () => {
       <div class="seller-actions">
         <h3 class="sub-title">Acciones disponibles</h3>
         <div class="actions-grid">
-          <button class="action-btn" @click="activarSeller">Activar Seller</button>
+          <button class="action-btn" @click="user.state === 'active' ? desactivarSeller() : activarSeller()">
+            {{ user.state === 'active' ? 'Desactivar Seller' : 'Activar Seller' }}
+          </button>
         </div>
       </div>
     </div>

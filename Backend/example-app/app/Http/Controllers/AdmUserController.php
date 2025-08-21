@@ -42,18 +42,46 @@ class AdmUserController extends Controller
             ], 422);
         }
 
-        if ($user->state !== UserState::WAITING_FOR_CONFIRMATION->value) {
+        if ($user->state === UserState::WAITING_FOR_CONFIRMATION->value || $user->state === UserState::INACTIVE->value) {
+            $user->state = UserState::ACTIVE->value;
+            $user->save();
+        }else {
             return response()->json([
                 'message' => 'El usuario no está esperando la confirmación de su establecimiento.'
             ], 422);
         }
 
-        $user->state = UserState::ACTIVE;
-        $user->save();
 
         return response()->json([
             'message' => 'Seller activado correctamente.',
             'user' => $user,
+        ]);
+    }
+
+    public function deactivateSeller(string $id)
+    {
+        $user = User::findOrFail($id);
+
+        if (!$user->hasRole('seller')) {
+            return response()->json([
+                'message' => 'El usuario no tiene rol seller.'
+            ], 422);
+        }
+
+        if ($user->state !== UserState::ACTIVE->value) {
+            return response()->json([
+                'message' => 'El usuario no está activo como seller.'
+            ], 422);
+        }
+
+
+        $user->state = UserState::INACTIVE->value;
+        $user->save();
+
+
+        return response()->json([
+            'message' => 'Seller desactivado correctamente.',
+            'user' => $user->state
         ]);
     }
 

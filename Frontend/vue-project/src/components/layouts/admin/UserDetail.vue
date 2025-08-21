@@ -92,7 +92,7 @@ onMounted(fetchUser);
           </div>
         </section>
 
-        <SellerSection v-if="isSeller" :user="user" />
+        <SellerSection v-if="isSeller" :user="user" @updated="fetchUser" />
         <CustomerSection v-if="isCustomer" :user="user" />
       </div>
 
