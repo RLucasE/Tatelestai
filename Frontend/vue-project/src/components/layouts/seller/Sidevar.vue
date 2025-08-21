@@ -54,6 +54,14 @@
           </span>
           <span>Mis Productos</span>
         </RouterLink>
+        <RouterLink :to="{ name: 'establishment' }" class="nav-link">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"></path>
+            </svg>
+          </span>
+          <span>Establecimiento</span>
+        </RouterLink>
       </nav>
     </aside>
   </div>

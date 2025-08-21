@@ -3,6 +3,7 @@
 use App\Enums\UserState;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
@@ -30,13 +31,14 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/establishment-types', [PublicDataController::class, 'establishmentTypes'])->middleware(['user.state:' . UserState::REGISTERING->value]);
+    Route::get('/establishment-types', [PublicDataController::class, 'establishmentTypes'])->middleware(['user.state:' . UserState::REGISTERING->value . ',' . UserState::ACTIVE->value]);
     Route::get('/user', [PublicDataController::class, 'getUser']);
 });
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:' . UserState::REGISTERING->value]);
     Route::middleware('user.state:' . UserState::ACTIVE->value)->group(function () {
+        Route::get('/my-establishment', [FoodEstablishmentController::class, 'getMyEstablishment']);
         Route::post('/product',  [ProductController::class, 'store']);
         Route::get('/products',  [ProductController::class, 'show']);
         Route::patch('/products/{id}',  [ProductController::class, 'update']);
@@ -47,6 +49,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::patch('/offer/{offerID}', [OfferSellerController::class, 'update']);
         Route::delete('/offer/{offerID}', [OfferSellerController::class, 'destroy']);
         Route::get('/sells', [SellController::class, 'sellerSells']);
+        Route::put('/my-establishment', [FoodEstablishmentController::class, 'updateMyEstablishment']);
     });
 });
 
