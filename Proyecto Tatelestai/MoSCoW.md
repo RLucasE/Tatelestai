@@ -1,5 +1,7 @@
-Hay que mejorar
- Implementado
+🔴 not implemented yet
+🟡 implementing / problems
+🟢 implemente
+❓ IKN man
 1. **M - Must Have** 
     
     - **Requisitos imprescindibles**: Sin ellos, el proyecto fracasa o no cumple objetivos. 
@@ -29,10 +31,12 @@ Hay que mejorar
 			- Hacer la compra de una oferta 🔴
 		- Vendedores
 			- Registrar su negocio 🟢
+				- Registrar la dirección del local 🔴
+				- Cambiar la dirección del establecimiento 🔴
+				- Cambiar el nombre del establecimiento 🔴
 			- Recibir notificación vía mail que su negocio ya fue habilitado 🔴
 			- Notificar al vendedor de una nueva venta 🟡
 			- Mostrar las ventas que se hicieron  🟢
-			- Un vendedor puede cambiar de dirección 🔴
 			- Puede agregar un producto 🟢
 			- Crear oferta con uno o más productos 🟢
 			- Des-habilitar una oferta ❓
@@ -45,6 +49,7 @@ Hay que mejorar
 	    - Administrativas 
 		    - Ver reclamos
 			    - Filtrar por tipo de reclamo
+			- Rchazar establecimiento
 		- Vendedores
 			- Confirmar y ocultar la venta 
 			- Editar un producto
@@ -71,6 +76,7 @@ Hay que mejorar
 			- Poder seleccionar motivo de des-habilitación de oferta
 			- Agregar y quitar motivos  de des-habilitación de oferta
 			- Registro de los establecimientos de un vendedor
+			- A la hora de activar un establecimiento saber si es un cambio o un registro nuevo
 	    - Geolocalización
 		    - Filtrar las ofertas cercanas
 		    - Ver locales registrados en mi localidad
