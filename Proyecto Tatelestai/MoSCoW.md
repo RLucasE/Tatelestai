@@ -33,7 +33,7 @@
 			- Registrar su negocio 🟢
 				- Registrar la dirección del local 🔴
 				- Cambiar la dirección del establecimiento 🔴
-				- Cambiar el nombre del establecimiento 🔴
+				- Cambiar el nombre del establecimiento 🟢
 			- Recibir notificación vía mail que su negocio ya fue habilitado 🔴
 			- Notificar al vendedor de una nueva venta 🟡
 			- Mostrar las ventas que se hicieron  🟢
