@@ -423,6 +423,50 @@ onMounted(() => {
   transform: scale(1.05);
 }
 
+/* Botones de activar/desactivar */
+.activate-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: 1px solid #45a049;
+}
+
+.activate-btn:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+.deactivate-btn {
+  background-color: #f44336;
+  color: white;
+  border: 1px solid #da190b;
+}
+
+.deactivate-btn:hover {
+  background-color: #da190b;
+  transform: scale(1.05);
+}
+
+/* Estilos para los badges de estado */
+.status-active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status-inactive {
+  background-color: #f44336;
+  color: white;
+}
+
+.status-expired {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status-unknown {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
