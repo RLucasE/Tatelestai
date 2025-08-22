@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserState;
+use App\Http\Controllers\AdmOfferController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\FoodEstablishmentController;
@@ -61,6 +62,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::patch('/users/{id}/deactivate-seller', [AdmUserController::class, 'deactivateSeller']);
         Route::get('/new-sellers', [AdmUserController::class, 'newSellers']);
         Route::get('/new-sellers/{id}', [AdmUserController::class, 'showNewSeller']);
+        Route::get('/adm-offers', [AdmOfferController::class, 'index']);
+        Route::patch('/adm-offers/{id}/status', [AdmOfferController::class, 'update']);
     });
 });
 

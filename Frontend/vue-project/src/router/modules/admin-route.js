@@ -23,6 +23,11 @@ export default [
             path: "new-seller/:id",
             name: "new-seller",
             component: () => import('@/components/layouts/admin/NewSeller.vue'),
+        },
+        {
+            path: "offers",
+            name: "admin-offers",
+            component: () => import('@/components/layouts/admin/AdminOffers.vue'),
         }
 
     ],

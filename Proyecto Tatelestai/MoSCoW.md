@@ -10,14 +10,17 @@
 		    - Pedir confirmación de correo 🔴
 		    - Recuperar contraseña 🔴
 		    - Poder con google Auth 🔴
+		
 	    - Administrativas
 			- Dar de alta un nuevo establecimiento 🟢
 			- Aprobar un cambio de dirección de un establecimiento 🔴
+			- Aprobar el cambio de nombre de un establecimiento 🟢
 			- Poder rechazar la solicitud de un vendedor 🔴
-			- Des-habilitar un customer/seller 🔴
+			- Des-habilitar un customer/seller 🟢
 			- Ver las compras que de un customer 🔴 
 			- Ver las ventas de un seller 🔴
-			- Des-habilitar una oferta 🔴
+			- Des-habilitar una oferta 🟢
+				- El customer no debe poder cambiar de nuevo a activo 🟡
 			- Ver las compras que se hicieron 🔴 
 			- Ver las ventas que se hicieron  🔴
 		- Compradores 
@@ -35,7 +38,7 @@
 				- Cambiar la dirección del establecimiento 🔴
 				- Cambiar el nombre del establecimiento 🟢
 			- Recibir notificación vía mail que su negocio ya fue habilitado 🔴
-			- Notificar al vendedor de una nueva venta 🟡
+			- Notificar al vendedor de una nueva venta 🔴
 			- Mostrar las ventas que se hicieron  🟢
 			- Puede agregar un producto 🟢
 			- Crear oferta con uno o más productos 🟢

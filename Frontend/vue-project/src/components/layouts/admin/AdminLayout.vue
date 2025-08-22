@@ -30,6 +30,7 @@ const isSidebarOpen = ref(false);
           <li><RouterLink to="/adm/users" class="menu-link">Usuarios</RouterLink></li>
           <li><RouterLink to="/adm/new-sellers" class="menu-link">Nuevos Vendedores</RouterLink></li>
           <li><RouterLink to="/adm/sells" class="menu-link">Ventas</RouterLink></li>
+          <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>
         </ul>
       </div>
     </aside>
