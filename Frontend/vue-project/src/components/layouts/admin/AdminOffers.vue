@@ -394,26 +394,6 @@ onMounted(() => {
   text-align: center;
 }
 
-.status-active {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.status-inactive {
-  background-color: #FF9800;
-  color: white;
-}
-
-.status-expired {
-  background-color: #F44336;
-  color: white;
-}
-
-.status-unknown {
-  background-color: var(--color-focus);
-  color: var(--color-text);
-}
-
 /* Actions Column */
 .actions-col {
   flex-direction: row;
@@ -431,26 +411,6 @@ onMounted(() => {
   transition: all 0.3s;
   white-space: nowrap;
   color: var(--color-text);
-}
-
-.activate-btn {
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-focus);
-}
-
-.activate-btn:hover {
-  background-color: var(--color-focus);
-  transform: scale(1.05);
-}
-
-.deactivate-btn {
-  background-color: var(--color-focus);
-  border: 1px solid var(--color-darkest);
-}
-
-.deactivate-btn:hover {
-  background-color: var(--color-darkest);
-  transform: scale(1.05);
 }
 
 .view-btn {
