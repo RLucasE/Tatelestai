@@ -28,6 +28,11 @@ export default [
             path: "offers",
             name: "admin-offers",
             component: () => import('@/components/layouts/admin/AdminOffers.vue'),
+        },
+        {
+            path: "sells",
+            name: "admin-sells",
+            component: () => import('@/components/layouts/admin/AdminSells.vue'),
         }
 
     ],

@@ -15,4 +15,14 @@ class Sell extends Model
     {
         return $this->hasMany(SellDetail::class);
     }
+
+    public function foodEstablishment(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(FoodEstablishment::class,'sold_by');
+    }
+
+    public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class,'bought_by');
+    }
 }

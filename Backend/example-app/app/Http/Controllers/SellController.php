@@ -72,4 +72,38 @@ class SellController
             ], 500);
         }
     }
+
+    public function adminSells(Request $request)
+    {
+        try {
+            $sells = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+            $formattedSells = $sells->map(function ($sell) {
+                return [
+                    'id' => $sell->id,
+                    'created_at' => $sell->created_at,
+                    'customer_name' => $sell->bought_by ?? 'N/A',
+                    'establishment_name' => $sell->foodEstablishment->name ?? 'N/A',
+                    'sold_by' => $sell->foodEstablishment->name ?? 'N/A',
+                    'sell_details' => $sell->sellDetails->map(function ($detail) {
+                        return [
+                            'id' => $detail->id,
+                            'product_name' => $detail->product_name ?? 'N/A',
+                            'product_description' => $detail->product_description ?? 'N/A',
+                            'product_price' => $detail->product_price ?? 0,
+                            'offer_quantity' => $detail->offer_quantity ?? 0,
+                            'product_quantity' => $detail->product_quantity ?? 0,
+                        ];
+                    })
+                ];
+            });
+
+            return response()->json($formattedSells);
+        } catch (\Exception $exception) {
+            return response()->json([
+                'error' => $exception->getMessage(),
+            ], 500);
+        }
+    }
 }

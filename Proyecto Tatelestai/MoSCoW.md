@@ -1,7 +1,7 @@
 🔴 not implemented yet
 🟡 implementing / problems
-🟢 implemente
-❓ IKN man
+🟢 implemented
+❓ I don't know
 1. **M - Must Have** 
     
     - **Requisitos imprescindibles**: Sin ellos, el proyecto fracasa o no cumple objetivos. 
@@ -9,8 +9,6 @@
 		    - Puede registrarse con su correo 🟢
 		    - Pedir confirmación de correo 🔴
 		    - Recuperar contraseña 🔴
-		    - Poder con google Auth 🔴
-		
 	    - Administrativas
 			- Dar de alta un nuevo establecimiento 🟢
 			- Aprobar un cambio de dirección de un establecimiento 🔴
@@ -20,9 +18,8 @@
 			- Ver las compras que de un customer 🔴 
 			- Ver las ventas de un seller 🔴
 			- Des-habilitar una oferta 🟢
-				- El customer no debe poder cambiar de nuevo a activo 🟡
-			- Ver las compras que se hicieron 🔴 
-			- Ver las ventas que se hicieron  🔴
+				- El customer no debe poder cambiar de nuevo a activo 🟢
+			- Ver las ventas que se hicieron  🟢
 		- Compradores 
 			- Ver las ofertas publicadas 🟢
 			- Agregar una oferta al carrito 🟢
@@ -42,7 +39,7 @@
 			- Mostrar las ventas que se hicieron  🟢
 			- Puede agregar un producto 🟢
 			- Crear oferta con uno o más productos 🟢
-			- Des-habilitar una oferta ❓
+			- Des-habilitar una oferta 🟢
 2. **S - Should Have** 🔴
     
     - **Requisitos importantes**: Añaden gran valor, pero el proyecto puede funcionar sin ellos a corto plazo.

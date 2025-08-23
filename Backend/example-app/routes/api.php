@@ -64,6 +64,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/new-sellers/{id}', [AdmUserController::class, 'showNewSeller']);
         Route::get('/adm-offers', [AdmOfferController::class, 'index']);
         Route::patch('/adm-offers/{id}/status', [AdmOfferController::class, 'update']);
+        Route::get('/adm-sells', [SellController::class, 'adminSells']);
     });
 });
 

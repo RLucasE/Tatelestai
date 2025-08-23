@@ -423,6 +423,26 @@ onMounted(() => {
   transform: scale(1.05);
 }
 
+.activate-btn {
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-focus);
+}
+
+.activate-btn:hover {
+  background-color: var(--color-focus);
+  transform: scale(1.05);
+}
+
+.deactivate-btn {
+  background-color: var(--color-focus);
+  border: 1px solid var(--color-darkest);
+}
+
+.deactivate-btn:hover {
+  background-color: var(--color-darkest);
+  transform: scale(1.05);
+}
+
 /* Botones de activar/desactivar */
 .activate-btn {
   background-color: #4CAF50;
