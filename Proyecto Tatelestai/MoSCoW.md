@@ -17,6 +17,7 @@
 			- Des-habilitar un customer/seller 🟢
 			- Ver las compras que de un customer 🔴 
 			- Ver las ventas de un seller 🔴
+			- Ver las ofertas de un seller 🟢
 			- Des-habilitar una oferta 🟢
 				- El customer no debe poder cambiar de nuevo a activo 🟢
 			- Ver las ventas que se hicieron  🟢

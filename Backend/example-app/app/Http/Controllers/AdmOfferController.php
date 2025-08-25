@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Offers\ChangeOfferStatusAction;
+use App\Enums\UserRole;
 use App\Exceptions\Offer\OfferStatusChangeException;
 use App\Models\Offer;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -62,5 +64,34 @@ class AdmOfferController extends Controller
                 'state' => $offer->state
             ]
         ]);
+    }
+    public function indexByUser(string $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        if(!$user || !$user->hasRole(UserRole::SELLER->value)){
+            return response()->json(['message' => 'Usuario no valido para esta operación'], 404);
+        }
+        try {
+            $offers = Offer::with([
+                'foodEstablishment:id,name,user_id',
+                'products:id,name,description',
+            ])
+            ->whereHas('foodEstablishment', function ($query) use ($id) {
+                $query->where('user_id', $id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+            return response()->json([
+                'data' => $offers,
+                'message' => 'Ofertas del usuario obtenidas exitosamente'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener las ofertas del usuario',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

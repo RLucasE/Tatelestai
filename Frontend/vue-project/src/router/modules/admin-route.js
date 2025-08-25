@@ -30,11 +30,15 @@ export default [
             component: () => import('@/components/layouts/admin/AdminOffers.vue'),
         },
         {
+            path: "sellers/:id/offers",
+            name: "admin-seller-offers",
+            component: () => import('@/components/layouts/admin/SellerOffers.vue'),
+        },
+        {
             path: "sells",
             name: "admin-sells",
             component: () => import('@/components/layouts/admin/AdminSells.vue'),
-        }
-
+        },
     ],
     meta: {
         requiresAuth: true,

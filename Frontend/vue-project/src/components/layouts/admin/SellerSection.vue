@@ -1,7 +1,9 @@
 <script setup>
 import { defineProps, defineEmits } from 'vue';
+import { useRouter } from 'vue-router';
 import axiosInstance from '@/lib/axios.js';
 
+const router = useRouter();
 const emit = defineEmits(['updated']);
 
 const props = defineProps({
@@ -27,6 +29,10 @@ const desactivarSeller = async () => {
   } catch (err) {
     console.error('Error al desactivar seller:', err);
   }
+};
+
+const verOfertas = () => {
+  router.push({ name: 'admin-seller-offers', params: { id: props.user.id } });
 };
 </script>
 
@@ -66,6 +72,9 @@ const desactivarSeller = async () => {
         <div class="actions-grid">
           <button class="action-btn" @click="user.state === 'active' ? desactivarSeller() : activarSeller()">
             {{ user.state === 'active' ? 'Desactivar Seller' : 'Activar Seller' }}
+          </button>
+          <button class="action-btn secondary" @click="verOfertas">
+            Ver Ofertas
           </button>
         </div>
       </div>
@@ -121,23 +130,33 @@ const desactivarSeller = async () => {
 }
 
 .actions-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
 }
 
 .action-btn {
-  background: var(--color-primary);
-  border: 1px solid var(--color-focus);
+  padding: 12px 24px;
+  border: none;
   border-radius: 8px;
-  color: var(--color-text);
-  padding: 8px 12px;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
 }
 
 .action-btn:hover {
+  background: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.action-btn.secondary {
+  background: var(--color-focus);
+  color: var(--color-text);
+}
+
+.action-btn.secondary:hover {
   background: var(--color-focus);
 }
 

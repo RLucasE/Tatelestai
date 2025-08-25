@@ -83,8 +83,10 @@ class SellController
                 return [
                     'id' => $sell->id,
                     'created_at' => $sell->created_at,
-                    'customer_name' => $sell->bought_by ?? 'N/A',
+                    'customer_id' => $sell->bought_by,
+                    'customer_name' => $sell->customer->name ?? 'N/A',
                     'establishment_name' => $sell->foodEstablishment->name ?? 'N/A',
+                    'seller_id' => $sell->foodEstablishment->user_id ?? 'N/A',
                     'sold_by' => $sell->foodEstablishment->name ?? 'N/A',
                     'sell_details' => $sell->sellDetails->map(function ($detail) {
                         return [
