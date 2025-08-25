@@ -198,7 +198,7 @@ onMounted(() => {
 }
 
 .retry-btn:hover {
-  background: var(--color-primary-dark, #2563eb);
+  background: var(--color-primary);
 }
 
 @media (max-width: 768px) {
