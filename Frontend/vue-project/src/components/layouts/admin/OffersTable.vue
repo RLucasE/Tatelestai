@@ -250,26 +250,6 @@ const getStatusText = (state) => {
   text-align: center;
 }
 
-.status-active {
-  background: #10b981;
-  color: white;
-}
-
-.status-inactive {
-  background: #6b7280;
-  color: white;
-}
-
-.status-expired {
-  background: #ef4444;
-  color: white;
-}
-
-.status-unknown {
-  background: var(--color-focus);
-  color: var(--color-text);
-}
-
 .actions-col {
   flex-direction: row;
   gap: 8px;
@@ -286,31 +266,13 @@ const getStatusText = (state) => {
   transition: all 0.3s ease;
 }
 
-.activate-btn {
-  background: #10b981;
-  color: white;
-}
-
-.activate-btn:hover {
-  background: #059669;
-}
-
-.deactivate-btn {
-  background: #ef4444;
-  color: white;
-}
-
-.deactivate-btn:hover {
-  background: #dc2626;
-}
-
 .view-btn {
   background: var(--color-focus);
   color: var(--color-text);
 }
 
 .view-btn:hover {
-  background: var(--color-focus-dark, #6b7280);
+  background: var(--color-focus);
 }
 
 @media (max-width: 768px) {
