@@ -124,4 +124,21 @@ class SellController
           'sells' => $sells
         ],200);
     }
+
+    public function adminCustomerSells(string $id)
+    {
+        $user = User::findOrFail($id);
+
+        if(!$user->hasRole('customer')) {
+            return response()->json(['error' => 'User is not a customer'], 400);
+        }
+
+        $purchases = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
+            ->where('bought_by', $user->id)
+            ->get();
+
+        return response()->json([
+            'purchases' => $purchases
+        ],200);
+    }
 }

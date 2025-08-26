@@ -15,7 +15,7 @@
 			- Aprobar el cambio de nombre de un establecimiento 🟢
 			- Poder rechazar la solicitud de un vendedor 🔴
 			- Des-habilitar un customer/seller 🟢
-			- Ver las compras que de un customer 🔴 
+			- Ver las compras que de un customer 🟢 
 			- Ver las ventas de un seller 🟢
 			- Ver las ofertas de un seller 🟢
 			- Des-habilitar una oferta 🟢

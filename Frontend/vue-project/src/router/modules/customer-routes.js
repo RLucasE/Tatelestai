@@ -35,7 +35,7 @@ export default [
         name: "customer-purchases",
         component: () =>
           import("@/components/layouts/customer/CustomerPurchases.vue"),
-      }
+      },
     ],
     meta: {
       requiresAuth: true,

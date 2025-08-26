@@ -1,5 +1,8 @@
 <script setup>
 import { defineProps } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const props = defineProps({
   user: {
@@ -7,6 +10,10 @@ const props = defineProps({
     required: true
   }
 });
+
+const verCompras = () => {
+  router.push({ name: 'adm-customer-purchases', params: { id: props.user.id } });
+};
 </script>
 
 <template>
@@ -35,7 +42,7 @@ const props = defineProps({
       <div class="customer-actions">
         <h3 class="sub-title">Acciones disponibles</h3>
         <div class="actions-grid">
-          <button class="action-btn">Ver historial de compras</button>
+          <button class="action-btn" @click="verCompras">Ver historial de compras</button>
           <button class="action-btn">Ver carrito actual</button>
           <button class="action-btn">Ofertas favoritas</button>
         </div>

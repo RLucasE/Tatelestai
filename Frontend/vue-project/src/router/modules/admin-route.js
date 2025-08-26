@@ -44,6 +44,11 @@ export default [
             name: "admin-sells",
             component: () => import('@/components/layouts/admin/AdminSells.vue'),
         },
+        {
+            path: "customer/:id/purchases",
+            name: "adm-customer-purchases",
+            component: () => import('@/components/layouts/admin/CustomerPurchases.vue'),
+        }
     ],
     meta: {
         requiresAuth: true,
