@@ -46,6 +46,27 @@ const addOfferToCart = async ({ id, quantity }) => {
   }
 };
 
+const buyOffer = async ({ id, quantity ,food_establishment_id}) => {
+  const offerPayload = {
+    food_establishment_id: food_establishment_id,
+    offers: [
+      {
+        id: id,
+        quantity: quantity || 1,
+      },
+    ],
+  };
+
+  try {
+    const response = await axiosInstance.post("/buy-offers", offerPayload);
+  } catch (error) {
+    if (error.status === 400) {
+      if ((error.data = "OfferQuantityExceded")) {
+        alert("Ya no se pueden agregar más unidades de esta oferta");
+      }
+    }
+  }
+};
 const handleOfferClick = (offer) => {
   selectedOffer.value = offer;
   isVisible.value = true;
@@ -94,6 +115,7 @@ onMounted(() => {
       :offer="selectedOffer"
       @close="handleCloseOffer"
       @offerAction="addOfferToCart"
+      @buyOffer="buyOffer"
     />
   </div>
 </template>

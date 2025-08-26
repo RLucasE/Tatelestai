@@ -29,7 +29,6 @@ class SellController
     ) {}
     public function buyOffers(Request $request)
     {
-        $request->validate($this->sellsRule());
         try {
             $this->validateOfferExpiration->execute($request->get('offers'));
             $this->offerIsFromFoodEstablishmentAction->execute($request->get('offers'), $request->get('food_establishment_id'));
@@ -40,7 +39,7 @@ class SellController
             return response()->json($result, 201);
         } catch (\Exception $exception) {
             return response()->json([
-                $exception->getMessage(),
+               'error' => $exception->getLine()
             ], 500);
         }
     }

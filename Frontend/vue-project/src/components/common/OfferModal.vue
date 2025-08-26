@@ -135,6 +135,9 @@
         <button class="action-button primary" @click="handleOfferAction">
           Carrito
         </button>
+        <button class="action-button primary" @click="buyOffer">
+          Comprar
+        </button>
       </div>
     </div>
   </div>
@@ -156,7 +159,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "offerAction"]);
+const emit = defineEmits(["close", "offerAction","buyOffer"]);
 
 const validateQuantity = () => {
   if (quantity.value < 0) {
@@ -212,6 +215,11 @@ const closeModal = () => {
 const handleOfferAction = () => {
   emit("offerAction", { id: props.offer.id, quantity: quantity.value });
 };
+
+const buyOffer = () => {
+  emit("buyOffer", { id: props.offer.id, quantity: quantity.value , food_establishment_id: props.offer.food_establishment_id });
+}
+
 </script>
 
 <style scoped>
