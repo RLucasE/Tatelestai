@@ -34,6 +34,10 @@ const desactivarSeller = async () => {
 const verOfertas = () => {
   router.push({ name: 'admin-seller-offers', params: { id: props.user.id } });
 };
+
+const verVentas = () => {
+  router.push({ name: 'adm-seller-sells', params: { id: props.user.id } });
+};
 </script>
 
 <template>
@@ -75,6 +79,9 @@ const verOfertas = () => {
           </button>
           <button class="action-btn secondary" @click="verOfertas">
             Ver Ofertas
+          </button>
+          <button class="action-btn secondary" @click="verVentas">
+            Ver Ventas
           </button>
         </div>
       </div>

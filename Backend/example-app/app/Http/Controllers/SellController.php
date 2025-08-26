@@ -10,7 +10,9 @@ use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\SellValidationRules;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
+use App\Models\User;
 use App\Models\UserCart;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -107,5 +109,19 @@ class SellController
                 'error' => $exception->getMessage(),
             ], 500);
         }
+    }
+
+    public function adminSellDetail(string $id)
+    {
+        $user = User::findOrFail($id);
+        if(!$user->hasRole('seller')) {
+            return response()->json(['error' => 'User is not a seller'], 400);
+        }
+        $sells = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
+            ->where('sold_by', $user->foodEstablishment->id)
+            ->get();
+        return response()->json([
+          'sells' => $sells
+        ],200);
     }
 }

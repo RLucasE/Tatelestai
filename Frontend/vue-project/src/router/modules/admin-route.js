@@ -35,6 +35,11 @@ export default [
             component: () => import('@/components/layouts/admin/SellerOffers.vue'),
         },
         {
+            path: "sellers/:id/sells",
+            name: "adm-seller-sells",
+            component: () => import('@/components/layouts/admin/SellerSells.vue'),
+        },
+        {
             path: "sells",
             name: "admin-sells",
             component: () => import('@/components/layouts/admin/AdminSells.vue'),
