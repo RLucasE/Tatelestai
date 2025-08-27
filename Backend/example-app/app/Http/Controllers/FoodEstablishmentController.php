@@ -25,6 +25,7 @@ class FoodEstablishmentController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
             'establishment_type_id' => 'required|integer|exists:establishment_types,id',
         ]);
         $user = Auth::user();
@@ -36,7 +37,7 @@ class FoodEstablishmentController extends Controller
         }
         $user->state = UserState::WAITING_FOR_CONFIRMATION->value;
         $user->save();
-        $establishment->update($request->only(['name', 'establishment_type_id']));
+        $establishment->update($request->only(['name', 'address' ,'establishment_type_id']));
         return response()->json([
             'message' => 'Establishment updated successfully.',
             'establishment' => $establishment,

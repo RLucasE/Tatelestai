@@ -56,6 +56,7 @@ class UserManagement extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
             'establishment_type_id' => 'required|integer|exists:establishment_types,id',
         ]);
 
@@ -69,6 +70,7 @@ class UserManagement extends Controller
 
         $establishment = $user->foodEstablishment()->create([
             'name' => $request->input('name'),
+            'address' => $request->input('address'),
             'establishment_type_id' => $request->input('establishment_type_id'),
         ]);
 

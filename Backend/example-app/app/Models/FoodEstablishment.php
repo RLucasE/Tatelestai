@@ -11,11 +11,11 @@ class FoodEstablishment extends Model
 {
     /** @use HasFactory<\Database\Factories\FoodEstablishmentFactory> */
     use HasFactory;
-    protected $fillable = [
-        'establishment_type_id',
-        'name'
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
     ];
-
 
     public function user()
     {

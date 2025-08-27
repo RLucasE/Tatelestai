@@ -125,6 +125,10 @@ onMounted(fetchSeller);
               <span class="label">Tipo de Establecimiento</span>
               <span class="value">{{ seller.food_establishment.establishment_type.name }}</span>
             </div>
+            <div class="establishment-item">
+              <span class="label">Dirección del Establecimiento</span>
+              <span class="value">{{ seller.food_establishment.address || 'No especificada' }}</span>
+            </div>
           </div>
         </section>
 

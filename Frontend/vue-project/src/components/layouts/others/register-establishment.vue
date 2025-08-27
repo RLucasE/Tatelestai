@@ -2,10 +2,17 @@
 import { ref, onMounted, computed } from "vue";
 import axiosInstance from "@/lib/axios";
 import MessageDialog from "@/components/common/MessageDialog.vue";
+import { useRouter } from "vue-router";
+import {useAuthStore} from "@/stores/auth.js";
+import { USER_STATES } from "@/constants/userStates.js";
+
+const router = useRouter();
+const authStore = useAuthStore();
 
 const form = ref({
   name: "",
   establishment_type_id: "",
+  address: "",
 });
 
 const establishmentTypes = ref([]);
@@ -17,7 +24,8 @@ const successMessage = ref("Establecimiento registrado correctamente");
 const isValid = computed(() => {
   return (
     String(form.value.name).trim().length >= 3 &&
-    String(form.value.establishment_type_id).trim() !== ""
+    String(form.value.establishment_type_id).trim() !== "" &&
+    String(form.value.address).trim().length >= 5
   );
 });
 
@@ -33,6 +41,7 @@ const fetchEstablishmentTypes = async () => {
 const resetForm = () => {
   form.value.name = "";
   form.value.establishment_type_id = "";
+  form.value.address = "";
 };
 
 const registerEstablishment = async () => {
@@ -42,6 +51,7 @@ const registerEstablishment = async () => {
     const payload = {
       name: form.value.name,
       establishment_type_id: Number(form.value.establishment_type_id),
+      address: form.value.address,
     };
     await axiosInstance.post("/food-establishment", payload);
     successVisible.value = true;
@@ -49,7 +59,10 @@ const registerEstablishment = async () => {
   } catch (e) {
     error.value = "Error al registrar el establecimiento";
   } finally {
+    authStore.setState(USER_STATES.WAITING_FOR_CONFIRMATION);
+    router.push({ name: "waiting-confirmation" });
     loading.value = false;
+
   }
 };
 
@@ -99,6 +112,20 @@ onMounted(fetchEstablishmentTypes);
                   {{ type.name }}
                 </option>
               </select>
+            </div>
+
+            <div>
+              <label for="estab-address" class="block text-sm font-medium text-[var(--color-text)] mb-1">Dirección</label>
+              <input
+                id="estab-address"
+                v-model="form.address"
+                type="text"
+                required
+                minlength="5"
+                :aria-invalid="String(!isValid && form.address.trim().length < 5)"
+                class="w-full px-3 py-2 rounded-lg bg-[var(--color-darkest)] text-[var(--color-text)] placeholder-[var(--color-text)]/40 border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)] focus:border-[var(--color-focus)] transition"
+                placeholder="Ej: Av. Principal 123, Centro"
+              />
             </div>
 
             <div v-if="error" class="text-sm text-red-300 bg-red-900/30 border border-red-900/60 rounded-lg px-3 py-2">

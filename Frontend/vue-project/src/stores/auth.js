@@ -3,7 +3,10 @@ import { defineStore } from "pinia";
 import axiosInstance from "@/lib/helpers/axiosDefault";
 import { loginLogic, registerLogic } from "@/lib/authentication";
 import { useStorageStore } from "@/stores/storage";
+import { USER_STATES , isValidState} from "@/constants/userStates.js";
 
+
+const userStates = USER_STATES;
 export const useAuthStore = defineStore("auth", () => {
   let user = useStorageStore().getUser();
   let isAuthenticated = false;
@@ -116,6 +119,12 @@ export const useAuthStore = defineStore("auth", () => {
     console.log(isAuthenticated);
   }
 
+  function setState(state) {
+    if (user && isValidState(state)) {
+      user.value.state = state;
+    }
+  }
+
   return {
     getUser,
     isCustomer,
@@ -127,6 +136,7 @@ export const useAuthStore = defineStore("auth", () => {
     waitingConfirmation,
     active,
     inactive,
+    setState,
     heavyVerifySession,
     verifySession,
     isLoggedIn,

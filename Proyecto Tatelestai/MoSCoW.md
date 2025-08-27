@@ -11,7 +11,7 @@
 		    - Recuperar contraseña 🔴
 	    - Administrativas
 			- Dar de alta un nuevo establecimiento 🟢
-			- Aprobar un cambio de dirección de un establecimiento 🔴
+			- Aprobar un cambio de dirección de un establecimiento 🟢 
 			- Aprobar el cambio de nombre de un establecimiento 🟢
 			- Poder rechazar la solicitud de un vendedor 🔴
 			- Des-habilitar un customer/seller 🟢
@@ -29,11 +29,11 @@
 			- Quitar oferta del carrito 🟢
 			- Quitar todas las ofertas del carrito 🟢
 			- Hacer la compra de un carrito  🟢
-			- Hacer la compra de una oferta 🔴
+			- Hacer la compra de una oferta 🟢
 		- Vendedores
 			- Registrar su negocio 🟢
-				- Registrar la dirección del local 🔴
-				- Cambiar la dirección del establecimiento 🔴
+				- Registrar la dirección del local 🟢
+				- Cambiar la dirección del establecimiento 🟢 
 				- Cambiar el nombre del establecimiento 🟢
 			- Recibir notificación vía mail que su negocio ya fue habilitado 🔴
 			- Notificar al vendedor de una nueva venta 🔴

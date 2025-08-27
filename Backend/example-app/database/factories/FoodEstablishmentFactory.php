@@ -18,6 +18,7 @@ class FoodEstablishmentFactory extends Factory
     {
         return [
             'name' => $this->faker->company(),
+            'address' => $this->faker->address(),
         ];
     }
 }

@@ -14,7 +14,8 @@ const successMessage = ref('');
 // Form data
 const formData = ref({
   name: '',
-  establishment_type_id: ''
+  establishment_type_id: '',
+  address: ''
 });
 
 const fetchEstablishment = async () => {
@@ -27,6 +28,7 @@ const fetchEstablishment = async () => {
     if (data) {
       formData.value.name = data.name || '';
       formData.value.establishment_type_id = data.establishment_type?.id || '';
+      formData.value.address = data.address || '';
     }
 
     error.value = null;
@@ -58,6 +60,11 @@ const updateEstablishment = async () => {
     return;
   }
 
+  if (!formData.value.address.trim()) {
+    error.value = 'La dirección del establecimiento es requerida';
+    return;
+  }
+
   try {
     saving.value = true;
     error.value = null;
@@ -65,7 +72,8 @@ const updateEstablishment = async () => {
 
     await axiosInstance.put('/my-establishment', {
       name: formData.value.name.trim(),
-      establishment_type_id: formData.value.establishment_type_id
+      establishment_type_id: formData.value.establishment_type_id,
+      address: formData.value.address.trim()
     });
 
     successMessage.value = 'Establecimiento actualizado correctamente';
@@ -164,6 +172,21 @@ onMounted(async () => {
                   {{ type.name }}
                 </option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <label for="establishment-address" class="label">
+                Dirección del Establecimiento *
+              </label>
+              <input
+                id="establishment-address"
+                v-model="formData.address"
+                type="text"
+                class="form-input"
+                placeholder="Ingresa la dirección del establecimiento"
+                required
+                :disabled="saving"
+              />
             </div>
 
             <div class="form-actions">

@@ -107,7 +107,7 @@ class AdmUserController extends Controller
     {
 
         $seller = User::select('id', 'name', 'last_name', 'email', 'state')
-            ->with(['roles:name', 'foodEstablishment:id,user_id,name,establishment_type_id', 'foodEstablishment.establishmentType:id,name'])
+            ->with(['roles:name', 'foodEstablishment:id,user_id,name,establishment_type_id,address', 'foodEstablishment.establishmentType:id,name'])
             ->findOrFail($id);
 
         $seller->roles = $seller->roles->pluck('name')->toArray();
