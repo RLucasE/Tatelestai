@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Enums\UserState;
+use App\Services\GmailService;
 
 class AdmUserController extends Controller
 {
@@ -35,6 +36,7 @@ class AdmUserController extends Controller
     public function activateSeller(string $id)
     {
         $user = User::findOrFail($id);
+        $gmailService = new GmailService();
 
         if (!$user->hasRole('seller')) {
             return response()->json([
@@ -44,6 +46,7 @@ class AdmUserController extends Controller
 
         if ($user->state === UserState::WAITING_FOR_CONFIRMATION->value || $user->state === UserState::INACTIVE->value) {
             $user->state = UserState::ACTIVE->value;
+            //$gmailService->sendEmail("lucascabjnmro2@gmail.com" , 'hola','Su establecimiento ha sido activado correctamente.');
             $user->save();
         }else {
             return response()->json([
