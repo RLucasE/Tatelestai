@@ -13,6 +13,8 @@ export const USER_STATES = {
   // Estado cuando el usuario está esperando confirmación para ser seller
   WAITING_FOR_CONFIRMATION: 'waiting_for_confirmation',
 
+  DENIED_CONFIRMATION: 'denied_confirmation',
+
   // Estado cuando el usuario está activo
   ACTIVE: 'active',
 
@@ -28,6 +30,7 @@ export const UserStateValidators = {
   isSelecting: (state) => state === USER_STATES.SELECTING,
   isRegistering: (state) => state === USER_STATES.REGISTERING,
   isWaitingConfirmation: (state) => state === USER_STATES.WAITING_FOR_CONFIRMATION,
+  isDeniedConfirmation: (state) => state === USER_STATES.DENIED_CONFIRMATION,
   isActive: (state) => state === USER_STATES.ACTIVE,
   isInactive: (state) => state === USER_STATES.INACTIVE
 };
@@ -39,7 +42,8 @@ export const UserStateValidators = {
 export const STATE_TRANSITIONS = {
   [USER_STATES.SELECTING]: [USER_STATES.REGISTERING, USER_STATES.ACTIVE],
   [USER_STATES.REGISTERING]: [USER_STATES.WAITING_FOR_CONFIRMATION, USER_STATES.ACTIVE],
-  [USER_STATES.WAITING_FOR_CONFIRMATION]: [USER_STATES.ACTIVE, USER_STATES.INACTIVE],
+  [USER_STATES.WAITING_FOR_CONFIRMATION]: [USER_STATES.ACTIVE, USER_STATES.INACTIVE, USER_STATES.DENIED_CONFIRMATION],
+  [USER_STATES.DENIED_CONFIRMATION]: [USER_STATES.REGISTERING, USER_STATES.WAITING_FOR_CONFIRMATION],
   [USER_STATES.ACTIVE]: [USER_STATES.INACTIVE],
   [USER_STATES.INACTIVE]: [USER_STATES.ACTIVE]
 };

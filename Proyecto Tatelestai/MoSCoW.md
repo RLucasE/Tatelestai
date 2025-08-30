@@ -7,8 +7,6 @@
     - **Requisitos imprescindibles**: Sin ellos, el proyecto fracasa o no cumple objetivos. 
 	    - Usuario general
 		    - Puede registrarse con su correo 🟢
-		    - Pedir confirmación de correo 🔴
-		    - Recuperar contraseña 🔴
 	    - Administrativas
 			- Dar de alta un nuevo establecimiento 🟢
 			- Aprobar un cambio de dirección de un establecimiento 🟢 
@@ -35,8 +33,7 @@
 				- Registrar la dirección del local 🟢
 				- Cambiar la dirección del establecimiento 🟢 
 				- Cambiar el nombre del establecimiento 🟢
-			- Recibir notificación vía mail que su negocio ya fue habilitado 🔴
-			- Notificar al vendedor de una nueva venta 🔴
+			- Recibir notificación vía mail que su negocio ya fue habilitado 🟢 
 			- Mostrar las ventas que se hicieron  🟢
 			- Puede agregar un producto 🟢
 			- Crear oferta con uno o más productos 🟢
@@ -59,6 +56,7 @@
 			- Filtrar las ofertas por categoría 
 			- timer de 10 min para hacer la compra por efectivo
 			- Que los compradores tengan un % de compras concluidas
+			- Notificar al vendedor de una nueva venta 
 		- Abrir un reclamo 
 			- Hacia un establecimiento 
 			- Hacia un comprador 

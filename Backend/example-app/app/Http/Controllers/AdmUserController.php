@@ -117,4 +117,29 @@ class AdmUserController extends Controller
 
         return response()->json($seller);
     }
+
+    public function denySeller(string $id)
+    {
+        $user = User::findOrFail($id);
+
+        if (!$user->hasRole('seller')) {
+            return response()->json([
+                'message' => 'El usuario no tiene rol seller.'
+            ], 422);
+        }
+
+        if ($user->state !== UserState::WAITING_FOR_CONFIRMATION->value) {
+            return response()->json([
+                'message' => 'El usuario no está esperando la confirmación de su establecimiento.'
+            ], 422);
+        }
+
+        $user->state = UserState::DENIED_CONFIRMATION;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Seller denegado correctamente.',
+            'user' => $user,
+        ]);
+    }
 }

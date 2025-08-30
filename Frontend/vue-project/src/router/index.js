@@ -24,6 +24,8 @@ function redirectByRole(authStore) {
             return {name: "register-establishment"};
         if (authStore.waitingConfirmation())
             return {name: "waiting-confirmation"};
+        if (authStore.deniedConfirmation())
+            return {name: "denied-confirmation"};
         if (authStore.inactive()) return {name: "inactive"};
         return {name: "seller"};
     }
@@ -76,6 +78,10 @@ router.beforeEach(async (to, from, next) => {
                             break;
                         case to.meta.requiresWaitingConfirmation &&
                         authStore.waitingConfirmation():
+                            next();
+                            break;
+                        case to.meta.requiresDeniedConfirmation &&
+                        authStore.deniedConfirmation():
                             next();
                             break;
                         case to.meta.requiresActive && authStore.active():

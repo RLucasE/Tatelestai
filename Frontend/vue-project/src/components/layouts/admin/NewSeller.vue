@@ -11,6 +11,7 @@ const seller = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const activating = ref(false);
+const rejecting = ref(false);
 
 const fetchSeller = async () => {
   try {
@@ -45,6 +46,23 @@ const activateSeller = async () => {
     alert(message);
   } finally {
     activating.value = false;
+  }
+};
+
+const denySeller = async () => {
+  if (!seller.value || rejecting.value) return;
+  if (!confirm('¿Seguro que deseas rechazar este establecimiento?')) return;
+  try {
+    rejecting.value = true;
+    await axiosInstance.patch(`/users/${sellerId}/denie-seller`);
+    alert('Establecimiento rechazado correctamente');
+    router.push({ name: 'new-sellers' });
+  } catch (err) {
+    console.error('Error denying seller:', err);
+    const message = err.response?.data?.message || 'Error al rechazar el establecimiento';
+    alert(message);
+  } finally {
+    rejecting.value = false;
   }
 };
 
@@ -139,13 +157,18 @@ onMounted(fetchSeller);
             <button
               class="activate-btn"
               @click="activateSeller"
-              :disabled="activating || seller.state !== 'waiting_for_confirmation'"
+              :disabled="activating || rejecting || seller.state !== 'waiting_for_confirmation'"
             >
               <span v-if="activating">Activando...</span>
               <span v-else>✓ Activar Vendedor</span>
             </button>
-            <button class="reject-btn" disabled>
-              ✗ Rechazar (No implementado)
+            <button
+              class="reject-btn"
+              @click="denySeller"
+              :disabled="rejecting || activating || seller.state !== 'waiting_for_confirmation'"
+            >
+              <span v-if="rejecting">Rechazando...</span>
+              <span v-else>✗ Rechazar</span>
             </button>
           </div>
           <p class="action-note">
@@ -370,15 +393,28 @@ onMounted(fetchSeller);
 }
 
 .reject-btn {
-  background: var(--color-secondary);
-  color: var(--color-text);
+  background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+  color: #fff;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-weight: 600;
-  cursor: not-allowed;
-  opacity: 0.6;
+  cursor: pointer;
+  transition: all 0.3s ease;
   flex: 1;
+  box-shadow: 0 4px 12px rgba(185,28,28,0.3);
+}
+
+.reject-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.reject-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .action-note {

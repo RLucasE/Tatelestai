@@ -47,6 +47,10 @@ export const useAuthStore = defineStore("auth", () => {
     return user && user.value.state === "waiting_for_confirmation";
   }
 
+  function deniedConfirmation() {
+    return user && user.value.state === "denied_confirmation";
+  }
+
   function active() {
     return user && user.value.state === "active";
   }
@@ -134,6 +138,7 @@ export const useAuthStore = defineStore("auth", () => {
     selectingRole,
     registeringEstablishment,
     waitingConfirmation,
+    deniedConfirmation,
     active,
     inactive,
     setState,

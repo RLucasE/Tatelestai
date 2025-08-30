@@ -39,5 +39,15 @@ export default [
       requiresAuth: true,
       requiresInactive: true,
     }
+  },
+  {
+    path: "/denied-confirmation",
+    name: "denied-confirmation",
+    component: () => import("@/components/layouts/others/denied-confirmation.vue"),
+    meta: {
+      requiresAuth: true,
+      requiresSeller: true,
+      requiresDeniedConfirmation: true,
+    }
   }
 ];
