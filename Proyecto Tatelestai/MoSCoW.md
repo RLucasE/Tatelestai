@@ -11,7 +11,7 @@
 			- Dar de alta un nuevo establecimiento 🟢
 			- Aprobar un cambio de dirección de un establecimiento 🟢 
 			- Aprobar el cambio de nombre de un establecimiento 🟢
-			- Poder rechazar la solicitud de un vendedor 🔴
+			- Poder rechazar la solicitud de un vendedor 🟢 
 			- Des-habilitar un customer/seller 🟢
 			- Ver las compras que de un customer 🟢 
 			- Ver las ventas de un seller 🟢

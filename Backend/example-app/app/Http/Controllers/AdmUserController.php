@@ -2,29 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\IsSellerActivableAction;
+use App\Actions\IsDeactivableSellerAction;
+use App\DTOs\BasicUserDTO;
 use App\Models\User;
 use App\Enums\UserState;
-use App\Services\GmailService;
+use App\Repositories\UserRepository;
+use Exception;
+use Illuminate\Http\JsonResponse;
 
 class AdmUserController extends Controller
 {
+    public function __construct(private UserRepository $userRepository)
+    {
+    }
+
     public function index()
     {
-        $users = User::select('id', 'name', 'last_name', 'email')
-            ->with(['roles:name'])
-            ->get();
-
-        $users = $users->map(function ($user) {
-            $user->roles = $user->roles->pluck('name')->toArray();
-            return $user;
-        });
-
+        $users = $this->userRepository->getAllWithRoles();
         return response()->json($users);
     }
 
     public function show(string $id)
     {
-        $user = User::select('id', 'name', 'last_name', 'email','state')
+        $user = User::select('id', 'name', 'last_name', 'email', 'state')
             ->with(['roles:name'])
             ->findOrFail($id);
 
@@ -33,58 +34,44 @@ class AdmUserController extends Controller
         return response()->json($user);
     }
 
-    public function activateSeller(string $id)
+    public function activateSeller(string $id): JsonResponse
     {
-        $user = User::findOrFail($id);
-        $gmailService = new GmailService();
-
-        if (!$user->hasRole('seller')) {
+        $basicUserDTO = $this->userRepository->findById($id);
+        $isSellerActivableAction = new IsSellerActivableAction();
+        try {
+            if ($isSellerActivableAction->execute($basicUserDTO->id)) {
+                $this->userRepository->changeUserState($basicUserDTO, UserState::ACTIVE);
+            }
+        } catch (Exception $exception) {
             return response()->json([
-                'message' => 'El usuario no tiene rol seller.'
-            ], 422);
+                'error' => $exception->getMessage(),
+            ], 500);
         }
-
-        if ($user->state === UserState::WAITING_FOR_CONFIRMATION->value || $user->state === UserState::INACTIVE->value) {
-            $user->state = UserState::ACTIVE->value;
-            //$gmailService->sendEmail("lucascabjnmro2@gmail.com" , 'hola','Su establecimiento ha sido activado correctamente.');
-            $user->save();
-        }else {
-            return response()->json([
-                'message' => 'El usuario no está esperando la confirmación de su establecimiento.'
-            ], 422);
-        }
-
-
         return response()->json([
             'message' => 'Seller activado correctamente.',
-            'user' => $user,
+            'user' => $basicUserDTO,
         ]);
     }
 
     public function deactivateSeller(string $id)
     {
-        $user = User::findOrFail($id);
+        $isDeactivableSellerAction = new IsDeactivableSellerAction();
 
-        if (!$user->hasRole('seller')) {
+        try {
+            $user = $this->userRepository->findById($id);
+            if ($isDeactivableSellerAction->execute($user->id)) {
+                $this->userRepository->changeUserState($user, UserState::INACTIVE);
+            }
+        }catch (Exception $exception){
             return response()->json([
-                'message' => 'El usuario no tiene rol seller.'
-            ], 422);
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTrace()
+            ]);
         }
-
-        if ($user->state !== UserState::ACTIVE->value) {
-            return response()->json([
-                'message' => 'El usuario no está activo como seller.'
-            ], 422);
-        }
-
-
-        $user->state = UserState::INACTIVE->value;
-        $user->save();
-
 
         return response()->json([
             'message' => 'Seller desactivado correctamente.',
-            'user' => $user->state
+            'user' => $user
         ]);
     }
 
