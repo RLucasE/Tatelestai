@@ -105,7 +105,7 @@ class AdmUserControllerTest extends TestCase
         $response = $this->patchJson("/api/users/{$seller->id}/activate-seller");
 
         // Assert
-        $response->assertStatus(200); // El método no arroja error pero no hace cambios
+        $response->assertStatus(200);
 
         $seller->refresh();
         $this->assertEquals(UserState::ACTIVE->value, $seller->state); // Se mantiene igual
@@ -184,7 +184,7 @@ class AdmUserControllerTest extends TestCase
         $response = $this->patchJson("/api/users/{$user->id}/deactivate-seller");
 
         // Assert
-        $response->assertStatus(200) // El método retorna 200 pero con error en el JSON
+        $response->assertStatus(200)
             ->assertJsonStructure([
                 'error',
             ]);
