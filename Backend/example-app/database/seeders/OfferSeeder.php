@@ -15,5 +15,22 @@ class OfferSeeder extends Seeder
      */
     public function run(): void
     {
+        $seller = User::where('email', 'seller@gmail.com')->first();
+        if ($seller) {
+
+            Offer::factory()
+                ->count(10000)
+                ->withProducts(10)
+                ->for($seller->foodEstablishment)
+                ->create();
+
+            echo "Mitad del OfferSeeder completada - Primera parte de ofertas creada\n";
+
+            Offer::factory()
+                ->count(10000)
+                ->withProducts(random_int(1,5))
+                ->for($seller->foodEstablishment)
+                ->create();
+        }
     }
 }

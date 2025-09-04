@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\ProductOffer;
+use Laravel\Scout\Searchable;
 
 class Offer extends Model
 {
     /** @use HasFactory<\Database\Factories\OfferFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes,Searchable;
     protected $guarded = ['id'];
 
     public function user()
@@ -41,5 +42,20 @@ class Offer extends Model
     public function offerCarts()
     {
         return $this->hasMany(OfferCart::class);
+    }
+
+    public function toSearchableArray(){
+        return [
+            'id' => (string)$this->id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'food_establishment' => $this->foodEstablishment->name,
+            'products' => $this->products->pluck('name')->toArray(),
+            'created_at' => $this->created_at->timestamp,
+            'state' => $this->state,
+            'expiration_datetime' => is_string($this->expiration_datetime)
+                ? strtotime($this->expiration_datetime)
+                : ($this->expiration_datetime ? $this->expiration_datetime->timestamp : null)
+        ];
     }
 }

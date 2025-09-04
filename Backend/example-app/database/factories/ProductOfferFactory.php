@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Offer;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,8 +18,10 @@ class ProductOfferFactory extends Factory
      */
     public function definition(): array
     {
+        $establishment = \App\Models\User::where('email', 'seller@gmail.com')->first()->foodEstablishment;
         return [
-            //
+            'product_id' => Product::inRandomOrder()->where('food_establishment_id',$establishment->id)->first()->id,
+            'offer_id' => Offer::inRandomOrder()->where('food_establishment_id',$establishment->id)->first()->id,
         ];
     }
 }

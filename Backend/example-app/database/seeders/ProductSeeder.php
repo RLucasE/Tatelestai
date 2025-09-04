@@ -1,11 +1,9 @@
 <?php
-
 namespace Database\Seeders;
 
-use App\Models\FoodEstablishment;
-use App\Models\Product;
 use Illuminate\Database\Seeder;
-
+use App\Models\Product;
+use App\Models\User;
 
 class ProductSeeder extends Seeder
 {
@@ -14,16 +12,12 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        Product::factory()->create([
-            'name' => 'Papas Fritas',
-            'description' => 'Classic pizza with tomato sauce, mozzarella cheese, and fresh basil.',
-            'food_establishment_id' => 1, // Assuming food_establishment_id 1 exists
-        ]);
-
-        Product::factory()->create([
-            'name' => 'Pancho',
-            'description' => 'Pancho con pan fresco, salchicha y condimentos.',
-            'food_establishment_id' => 1, // Assuming food_establishment_id 1 exists
+        $user = User::where('email','seller@gmail.com')->first();
+        $establishment = $user->foodEstablishment;
+        Product::factory()->count(50)->create([
+            'food_establishment_id' => $establishment->id
         ]);
     }
 }
+
+

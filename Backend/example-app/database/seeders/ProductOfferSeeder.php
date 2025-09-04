@@ -14,19 +14,8 @@ class ProductOfferSeeder extends Seeder
      */
     public function run(): void
     {
-        //
-        productOffer::factory()->create(
-            [
-                'product_id' => 1,
-                'offer_id' => 1,
-                'quantity' => 2,
-            ]
-        );
-        productOffer::factory()->create(
-            [
-                'product_id' => 2,
-                'offer_id' => 1,
-            ]
+        ProductOffer::factory()->count(50)->create(
+            ['offer_id' => rand(50,200)]
         );
     }
 }

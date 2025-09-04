@@ -2,20 +2,25 @@
 import axiosInstance from "@/lib/axios";
 import CustomerCard from "./CustomerCard.vue";
 import OfferModal from "../../common/OfferModal.vue";
+import SearchBar from "../../common/SearchBar.vue";
 import { ref, onMounted } from "vue";
 
 const offers = ref([]);
+const originalOffers = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const selectedOffer = ref({});
 const isVisible = ref(false);
+const isSearchActive = ref(false);
 
 const getOffers = async () => {
   try {
     loading.value = true;
     const response = await axiosInstance.get("/offers");
     console.log(response.data);
-    offers.value = response.data.data || response.data;
+    const fetchedOffers = response.data.data || response.data;
+    offers.value = fetchedOffers;
+    originalOffers.value = fetchedOffers;
     error.value = null;
   } catch (err) {
     console.error("Error fetching offers:", err);
@@ -24,6 +29,21 @@ const getOffers = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const handleSearchResults = (searchResults) => {
+  offers.value = searchResults;
+  isSearchActive.value = true;
+};
+
+const handleSearchError = (errorMessage) => {
+  error.value = errorMessage;
+};
+
+const handleSearchClear = () => {
+  offers.value = originalOffers.value;
+  isSearchActive.value = false;
+  error.value = null;
 };
 
 const addOfferToCart = async ({ id, quantity }) => {
@@ -79,11 +99,23 @@ const handleCloseOffer = () => {
 onMounted(() => {
   getOffers();
 });
+
+const changueLoading = (state) => {
+  loading.value = state;
+};
 </script>
 
 <template>
   <div class="offers-container">
     <!-- Loading State -->
+    <SearchBar
+        @search-results="handleSearchResults"
+        @search-error="handleSearchError"
+        @search-clear="handleSearchClear"
+        @search-leading="changueLoading"
+        placeholder="Buscar ofertas por nombre, descripción o establecimiento..."
+    />
+
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>Cargando ofertas...</p>
@@ -96,18 +128,27 @@ onMounted(() => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="offers.length === 0" class="empty-container">
+    <div v-else-if="offers.length === 0 && !isSearchActive" class="empty-container">
       <p>No hay ofertas disponibles en este momento</p>
     </div>
 
-    <!-- Offers Grid -->
-    <div v-else class="offers-grid">
-      <CustomerCard
-        v-for="offer in offers"
-        :key="offer.id"
-        :offer="offer"
-        @click="handleOfferClick(offer)"
-      />
+    <!-- Search Results Empty State -->
+    <div v-else-if="offers.length === 0 && isSearchActive" class="empty-container">
+      <p>No se encontraron ofertas que coincidan con tu búsqueda</p>
+    </div>
+
+    <!-- Content (Search Bar + Offers Grid) -->
+    <div v-else>
+      <!-- Search Bar -->
+      <!-- Offers Grid -->
+      <div class="offers-grid">
+        <CustomerCard
+          v-for="offer in offers"
+          :key="offer.id"
+          :offer="offer"
+          @click="handleOfferClick(offer)"
+        />
+      </div>
     </div>
 
     <OfferModal
@@ -124,6 +165,7 @@ onMounted(() => {
 .offers-container {
   padding: 20px;
   max-width: 1200px;
+  min-width: 70%;
   margin: 0 auto;
   background-color: var(--color-bg);
   min-height: 100vh;

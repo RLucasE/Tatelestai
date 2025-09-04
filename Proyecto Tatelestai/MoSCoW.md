@@ -43,11 +43,10 @@
     - **Requisitos importantes**: Añaden gran valor, pero el proyecto puede funcionar sin ellos a corto plazo.
 	    - [[Motor de búsqueda]] 
 			- Buscar una venta por numero de venta 
-			- Buscador de ofertas
+			- Buscador de ofertas 🟢 
 	    - Administrativas 
 		    - Ver reclamos
 			    - Filtrar por tipo de reclamo
-			- Rchazar establecimiento
 		- Vendedores
 			- Confirmar y ocultar la venta 
 			- Editar un producto

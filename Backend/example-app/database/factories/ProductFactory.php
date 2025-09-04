@@ -37,7 +37,27 @@ class ProductFactory extends Factory
                 'Asado',
                 'Choripán',
                 'Provoleta',
-                'Flan Casero'
+                'Flan Casero',
+                'Taco al Pastor',
+                'Burrito Mexicano',
+                'Pad Thai',
+                'Curry de Pollo',
+                'Gnocchi con Salsa',
+                'Ravioles de Ricota',
+                'Crepe Dulce',
+                'Crepe Salado',
+                'Panqueques con Miel',
+                'Sopa de Mariscos',
+                'Ceviche Peruano',
+                'Bife de Chorizo',
+                'Bruschetta',
+                'Ensalada Caprese',
+                'Falafel',
+                'Shawarma',
+                'Arepas',
+                'Chilaquiles',
+                'Ramen Tonkotsu',
+                'Okonomiyaki'
             ]),
             'description' => $this->faker->randomElement([
                 'Deliciosa preparación con ingredientes frescos',
@@ -49,7 +69,18 @@ class ProductFactory extends Factory
                 'Ideal para compartir en familia',
                 'Recomendado por nuestros clientes',
                 'Elaborado con amor y dedicación',
-                'La mejor calidad al mejor precio'
+                'La mejor calidad al mejor precio',
+                'Hecho con ingredientes locales y de temporada',
+                'Ideal para dietas vegetarianas',
+                'Versión sin gluten disponible bajo pedido',
+                'Acompañado de nuestras salsas caseras',
+                'Porción abundante, perfecto para compartir',
+                'Perfecto para llevar y disfrutar en cualquier lugar',
+                'Receta familiar secreta que no falla',
+                'Rápido, sabroso y elaborado al instante',
+                'Sabor internacional con toque local',
+                'Apto para niños y paladares exigentes',
+                'Maridado especialmente para resaltar sabores'
             ]),
         ];
     }

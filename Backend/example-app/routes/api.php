@@ -21,7 +21,7 @@ Route::middleware(['auth:sanctum', 'role:default'])->post('/select-role', [UserM
 Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
     Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
-        Route::get('customer-cart', [CustomerCartController::class, 'customerCart']);
+        Route::get('/customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
         Route::post('/buy-offers',[SellController::class, 'buyOffers']);
         Route::get('/customer/purchases', [SellController::class, 'customerPurchases']);

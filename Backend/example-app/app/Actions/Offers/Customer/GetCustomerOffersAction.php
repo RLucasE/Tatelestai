@@ -29,6 +29,7 @@ class GetCustomerOffersAction
             }])
             ->where("offers.state", OfferState::ACTIVE)
             ->where("offers.expiration_datetime", ">=", now())
+            ->limit(20)
             ->get()
             ->toArray();
     }
