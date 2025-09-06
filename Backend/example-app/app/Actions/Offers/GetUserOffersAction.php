@@ -4,6 +4,7 @@ namespace App\Actions\Offers;
 
 use App\Models\Offer;
 use Illuminate\Database\Eloquent\Collection;
+use Ramsey\Uuid\Type\Integer;
 
 class GetUserOffersAction
 {
@@ -19,16 +20,17 @@ class GetUserOffersAction
      *
      * @return Collection
      */
-    public function execute(): Collection
+    public function execute(int $paginationQuantity = 20): Collection
     {
         $establishment = $this->getUserEstablishmentAction->execute();
-        
+
         if (!$establishment) {
             return new Collection();
         }
-        
+
         return Offer::where('food_establishment_id', $establishment->id)
             ->orderBy('expiration_datetime', 'desc')
+            ->limit($paginationQuantity)
             ->get();
     }
 }

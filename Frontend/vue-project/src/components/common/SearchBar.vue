@@ -5,7 +5,7 @@
         v-model="searchQuery"
         @input="handleSearch"
         type="text"
-        placeholder="Buscar ofertas..."
+        :placeholder="placeholder"
         class="search-input"
       />
       <div class="search-icon">
@@ -43,10 +43,6 @@
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
-    </div>
-
-    <div>
-      hola xd
     </div>
   </div>
 </template>
@@ -87,19 +83,17 @@ const performSearch = async () => {
 
   try {
     isSearching.value = true
-    const response = await axiosInstance.get('/offers', {
-      params: {
-        search: searchQuery.value.trim()
-      }
-    })
+    emit('search-leading', true)
 
-    const offers = response.data.data || response.data
-    emit('search-results', offers)
+    // Ahora emitimos la query en lugar de los resultados
+    // para que el componente padre gestione la paginación
+    emit('search-results', searchQuery.value.trim())
   } catch (error) {
     console.error('Error searching offers:', error)
     emit('search-error', 'Error al buscar ofertas')
   } finally {
     isSearching.value = false
+    emit('search-leading', false)
   }
 }
 

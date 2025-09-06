@@ -3,37 +3,85 @@ import axiosInstance from "@/lib/axios";
 import CustomerCard from "./CustomerCard.vue";
 import OfferModal from "../../common/OfferModal.vue";
 import SearchBar from "../../common/SearchBar.vue";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 
 const offers = ref([]);
 const originalOffers = ref([]);
 const loading = ref(true);
+const loadingMore = ref(false);
 const error = ref(null);
 const selectedOffer = ref({});
 const isVisible = ref(false);
 const isSearchActive = ref(false);
+const currentPage = ref(1);
+const hasMorePages = ref(true);
+const searchQuery = ref('');
 
-const getOffers = async () => {
+const getOffers = async (page = 1, isLoadMore = false) => {
   try {
-    loading.value = true;
-    const response = await axiosInstance.get("/offers");
+    if (isLoadMore) {
+      loadingMore.value = true;
+    } else {
+      loading.value = true;
+    }
+
+    const params = { page };
+    if (isSearchActive.value && searchQuery.value) {
+      params.search = searchQuery.value;
+    }
+
+    const response = await axiosInstance.get("/offers", { params });
     console.log(response.data);
-    const fetchedOffers = response.data.data || response.data;
-    offers.value = fetchedOffers;
-    originalOffers.value = fetchedOffers;
+
+    const fetchedOffers = response.data.data;
+    currentPage.value = response.data.current_page;
+    hasMorePages.value = response.data.has_more;
+
+    if (isLoadMore) {
+      // Agregar nuevas ofertas al final de la lista existente
+      offers.value = [...offers.value, ...fetchedOffers];
+    } else {
+      // Reemplazar la lista completa
+      offers.value = fetchedOffers;
+      originalOffers.value = fetchedOffers;
+    }
+
     error.value = null;
   } catch (err) {
     console.error("Error fetching offers:", err);
     error.value = "Error al cargar las ofertas";
-    offers.value = [];
+    if (!isLoadMore) {
+      offers.value = [];
+    }
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 };
 
-const handleSearchResults = (searchResults) => {
-  offers.value = searchResults;
+const handleScroll = () => {
+  const scrollHeight = document.documentElement.scrollHeight;
+  const scrollTop = window.scrollY;
+  const clientHeight = document.documentElement.clientHeight;
+
+  // Cuando el usuario está cerca del final (200px antes)
+  if (scrollHeight - scrollTop - clientHeight < 200) {
+    if (!loadingMore.value && hasMorePages.value) {
+      loadMoreOffers();
+    }
+  }
+};
+
+const loadMoreOffers = async () => {
+  if (loadingMore.value || !hasMorePages.value) return;
+  await getOffers(currentPage.value + 1, true);
+};
+
+const handleSearchResults = (results) => {
+  searchQuery.value = results;
   isSearchActive.value = true;
+  currentPage.value = 1;
+  getOffers(1, false);
 };
 
 const handleSearchError = (errorMessage) => {
@@ -41,9 +89,10 @@ const handleSearchError = (errorMessage) => {
 };
 
 const handleSearchClear = () => {
-  offers.value = originalOffers.value;
+  searchQuery.value = '';
   isSearchActive.value = false;
-  error.value = null;
+  currentPage.value = 1;
+  getOffers(1, false);
 };
 
 const addOfferToCart = async ({ id, quantity }) => {
@@ -98,6 +147,11 @@ const handleCloseOffer = () => {
 
 onMounted(() => {
   getOffers();
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
 });
 
 const changueLoading = (state) => {
@@ -116,7 +170,7 @@ const changueLoading = (state) => {
         placeholder="Buscar ofertas por nombre, descripción o establecimiento..."
     />
 
-    <div v-if="loading" class="loading-container">
+    <div v-if="loading && !loadingMore" class="loading-container">
       <div class="loading-spinner"></div>
       <p>Cargando ofertas...</p>
     </div>
@@ -139,7 +193,6 @@ const changueLoading = (state) => {
 
     <!-- Content (Search Bar + Offers Grid) -->
     <div v-else>
-      <!-- Search Bar -->
       <!-- Offers Grid -->
       <div class="offers-grid">
         <CustomerCard
@@ -148,6 +201,17 @@ const changueLoading = (state) => {
           :offer="offer"
           @click="handleOfferClick(offer)"
         />
+      </div>
+
+      <!-- Loading More Indicator -->
+      <div v-if="loadingMore" class="loading-more">
+        <div class="loading-spinner-small"></div>
+        <p>Cargando más ofertas...</p>
+      </div>
+
+      <!-- End Message -->
+      <div v-else-if="!hasMorePages && offers.length > 0" class="end-message">
+        <p>No hay más ofertas para mostrar</p>
       </div>
     </div>
 
@@ -227,6 +291,27 @@ const changueLoading = (state) => {
   }
 }
 
+/* Loading More Indicator */
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.loading-spinner-small {
+  width: 25px;
+  height: 25px;
+  border: 3px solid var(--color-secondary);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
 /* Error State */
 .error-container {
   display: flex;
@@ -269,5 +354,14 @@ const changueLoading = (state) => {
   background-color: var(--color-secondary);
   border-radius: 12px;
   margin: 20px;
+}
+
+/* End Message */
+.end-message {
+  text-align: center;
+  padding: 20px;
+  margin-top: 10px;
+  color: var(--color-text-light, #999);
+  font-style: italic;
 }
 </style>

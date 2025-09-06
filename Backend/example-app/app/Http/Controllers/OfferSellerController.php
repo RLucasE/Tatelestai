@@ -48,7 +48,7 @@ class OfferSellerController extends OfferController
     public function show(Request $request)
     {
         return response()->json(
-            $this->getUserOffers->execute()
+            $this->getUserOffers->execute(20)
         );
     }
 
