@@ -57,6 +57,9 @@ export default {
   border: 2px solid transparent;
   cursor: pointer;
   color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .customer-card:hover {
@@ -154,6 +157,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   background: var(--color-darkest);
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .expiration-info {

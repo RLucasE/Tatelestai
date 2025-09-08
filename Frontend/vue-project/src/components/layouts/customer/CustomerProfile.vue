@@ -79,6 +79,7 @@ async function refresh() {
 .profile-container {
   width: 100%;
   max-width: 860px;
+  height: 100vw;
   margin: 24px auto;
   padding: 0 16px;
   color: var(--color-text);

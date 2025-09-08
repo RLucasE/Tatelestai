@@ -25,10 +25,10 @@ class OfferCustomerController extends Controller
             $offers = Offer::search($searchQuery)
                 ->where('state', OfferState::ACTIVE->value)
                 ->get()
-                ->forPage($page, $perPage)
                 ->filter(function ($offer){
                     return $offer->expiration_datetime >= now();
                 } )
+                ->forPage($page, $perPage)
                 ->load(['products' => function ($query) {
                     $query->select(
                         'products.id',
