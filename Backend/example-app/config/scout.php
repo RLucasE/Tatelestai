@@ -204,7 +204,7 @@ return [
                         ],
                         [
                             'name' => 'products',
-                            'type' => 'string[]',
+                            'type' => 'string',
                         ],
                         [
                             'name' => 'created_at',
