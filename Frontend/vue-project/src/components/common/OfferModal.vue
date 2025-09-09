@@ -126,9 +126,6 @@
             @blur="handleBlur"
           />
         </div>
-        <button class="action-button secondary" @click="closeModal">
-          Cerrar
-        </button>
         <button class="action-button primary" @click="handleOfferAction">
           Carrito
         </button>

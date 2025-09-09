@@ -17,6 +17,26 @@ const currentPage = ref(1);
 const hasMorePages = ref(true);
 const searchQuery = ref('');
 
+// Sistema de notificaciones
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success' // 'success', 'error', 'info'
+});
+
+const showNotification = (message, type = 'success') => {
+  notification.value = {
+    show: true,
+    message,
+    type
+  };
+
+  // Auto-ocultar después de 3 segundos
+  setTimeout(() => {
+    notification.value.show = false;
+  }, 3000);
+};
+
 const getOffers = async (page = 1, isLoadMore = false) => {
   try {
     if (isLoadMore) {
@@ -98,13 +118,12 @@ const handleSearchClear = () => {
 const addOfferToCart = async ({ id, quantity }) => {
   const offerPayload = {
     offer_id: id,
-    quantity: quantity || 1, // Assuming a default quantity of 1
+    quantity: quantity || 1,
   };
 
   try {
-    console.log(offerPayload);
     const response = await axiosInstance.post("/add-to-cart", offerPayload);
-    console.log(response);
+    showNotification('Oferta agregada al carrito', 'success');
   } catch (error) {
     console.log(error);
     if (error.status === 400) {
@@ -115,7 +134,7 @@ const addOfferToCart = async ({ id, quantity }) => {
   }
 };
 
-const buyOffer = async ({ id, quantity ,food_establishment_id}) => {
+const buyOffer = async ({ id, quantity, food_establishment_id }) => {
   const offerPayload = {
     food_establishment_id: food_establishment_id,
     offers: [
@@ -128,11 +147,25 @@ const buyOffer = async ({ id, quantity ,food_establishment_id}) => {
 
   try {
     const response = await axiosInstance.post("/buy-offers", offerPayload);
+
+    // Cartel de éxito cuando la compra se realiza correctamente
+    showNotification('🎉 ¡Compra realizada con éxito! Tu pedido está siendo procesado', 'success');
+
+    // Cerrar el modal después de la compra exitosa
+    setTimeout(() => {
+      isVisible.value = false;
+    }, 1500);
+
   } catch (error) {
+    console.log(error);
     if (error.status === 400) {
-      if ((error.data = "OfferQuantityExceded")) {
-        alert("Ya no se pueden agregar más unidades de esta oferta");
+      if (error.data === "OfferQuantityExceded") {
+        showNotification('Ya no se pueden agregar más unidades de esta oferta', 'error');
+      } else {
+        showNotification('Error al procesar la compra. Verifica los datos', 'error');
       }
+    } else {
+      showNotification('Error de conexión. Intenta nuevamente', 'error');
     }
   }
 };
@@ -222,6 +255,34 @@ const changueLoading = (state) => {
       @offerAction="addOfferToCart"
       @buyOffer="buyOffer"
     />
+
+    <!-- Notification Component -->
+    <Transition name="notification" appear>
+      <div v-if="notification.show" :class="`notification notification-${notification.type}`">
+        <div class="notification-content">
+          <div class="notification-icon">
+            <svg v-if="notification.type === 'success'" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <svg v-else-if="notification.type === 'error'" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+            <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div class="notification-message">
+            {{ notification.message }}
+          </div>
+          <button class="notification-close" @click="notification.show = false" aria-label="Cerrar notificación">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="notification-progress"></div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -363,5 +424,119 @@ const changueLoading = (state) => {
   margin-top: 10px;
   color: var(--color-text-light, #999);
   font-style: italic;
+}
+
+/* Notification - Estilos mejorados */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 320px;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(34, 32, 31, 0.4);
+  z-index: 1000;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(175, 173, 171, 0.2);
+}
+
+.notification-success {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: var(--color-text);
+  border-left: 4px solid #10b981;
+}
+
+.notification-error {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-focus) 100%);
+  color: var(--color-text);
+  border-left: 4px solid #ef4444;
+}
+
+.notification-info {
+  background: linear-gradient(135deg, var(--color-focus) 0%, var(--color-darkest) 100%);
+  color: var(--color-text);
+  border-left: 4px solid #3b82f6;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  position: relative;
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  padding: 8px;
+  border-radius: 50%;
+  background: rgba(175, 173, 171, 0.2);
+  flex-shrink: 0;
+}
+
+.notification-success .notification-icon {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.notification-error .notification-icon {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.notification-info .notification-icon {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.notification-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.notification-close:hover {
+  opacity: 1;
+  background: var(--color-focus);
+  transform: scale(1.1);
+}
+
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(175, 173, 171, 0.3);
+  animation: progress 3s linear forwards;
+}
+
+.notification-success .notification-progress {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+.notification-error .notification-progress {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+.notification-info .notification-progress {
+  background: rgba(59, 130, 246, 0.4);
 }
 </style>

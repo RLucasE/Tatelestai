@@ -16,7 +16,7 @@ function redirectByRole(authStore) {
     if (!authStore.isLoggedIn()) return null;
 
     // Cliente
-    if (authStore.isCustomer()) return {name: "customer"};
+    if (authStore.isCustomer()) return {name: "customer-offers"};
 
     // Vendedor
     if (authStore.isSeller()) {
