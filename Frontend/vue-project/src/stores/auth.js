@@ -19,6 +19,23 @@ export const useAuthStore = defineStore("auth", () => {
     return user.value !== null;
   }
 
+  async function logout() {
+    try {
+      // Llamada al backend para revocar el token de Sanctum
+      await axiosInstance.post("/logout");
+    } catch (error) {
+      console.error("Error al hacer logout en el servidor:", error);
+      // Continuamos con el logout local aunque falle el servidor
+    }
+    
+    // Limpiar datos locales
+    user.value = null;
+    isAuthenticated = false;
+    localStorage.removeItem("authToken");
+    sessionStorage.removeItem("userData");
+    useStorageStore().clearUser();
+  }
+
   function isCustomer() {
     return user && user.value.roles.includes("customer");
   }
@@ -136,6 +153,7 @@ export const useAuthStore = defineStore("auth", () => {
     isSeller,
     isDefaultRole,
     selectingRole,
+    logout,
     registeringEstablishment,
     waitingConfirmation,
     deniedConfirmation,

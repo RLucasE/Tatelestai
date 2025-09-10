@@ -51,6 +51,7 @@ class Offer extends Model
             'description' => $this->description,
             'food_establishment' => $this->foodEstablishment->name,
             'products' => implode(' ', $this->products->pluck('name')->toArray()),
+            'product_descriptions' => implode(' ', $this->products->pluck('description')->toArray()),
             'created_at' => $this->created_at->timestamp,
             'state' => $this->state,
             'expiration_datetime' => is_string($this->expiration_datetime)

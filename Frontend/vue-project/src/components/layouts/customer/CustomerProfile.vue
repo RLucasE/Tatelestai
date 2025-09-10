@@ -35,6 +35,11 @@ async function refresh() {
     // Silencioso, la UI ya refleja ausencia de sesión
   }
 }
+
+async function handleLogout() {
+  await authStore.logout();
+  window.location.reload();
+}
 </script>
 
 <template>
@@ -71,6 +76,9 @@ async function refresh() {
           </div>
         </div>
       </div>
+      <footer class="profile-footer">
+        <button class="btn logout" @click="handleLogout">Cerrar sesión</button>
+      </footer>
     </section>
   </div>
 </template>
@@ -154,5 +162,12 @@ async function refresh() {
   border-radius: 999px;
   background: var(--color-darkest);
   border: 1px solid var(--color-focus);
+}
+
+.profile-footer {
+  padding: 16px;
+  text-align: right;
+  background: var(--color-secondary);
+  border-top: 1px solid var(--color-focus);
 }
 </style>

@@ -207,6 +207,10 @@ return [
                             'type' => 'string',
                         ],
                         [
+                            'name' => 'product_descriptions',
+                            'type' => 'string',
+                        ],
+                        [
                             'name' => 'created_at',
                             'type' => 'int64',
                         ],
@@ -222,7 +226,7 @@ return [
                     'default_sorting_field' => 'created_at',
                 ],
                 'search-parameters' => [
-                    'query_by' => 'title,description,products,food_establishment'
+                    'query_by' => 'title,products,product_descriptions,description,'
                 ],
             ],
         ],
