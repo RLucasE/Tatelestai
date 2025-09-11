@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Offer;
 use App\Models\Product;
 use App\Models\FoodEstablishment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -95,6 +97,15 @@ class ProductController extends Controller
                     'description' => $request->description
                 ]
             );
+
+            $offers = Offer::whereHas('products', function ($query) use ($product) {
+                $query->where('products.id', $product->id);
+            })->get();
+
+            foreach ($offers as $offer) {
+                $offer->searchable();
+            }
+
             $product->save();
 
             return response()->json([
