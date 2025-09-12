@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
         Route::get('/customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
+        Route::post('/prepare-purchase', [SellController::class, 'prepareBuyOffers']);
         Route::post('/buy-offers',[SellController::class, 'buyOffers']);
         Route::get('/customer/purchases', [SellController::class, 'customerPurchases']);
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);

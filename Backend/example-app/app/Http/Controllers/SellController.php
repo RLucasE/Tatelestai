@@ -5,16 +5,21 @@ namespace App\Http\Controllers;
 
 use App\Actions\Offers\OfferIsFromFoodEstablishmentAction;
 use App\Actions\Offers\ValidateOfferExpirationAction;
+use App\Actions\Offers\ValidateOfferExpirationFromDTOAction;
 use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\SellValidationRules;
+use App\Actions\Sell\VerifyPurchaseDataFreshnessAction;
+use App\DTOs\PreparePurchaseDTO;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use App\Models\User;
 use App\Models\UserCart;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 
 class SellController
@@ -22,41 +27,121 @@ class SellController
     use SellValidationRules;
 
     public function __construct(
-        private readonly ValidateOfferExpirationAction $validateOfferExpiration,
-        private readonly OfferIsFromFoodEstablishmentAction $offerIsFromFoodEstablishmentAction,
-        private readonly getCustomerSellsAction $getCustomerSellsAction,
-        private readonly makeSellAction $makeSellAction,
-    ) {}
+        private readonly ValidateOfferExpirationAction        $validateOfferExpiration,
+        private readonly OfferIsFromFoodEstablishmentAction   $offerIsFromFoodEstablishmentAction,
+        private readonly ValidateOfferExpirationFromDTOAction $validateOfferExpirationFromDTOAction,
+        private readonly getCustomerSellsAction               $getCustomerSellsAction,
+        private readonly makeSellAction                       $makeSellAction,
+        private readonly VerifyPurchaseDataFreshnessAction    $verifyPurchaseDataFreshnessAction,
+    )
+    {
+    }
+
     public function buyOffers(Request $request)
     {
         try {
-            $this->validateOfferExpiration->execute($request->get('offers'));
-            $this->offerIsFromFoodEstablishmentAction->execute($request->get('offers'), $request->get('food_establishment_id'));
-            $offers = $request->get('offers');
-            $bought_by = Auth::id();
-            $sold_by = FoodEstablishment::findOrFail($request->get('food_establishment_id'))->id;
-            $result = $this->makeSellAction->execute($offers,$bought_by, $sold_by);
-            return response()->json($result, 201);
-        } catch (\Exception $exception) {
+            $purchaseToken = $request->input('purchase_token');
+            if (!$purchaseToken || !session()->has('purchase_' . $purchaseToken)) {
+                return response()->json([
+                    'error' => 'Token de compra inválido o expirado'
+                ], 400);
+            }
+            $purchaseData = session()->get('purchase_' . $purchaseToken);
+            if (now()->isAfter($purchaseData['expires_at'])) {
+                session()->forget('purchase_' . $purchaseToken);
+                return response()->json([
+                    'error' => 'El tiempo para confirmar la compra ha expirado'
+                ], 400);
+            }
+            $preparePurchaseDTO = PreparePurchaseDTO::fromArray($purchaseData['preparePurchaseDTO']);
+
+
+            $result = DB::transaction(function () use ($preparePurchaseDTO) {
+                $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
+                $this->offerIsFromFoodEstablishmentAction->execute(
+                    $preparePurchaseDTO->offers,
+                    $preparePurchaseDTO->food_establishment_id
+                );
+                $this->verifyPurchaseDataFreshnessAction->execute($preparePurchaseDTO);
+            });
+
+            dump("hola");
+
+            return $this->makeSellAction->execute(
+                $preparePurchaseDTO->offers,
+                Auth::id(),
+                $preparePurchaseDTO->food_establishment_id
+            );
+        } catch (Exception $exception) {
             return response()->json([
-               'error' => $exception->getLine()
+                'error' => $exception->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function prepareBuyOffers(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'food_establishment_id' => 'required|integer|exists:food_establishments,id',
+                'offers' => 'required|array|min:1',
+                'offers.*.id' => 'required|integer|exists:offers,id',
+                'offers.*.quantity' => 'required|integer|min:1',
+            ]);
+
+            $preparePurchaseDTO = PreparePurchaseDTO::fromRequest($request);
+
+            $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
+            $this->offerIsFromFoodEstablishmentAction->execute(
+                $preparePurchaseDTO->offers,
+                $preparePurchaseDTO->food_establishment_id
+            );
+
+            $purchaseToken = md5(uniqid(Auth::id(), true));
+
+            session()->put('purchase_' . $purchaseToken, [
+                'preparePurchaseDTO' => $preparePurchaseDTO,
+                'expires_at' => now()->addMinutes(5)
+            ]);
+
+            return response()->json([
+                'message' => 'Purchase preparation completed successfully',
+                'data' => [
+                    'purchase_token' => $purchaseToken,
+                    'offers' => $preparePurchaseDTO,
+                    'total_offers' => count($preparePurchaseDTO->offers),
+                    'food_establishment_id' => $preparePurchaseDTO->food_establishment_id,
+                    'expires_at' => now()->addMinutes(5)->toDateTimeString(),
+                ]
+            ], 200);
+
+        } catch (Exception $exception) {
+            return response()->json([
+                'error' => 'Failed to prepare purchase',
+                'message' => $exception->getMessage()
             ], 500);
         }
     }
+
+
     public function sellerSells(Request $request)
     {
         try {
             $foodEstablishment = FoodEstablishment::where('user_id', Auth::id())->firstOrFail();
             $sells = Sell::with(['sellDetails.offer'])
                 ->where('sold_by', $foodEstablishment->id)
-                ->orderBy('created_at','desc')->get();
+                ->orderBy('created_at', 'desc')->get();
             return response()->json($sells->toArray());
-        }catch (\Exception $exception){
+        } catch (Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
             ], 500);
         }
     }
+
     public function customerPurchases(Request $request)
     {
         try {
@@ -67,7 +152,7 @@ class SellController
             return response()->json([
                 'data' => $customerSells
             ]);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
             ], 500);
@@ -103,7 +188,7 @@ class SellController
             });
 
             return response()->json($formattedSells);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
             ], 500);
@@ -113,22 +198,22 @@ class SellController
     public function adminSellDetail(string $id)
     {
         $user = User::findOrFail($id);
-        if(!$user->hasRole('seller')) {
+        if (!$user->hasRole('seller')) {
             return response()->json(['error' => 'User is not a seller'], 400);
         }
         $sells = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
             ->where('sold_by', $user->foodEstablishment->id)
             ->get();
         return response()->json([
-          'sells' => $sells
-        ],200);
+            'sells' => $sells
+        ], 200);
     }
 
     public function adminCustomerSells(string $id)
     {
         $user = User::findOrFail($id);
 
-        if(!$user->hasRole('customer')) {
+        if (!$user->hasRole('customer')) {
             return response()->json(['error' => 'User is not a customer'], 400);
         }
 
@@ -138,6 +223,6 @@ class SellController
 
         return response()->json([
             'purchases' => $purchases
-        ],200);
+        ], 200);
     }
 }
