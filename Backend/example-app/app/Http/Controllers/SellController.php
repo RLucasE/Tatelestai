@@ -53,28 +53,33 @@ class SellController
                     'error' => 'El tiempo para confirmar la compra ha expirado'
                 ], 400);
             }
-            $preparePurchaseDTO = PreparePurchaseDTO::fromArray($purchaseData['preparePurchaseDTO']);
+
+            $preparePurchaseDTO = PreparePurchaseDTO::clone($purchaseData['preparePurchaseDTO']);
 
 
-            $result = DB::transaction(function () use ($preparePurchaseDTO) {
+            DB::transaction(function () use ($preparePurchaseDTO) {
                 $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
                 $this->offerIsFromFoodEstablishmentAction->execute(
                     $preparePurchaseDTO->offers,
                     $preparePurchaseDTO->food_establishment_id
                 );
                 $this->verifyPurchaseDataFreshnessAction->execute($preparePurchaseDTO);
+                $this->makeSellAction->execute(
+                    $preparePurchaseDTO,
+                    Auth::id(),
+                    $preparePurchaseDTO->food_establishment_id
+                );
             });
 
-            dump("hola");
+            return response()->json([
+                'message' => 'Compra realizada con éxito',
+                'data' => $preparePurchaseDTO
+            ], 200);
 
-            return $this->makeSellAction->execute(
-                $preparePurchaseDTO->offers,
-                Auth::id(),
-                $preparePurchaseDTO->food_establishment_id
-            );
         } catch (Exception $exception) {
             return response()->json([
-                'error' => $exception->getMessage()
+                'error' => $exception->getMessage(),
+                'line' => $exception->getLine()
             ], 400);
         }
     }

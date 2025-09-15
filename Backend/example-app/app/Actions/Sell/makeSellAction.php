@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sell;
 
+use App\DTOs\PreparePurchaseDTO;
 use App\Actions\Offers\GetOfferAction;
 use App\Enums\CartState;
 use App\Enums\OfferState;
@@ -24,73 +25,52 @@ class makeSellAction{
     {
     }
 
-    public function execute(array $offers, int $bought_by, int $sold_by): array
+    /**
+     * @param PreparePurchaseDTO $preparePurchaseDTO
+     * @param int $bought_by
+     * @param int $sold_by
+     * @return array
+     * @throws \Throwable
+     */
+    public function execute(PreparePurchaseDTO $preparePurchaseDTO, int $bought_by, int $sold_by): array
     {
-        return DB::transaction(function () use ($offers, $bought_by, $sold_by) {
-
-            $sell = Sell::create([
-                'bought_by' => $bought_by,
-                'sold_by' => $sold_by,
-            ]);
+        $sell = Sell::create([
+            'bought_by' => $bought_by,
+            'sold_by' => $sold_by,
+        ]);
 
 
-            foreach ($offers as $offerData) {
-                $offer = $this->getOfferAction->execute($offerData['id'],true);
-
-                if ($offer->quantity < $offerData['quantity']) {
-                    throw new \Exception("No hay suficiente stock disponible para la oferta: {$offer->title}");
-                }
-                foreach ($offer->products as $productData) {
-                    SellDetail::create([
-                        'sell_id' => $sell->id,
-                        'offer_id' => $offer->id,
-                        'offer_quantity' => $offerData['quantity'],
-                        'product_quantity' => $productData['pivot']['quantity'],
-                        'product_price' => $productData['pivot']['price'],
-                        'product_name' => $productData['name'],
-                        'product_description' => $productData['description'] ?? null,
-                    ]);
-                }
-
-                $offer->update([
-                    'quantity' => $offer->quantity - $offerData['quantity']
-                ]);
-
-                $userCart = UserCart::where('user_id', $bought_by)
-                    ->where('state',CartState::ACTIVE)->firstOrFail();
-
-                OfferCart::where('offer_id', $offer->id)
-                    ->where('user_cart_id', $userCart->id)
-                    ->delete();
+        foreach ($preparePurchaseDTO->offers as $offerDTO) {
+            $offer = $this->getOfferAction->execute($offerDTO->id, true);
 
 
-                if($offer->quantity == 0){
-                    $offer->update(['state' =>OfferState::PURCHASED]);
-                }
+            if ($offer->quantity < $offerDTO->quantity) {
+                throw new \Exception("No hay suficiente stock disponible para la oferta: {$offer->title}");
             }
 
-            return [
-                'sell_id' => $sell->id,
-                'total' => $sell->total,
-                'message' => 'Venta realizada con éxito'
-            ];
-        });
-    }
+            foreach ($offerDTO->products as $productDTO) {
+                SellDetail::create([
+                    'sell_id' => $sell->id,
+                    'offer_quantity' => $offerDTO->quantity,
+                    'offer_id' => $offerDTO->id,
+                    'product_name' => $productDTO->name,
+                    'product_description' => $productDTO->description,
+                    'product_quantity' => $productDTO->quantity,
+                    'product_price' => $productDTO->price,
+                ]);
+            }
 
-    private function calculateTotal(array $offers): float
-    {
-        $total = 0;
-        foreach ($offers as $offerData) {
-            $offer = Offer::findOrFail($offerData['id']);
-            $total += $this->calculateOfferPrice($offer) * $offerData['quantity'];
+            $offer->decrement('quantity', $offerDTO->quantity);
+
+            if ($offer->quantity <= 0) {
+                $offer->update(['state' => 'purchased']);
+            }
         }
-        return $total;
-    }
 
-    private function calculateOfferPrice(Offer $offer): float
-    {
-        return $offer->products->sum(function ($product) {
-            return $product->pivot->price * $product->pivot->quantity;
-        });
+        return [
+            'sell_id' => $sell->id,
+            'message' => 'Venta realizada exitosamente',
+            'offers_processed' => count($preparePurchaseDTO->offers)
+        ];
     }
 }

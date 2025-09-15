@@ -36,6 +36,16 @@ export default [
         component: () =>
           import("@/components/layouts/customer/CustomerPurchases.vue"),
       },
+      {
+        path: "purchase-confirmation/:token",
+        name: "purchase-confirmation",
+        component: () =>
+          import("@/components/layouts/customer/PurchaseConfirmation.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
+      },
     ],
     meta: {
       requiresAuth: true,

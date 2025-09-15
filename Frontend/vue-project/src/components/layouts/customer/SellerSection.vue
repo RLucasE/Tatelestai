@@ -108,11 +108,26 @@
         {{ loading ? "Procesando..." : "Comprar" }}
       </button>
     </div>
+
+    <!-- Notificación de error -->
+    <div v-if="showErrorNotification" class="notification error">
+      <div class="notification-content">
+        <i class="fas fa-exclamation-circle"></i>
+        <div class="notification-text">
+          <h4>Error al preparar la compra</h4>
+          <p>{{ errorMessage }}</p>
+        </div>
+        <button @click="showErrorNotification = false" class="notification-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { defineProps, computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import axiosInstance from "@/lib/axios";
 
 const props = defineProps({
@@ -123,6 +138,9 @@ const props = defineProps({
 });
 
 const loading = ref(false);
+const router = useRouter();
+const showErrorNotification = ref(false);
+const errorMessage = ref('');
 const emit = defineEmits(["offerRemoved", "quantityUpdated","removeAllOffers"]);
 
 const calculateOfferTotal = (offer) => {
@@ -155,12 +173,29 @@ const handlePurchase = async () => {
       })),
       food_establishment_id: props.offers[0].establishment_id,
     };
-    await axiosInstance.post("/prepare-purchase", purchaseData);
-    alert("¡Compra realizada con éxito!");
-    window.location.reload();
+
+    // Llamar a preparePurchase en lugar de comprar directamente
+    const response = await axiosInstance.post("/prepare-purchase", purchaseData);
+
+    // Guardar los datos de confirmación en sessionStorage
+    sessionStorage.setItem('purchaseConfirmation', JSON.stringify(response.data.data));
+
+    // Redirigir a la vista de confirmación con el token
+    router.push({
+      name: 'purchase-confirmation',
+      params: { token: response.data.data.purchase_token }
+    });
+
   } catch (error) {
-    console.error("Error al procesar la compra:", error);
-    alert("Error al procesar la compra. Por favor, intente nuevamente.");
+    console.error("Error al preparar la compra:", error);
+
+    // Mostrar notificación de error
+    showErrorNotification.value = true;
+    errorMessage.value = error.response?.data?.error || "Error al preparar la compra. Por favor, intente nuevamente.";
+
+    setTimeout(() => {
+      showErrorNotification.value = false;
+    }, 5000);
   } finally {
     loading.value = false;
   }
@@ -575,6 +610,80 @@ const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
   opacity: 0.7;
   cursor: not-allowed;
   background: var(--color-focus);
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+  border-radius: 12px;
+  padding: 1rem;
+  animation: slideIn 0.5s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.notification.error {
+  background: var(--color-darkest);
+  color: var(--color-text);
+  border: 2px solid var(--color-focus);
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.notification-content i {
+  font-size: 1.5rem;
+  color: var(--color-text);
+  margin-top: 0.2rem;
+}
+
+.notification-text {
+  flex: 1;
+}
+
+.notification-text h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.notification-text p {
+  margin: 0;
+  color: var(--color-text);
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+.notification-close {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.notification-close:hover {
+  background: var(--color-focus);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @media (max-width: 992px) {
