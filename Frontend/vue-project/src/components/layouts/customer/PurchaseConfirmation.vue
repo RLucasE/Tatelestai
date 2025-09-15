@@ -217,7 +217,7 @@ const startPurchase = async () => {
   }, 200);
 
   try {
-    const response = await axiosInstance.post('/buy-offers', {
+    await axiosInstance.post('/buy-offers', {
       purchase_token: purchaseToken
     });
 
