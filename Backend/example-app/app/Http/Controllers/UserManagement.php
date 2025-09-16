@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\CustomerCartController;
-use PHPMailer\PHPMailer\Exception;
 
 class UserManagement extends Controller
 {
@@ -55,7 +54,7 @@ class UserManagement extends Controller
     }
 
     /**
-     * @throws Exception
+     * @throws /Exception
      */
     public function registerEstablishment(Request $request)
     {
