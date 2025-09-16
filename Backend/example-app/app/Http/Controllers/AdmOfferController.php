@@ -24,6 +24,7 @@ class AdmOfferController extends Controller
                 'products:id,name,description',
             ])
             ->orderBy('created_at', 'desc')
+            ->limit(50)
             ->get();
 
             return response()->json([
@@ -72,16 +73,13 @@ class AdmOfferController extends Controller
             return response()->json(['message' => 'Usuario no valido para esta operación'], 404);
         }
         try {
-            $offers = Offer::with([
-                'foodEstablishment:id,name,user_id',
-                'products:id,name,description',
-            ])
-            ->whereHas('foodEstablishment', function ($query) use ($id) {
-                $query->where('user_id', $id);
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
-
+            $offers = Offer::with('products:id,name,description')
+                ->whereHas('foodEstablishment', function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
             return response()->json([
                 'data' => $offers,
                 'message' => 'Ofertas del usuario obtenidas exitosamente'
