@@ -131,7 +131,7 @@
 </template>
 
 <script setup>
-import {ref, watch, computed} from "vue";
+import {ref, computed} from "vue";
 import axiosInstance from "@/lib/axios";
 import AddProductToOfferModal from "./AddProductToOfferModal.vue";
 
@@ -207,7 +207,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  const expirationDate = new Date(offerData.value.expirationDate);
+
   const minDate = new Date();
   minDate.setHours(minDate.getHours() + 1);
 
@@ -289,7 +289,7 @@ h2 {
 }
 
 .add-product-btn {
-  background-color: var(--color-accent);
+  background-color: var(--color-secondary);
   color: var(--color-text);
   border: none;
   padding: 0.5rem 1rem;
@@ -317,7 +317,7 @@ h2 {
   background-color: var(--color-primary);
   padding: 1rem;
   border-radius: 4px;
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-darkest);
 }
 
 .product-info h4 {
@@ -344,7 +344,7 @@ h2 {
 }
 
 .total {
-  color: var(--color-accent) !important;
+  color: var(--color-darkest) !important;
   font-weight: bold;
 }
 
@@ -352,7 +352,6 @@ h2 {
   background-color: var(--color-darkest);
   max-width: 50%;
   color: white;
-  display: block;
   cursor: pointer;
   font-size: 1.2rem;
   display: flex;
@@ -377,9 +376,9 @@ h2 {
   border-radius: 4px;
   font-size: 1.2rem;
   font-weight: bold;
-  color: var(--color-accent);
+  color: var(--color-darkest);
   text-align: center;
-  border: 2px solid var(--color-accent);
+  border: 2px solid var(--color-darkest);
 }
 
 label {
