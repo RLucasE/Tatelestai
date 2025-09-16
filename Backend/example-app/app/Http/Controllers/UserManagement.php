@@ -59,7 +59,6 @@ class UserManagement extends Controller
      */
     public function registerEstablishment(Request $request)
     {
-        $gmailService = new GmailService();
         $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:255',

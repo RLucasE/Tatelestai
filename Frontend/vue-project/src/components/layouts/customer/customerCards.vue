@@ -4,6 +4,7 @@ import CustomerCard from "./CustomerCard.vue";
 import OfferModal from "../../common/OfferModal.vue";
 import SearchBar from "../../common/SearchBar.vue";
 import { ref, onMounted, onUnmounted } from "vue";
+import { useRouter } from 'vue-router';
 
 const offers = ref([]);
 const originalOffers = ref([]);
@@ -134,6 +135,8 @@ const addOfferToCart = async ({ id, quantity }) => {
   }
 };
 
+const router = useRouter();
+
 const buyOffer = async ({ id, quantity, food_establishment_id }) => {
   const offerPayload = {
     food_establishment_id: food_establishment_id,
@@ -146,15 +149,25 @@ const buyOffer = async ({ id, quantity, food_establishment_id }) => {
   };
 
   try {
-    const response = await axiosInstance.post("/buy-offers", offerPayload);
+    // Mostrar que está preparando la compra
+    showNotification('Preparando tu compra...', 'info');
 
-    // Cartel de éxito cuando la compra se realiza correctamente
-    showNotification('🎉 ¡Compra realizada con éxito! Tu pedido está siendo procesado', 'success');
+    // Primero preparar la compra
+    const prepareResponse = await axiosInstance.post("/prepare-purchase", offerPayload);
 
-    // Cerrar el modal después de la compra exitosa
-    setTimeout(() => {
-      isVisible.value = false;
-    }, 1500);
+    // Guardar los datos de confirmación en sessionStorage
+    sessionStorage.setItem('purchaseConfirmation', JSON.stringify(prepareResponse.data.data));
+
+    // Cerrar el modal
+    isVisible.value = false;
+
+    // Redirigir a la página de confirmación con el token
+    router.push({
+      name: 'purchase-confirmation',
+      params: {
+        token: prepareResponse.data.data.purchase_token
+      }
+    });
 
   } catch (error) {
     console.log(error);

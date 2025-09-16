@@ -7,62 +7,48 @@
         <div class="form-group">
           <label for="title">Título de la Oferta</label>
           <input
-            type="text"
-            id="title"
-            v-model="offerData.title"
-            required
-            placeholder="Título de la oferta"
+              type="text"
+              id="title"
+              v-model="offerData.title"
+              required
+              placeholder="Título de la oferta"
           />
         </div>
 
         <div class="form-group">
           <label for="description">Descripción</label>
           <textarea
-            id="description"
-            v-model="offerData.description"
-            placeholder="Descripción de la oferta"
+              id="description"
+              v-model="offerData.description"
+              placeholder="Descripción de la oferta"
           ></textarea>
         </div>
 
         <div class="form-group">
           <label for="expirationDate">Fecha de Expiración</label>
           <input
-            type="datetime-local"
-            id="expirationDate"
-            v-model="offerData.expirationDate"
-            :min="minExpirationDate"
-            required
-            placeholder="Fecha y hora de expiración"
+              type="datetime-local"
+              id="expirationDate"
+              v-model="offerData.expirationDate"
+              :min="minExpirationDate"
+              required
+              placeholder="Fecha y hora de expiración"
           />
           <small class="field-hint"
-            >La oferta debe expirar al menos 1 hora después de la fecha
+          >La oferta debe expirar al menos 1 hora después de la fecha
             actual</small
           >
         </div>
 
-        <div class="form-group">
-          <label for="offerQuantity">Cantidad de Ofertas</label>
-          <input
-            type="number"
-            id="offerQuantity"
-            v-model.number="offerData.quantity"
-            min="1"
-            placeholder="1"
-            required
-          />
-          <small class="field-hint"
-            >Número de ofertas disponibles para venta</small
-          >
-        </div>
 
         <!-- Sección de productos -->
         <div class="form-group">
           <div class="products-header">
             <label>Productos en la Oferta</label>
             <button
-              type="button"
-              @click="openAddProductModal"
-              class="add-product-btn"
+                type="button"
+                @click="openAddProductModal"
+                class="add-product-btn"
             >
               + Agregar Producto
             </button>
@@ -71,9 +57,9 @@
           <!-- Lista de productos agregados -->
           <div v-if="selectedProducts.length > 0" class="products-list">
             <div
-              v-for="(product, index) in selectedProducts"
-              :key="product.id + '-' + index"
-              class="product-item"
+                v-for="(product, index) in selectedProducts"
+                :key="product.id + '-' + index"
+                class="product-item"
             >
               <div class="product-info">
                 <h4>{{ product.name }}</h4>
@@ -85,9 +71,9 @@
                 </div>
               </div>
               <button
-                type="button"
-                @click="removeProduct(index)"
-                class="remove-btn"
+                  type="button"
+                  @click="removeProduct(index)"
+                  class="remove-btn"
               >
                 quitar
               </button>
@@ -99,6 +85,21 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label for="offerQuantity">Cantidad de Ofertas</label>
+          <input
+              type="number"
+              id="offerQuantity"
+              v-model.number="offerData.quantity"
+              min="1"
+              placeholder="1"
+              required
+          />
+          <small class="field-hint"
+          >Número de ofertas disponibles para venta</small
+          >
+        </div>
+
         <!-- Precio total calculado -->
         <div class="form-group">
           <label>Precio Total de la Oferta</label>
@@ -107,8 +108,8 @@
 
         <div class="modal-actions">
           <button
-            type="submit"
-            :disabled="loading || selectedProducts.length === 0"
+              type="submit"
+              :disabled="loading || selectedProducts.length === 0"
           >
             {{ loading ? "Creando..." : "Crear Oferta" }}
           </button>
@@ -121,16 +122,16 @@
 
     <!-- Modal para agregar productos -->
     <AddProductToOfferModal
-      :visible="addProductModalVisible"
-      :excludedProductIds="excludedProductIds"
-      @update:visible="addProductModalVisible = $event"
-      @productAdded="handleProductAdded"
+        :visible="addProductModalVisible"
+        :excludedProductIds="excludedProductIds"
+        @update:visible="addProductModalVisible = $event"
+        @productAdded="handleProductAdded"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import {ref, watch, computed} from "vue";
 import axiosInstance from "@/lib/axios";
 import AddProductToOfferModal from "./AddProductToOfferModal.vue";
 
@@ -169,7 +170,7 @@ const excludedProductIds = computed(() => {
 // Computed para el precio total de la oferta
 const totalOfferPrice = computed(() => {
   return selectedProducts.value.reduce((total, product) => {
-    return total + product.total;
+    return total + product.total * offerData.value.quantity;
   }, 0);
 });
 

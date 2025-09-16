@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Actions\Offers\OfferIsFromFoodEstablishmentAction;
 use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Actions\Offers\ValidateOfferExpirationFromDTOAction;
+use App\Actions\Offers\ValidateOfferIsActiveAction;
 use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\SellValidationRules;
@@ -30,6 +31,7 @@ class SellController
         private readonly ValidateOfferExpirationAction        $validateOfferExpiration,
         private readonly OfferIsFromFoodEstablishmentAction   $offerIsFromFoodEstablishmentAction,
         private readonly ValidateOfferExpirationFromDTOAction $validateOfferExpirationFromDTOAction,
+        private readonly ValidateOfferIsActiveAction          $validateOfferIsActiveAction,
         private readonly getCustomerSellsAction               $getCustomerSellsAction,
         private readonly makeSellAction                       $makeSellAction,
         private readonly VerifyPurchaseDataFreshnessAction    $verifyPurchaseDataFreshnessAction,
@@ -59,6 +61,7 @@ class SellController
 
             DB::transaction(function () use ($preparePurchaseDTO) {
                 $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
+                $this->validateOfferIsActiveAction->execute($preparePurchaseDTO->offers);
                 $this->offerIsFromFoodEstablishmentAction->execute(
                     $preparePurchaseDTO->offers,
                     $preparePurchaseDTO->food_establishment_id
@@ -100,6 +103,7 @@ class SellController
             $preparePurchaseDTO = PreparePurchaseDTO::fromRequest($request);
 
             $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
+            $this->validateOfferIsActiveAction->execute($preparePurchaseDTO->offers);
             $this->offerIsFromFoodEstablishmentAction->execute(
                 $preparePurchaseDTO->offers,
                 $preparePurchaseDTO->food_establishment_id
