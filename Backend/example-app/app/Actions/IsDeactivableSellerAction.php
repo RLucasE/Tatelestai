@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Enums\UserState;
 
@@ -20,7 +21,7 @@ class IsDeactivableSellerAction
     public function execute(int $userId): bool
     {
         $user = User::findOrFail($userId);
-        if (!$user->hasRole('seller')) {
+        if (!$user->hasRole(UserRole::SELLER->value)) {
             throw new \Exception('El usuario no tiene rol seller.');
         }
         if ($user->state === UserState::ACTIVE->value || $user->state === UserState::DENIED_CONFIRMATION->value) {

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Actions\IsSellerActivableAction;
 use App\Actions\IsDeactivableSellerAction;
+use App\Actions\ChangeUserStateAction;
+use App\Actions\DeactivateEstablishmentOffersAction;
 use App\DTOs\BasicUserDTO;
 use App\Models\User;
 use App\Enums\UserState;
@@ -56,21 +58,25 @@ class AdmUserController extends Controller
     public function deactivateSeller(string $id)
     {
         $isDeactivableSellerAction = new IsDeactivableSellerAction();
+        $changeUserStateAction = new ChangeUserStateAction();
+        $deactivateOffersAction = new DeactivateEstablishmentOffersAction();
 
         try {
             $user = $this->userRepository->findById($id);
             if ($isDeactivableSellerAction->execute($user->id)) {
-                $this->userRepository->changeUserState($user, UserState::INACTIVE);
+                $changeUserStateAction->execute($user, UserState::INACTIVE);
+                $offersDeactivated = $deactivateOffersAction->executeByUserId($user->id);
             }
         }catch (Exception $exception){
             return response()->json([
                 'error' => $exception->getMessage(),
                 'trace' => $exception->getTrace()
-            ]);
+            ], 500);
         }
 
         return response()->json([
-            'message' => 'Seller desactivado correctamente.',
+            'message' => 'Seller y sus ofertas desactivados correctamente.',
+            'offers_deactivated' => $offersDeactivated,
             'user' => $user
         ]);
     }

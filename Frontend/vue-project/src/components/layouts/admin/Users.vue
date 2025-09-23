@@ -9,7 +9,6 @@ const error = ref(null);
 
 const rolesOrder = [
   "admin",
-  "super_admin",
   "seller",
   "customer",
   "default",
@@ -17,7 +16,6 @@ const rolesOrder = [
 
 const roleLabels = {
   admin: "Administradores",
-  super_admin: "Super Administradores",
   seller: "Vendedores",
   customer: "Clientes",
   default: "Usuarios sin rol",
