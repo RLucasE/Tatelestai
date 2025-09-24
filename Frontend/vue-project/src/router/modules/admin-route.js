@@ -48,6 +48,11 @@ export default [
             path: "customer/:id/purchases",
             name: "adm-customer-purchases",
             component: () => import('@/components/layouts/admin/CustomerPurchases.vue'),
+        },
+        {
+            path: "establishment-types",
+            name: "admin-establishment-types",
+            component: () => import('@/views/EstablishmentTypesManagement.vue'),
         }
     ],
     meta: {

@@ -4,11 +4,13 @@ use App\Enums\UserState;
 use App\Http\Controllers\AdmOfferController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
 use App\Http\Controllers\SellController;
+use App\Models\EstablishmentType;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserManagement;
 use App\Http\Controllers\OfferCustomerController;
@@ -70,6 +72,16 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm-sells', [SellController::class, 'adminSells']);
         Route::get('/adm-sells/{id}', [SellController::class, 'adminSellDetail']);
         Route::get('/adm-customer-purchases/{id}', [SellController::class, 'adminCustomerSells']);
+        Route::get('/adm-establishments/types', [EstablishmentTypeController::class, 'index']);
+        Route::post('/adm-establishments/types', [EstablishmentTypeController::class, 'store']);
+        Route::get('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'show']);
+        Route::patch('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'update']);
+//        Route::delete('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'destroy']);
+//        Route::get('/adm-establishments/types-trashed', [EstablishmentTypeController::class, 'trashed']);
+//        Route::patch('/adm-establishments/types/{id}/restore', [EstablishmentTypeController::class, 'restore']);
+
+
+
     });
 });
 

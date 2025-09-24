@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { RouterLink, RouterView } from "vue-router";
+import DropdownMenu from "@/components/common/DropdownMenu.vue";
 
 const isSidebarOpen = ref(false);
 </script>
@@ -28,9 +29,18 @@ const isSidebarOpen = ref(false);
         <h2 class="sidebar-title">Panel</h2>
         <ul class="menu">
           <li><RouterLink to="/adm/users" class="menu-link">Usuarios</RouterLink></li>
-          <li><RouterLink to="/adm/new-sellers" class="menu-link">Nuevos Vendedores</RouterLink></li>
           <li><RouterLink to="/adm/sells" class="menu-link">Ventas</RouterLink></li>
           <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>
+          <li>
+            <DropdownMenu
+                title="Establecimientos"
+                class="menu-dropdown"
+                :items="[
+              { text: 'Solicitudes', to: '/adm/new-sellers' },
+              { text: 'Categorías', to: '/adm/establishment-types' },
+            ]"
+            />
+          </li>
         </ul>
       </div>
     </aside>

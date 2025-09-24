@@ -19,7 +19,7 @@
 			- Des-habilitar una oferta 🟢
 				- El customer no debe poder cambiar de nuevo a activo 🟢
 			- Ver las ventas que se hicieron  🟢
-			-  Ser capaz de crear nuevos tipos de establecimientos 🔴
+			-  Ser capaz de crear nuevos tipos de establecimientos 🟢
 			- Agregar detalles a la petición de un nuevo local (Para que los usuarios administradores puedan comunicarse) 🔴
 			- 
 		- Compradores 
