@@ -76,8 +76,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::post('/adm-establishments/types', [EstablishmentTypeController::class, 'store']);
         Route::get('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'show']);
         Route::patch('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'update']);
-//        Route::delete('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'destroy']);
-//        Route::get('/adm-establishments/types-trashed', [EstablishmentTypeController::class, 'trashed']);
+        Route::delete('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'destroy']);
+        Route::get('/adm-establishments/types-trashed', [EstablishmentTypeController::class, 'trashed']);
 //        Route::patch('/adm-establishments/types/{id}/restore', [EstablishmentTypeController::class, 'restore']);
 
 

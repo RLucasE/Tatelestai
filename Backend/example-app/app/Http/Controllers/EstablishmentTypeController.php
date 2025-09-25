@@ -127,7 +127,8 @@ class EstablishmentTypeController extends Controller
             ], 404);
         }
 
-        $establishmentType->delete(); // Soft delete
+        $establishmentType->delete();
+
 
         return response()->json([
             'success' => true,

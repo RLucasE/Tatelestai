@@ -142,7 +142,7 @@
     </div>
 
     <!-- Modal para crear/editar -->
-    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div v-if="showModal" class="modal-backdrop fixed inset-0 flex items-center justify-center p-4 z-50">
       <div class="custom-card rounded-lg max-w-md w-full p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-semibold custom-text">
@@ -488,5 +488,14 @@ onMounted(() => {
 
 .custom-input::placeholder {
   color: #9ca3af;
+}
+
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.modal-backdrop .custom-card {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
+              0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 </style>
