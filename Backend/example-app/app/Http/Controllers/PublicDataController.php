@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstablishmentTypeState;
 use App\Http\Controllers\Controller;
 use App\Models\EstablishmentType;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class PublicDataController extends Controller
     {
         return response()->json(
             EstablishmentType::select('id', 'name')
+                ->where('state', EstablishmentTypeState::ACTIVE->value)
                 ->orderBy('id')
                 ->get()
         );

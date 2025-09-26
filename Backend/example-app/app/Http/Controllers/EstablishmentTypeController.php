@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\DTOs\EstablishmentTypeDTO;
+use App\Enums\EstablishmentTypeState;
 use App\Models\EstablishmentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ class EstablishmentTypeController extends Controller
 {
     public function index(): JsonResponse
     {
-        $establishmentTypes = EstablishmentType::all();
+        $establishmentTypes = EstablishmentType::where('state', EstablishmentTypeState::ACTIVE->value)->get();
 
         $establishmentTypesDTO = $establishmentTypes->map(function ($type) {
             return EstablishmentTypeDTO::fromModel($type);
@@ -126,10 +127,10 @@ class EstablishmentTypeController extends Controller
                 'message' => 'Tipo de establecimiento no encontrado'
             ], 404);
         }
-
-        $establishmentType->delete();
-
-
+        $establishmentType->update(
+            ['state' => EstablishmentTypeState::INACTIVE]
+        );
+        $establishmentType->save();
         return response()->json([
             'success' => true,
             'message' => 'Tipo de establecimiento eliminado exitosamente'
@@ -138,7 +139,7 @@ class EstablishmentTypeController extends Controller
 
     public function restore($id): JsonResponse
     {
-        $establishmentType = EstablishmentType::withTrashed()->find($id);
+        $establishmentType = EstablishmentType::findOrFail($id);
 
         if (!$establishmentType) {
             return response()->json([
@@ -147,35 +148,34 @@ class EstablishmentTypeController extends Controller
             ], 404);
         }
 
-        if (!$establishmentType->trashed()) {
+        if ($establishmentType->state !== EstablishmentTypeState::INACTIVE->value) {
             return response()->json([
                 'success' => false,
                 'message' => 'El tipo de establecimiento no está eliminado'
             ], 400);
         }
 
-        $establishmentType->restore();
+        $establishmentType->update(
+            ['state' => EstablishmentTypeState::ACTIVE->value]
+        );
 
-        $dto = EstablishmentTypeDTO::fromModel($establishmentType);
+        $EstablishmentTypedto = EstablishmentTypeDTO::fromModel($establishmentType);
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de establecimiento restaurado exitosamente',
-            'data' => $dto
+            'data' => $EstablishmentTypedto
         ]);
     }
 
     public function trashed(): JsonResponse
     {
-        $trashedTypes = EstablishmentType::onlyTrashed()->get();
+        $trashedTypes = EstablishmentType::where('state', EstablishmentTypeState::INACTIVE->value)->get();
 
-        $trashedTypesDTO = $trashedTypes->map(function ($type) {
-            return EstablishmentTypeDTO::fromModel($type);
-        });
 
         return response()->json([
             'success' => true,
-            'data' => $trashedTypesDTO
+            'data' => $trashedTypes
         ]);
     }
 

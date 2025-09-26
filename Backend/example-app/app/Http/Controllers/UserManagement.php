@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserState;
 use App\Http\Controllers\Controller;
+use App\Models\EstablishmentType;
 use App\Models\User;
 use App\Services\GmailService;
 use Illuminate\Http\JsonResponse;
@@ -63,6 +64,14 @@ class UserManagement extends Controller
             'address' => 'required|string|max:255',
             'establishment_type_id' => 'required|integer|exists:establishment_types,id',
         ]);
+
+        $establishmentType = EstablishmentType::find($request->input('establishment_type_id'));
+
+        if ($establishmentType->state !== 'active') {
+            return response()->json([
+                'message' => 'The selected establishment type is not active.',
+            ], 400);
+        }
 
         $user = Auth::user();
 
