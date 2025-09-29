@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Offers\Customer\GetCustomerOffersAction;
+use App\DTOs\OfferDTO;
+use App\DTOs\ProductOfferDTO;
 use App\Enums\OfferState;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,26 +31,23 @@ class OfferCustomerController extends Controller
                     return $offer->expiration_datetime >= now();
                 } )
                 ->forPage($page, $perPage)
-                ->load(['products' => function ($query) {
-                    $query->select(
-                        'products.id',
-                        'products.name',
-                        'products.description',
-                        'product_offers.price',
-                        'product_offers.quantity as product_quantity',
-                        'product_offers.offer_id'
-                    );
-                }])
+                ->load([
+                    'products' => function ($query) {
+                        $query->select(
+                            'products.id',
+                            'products.name',
+                            'products.description',
+                            'product_offers.price',
+                            'product_offers.quantity as product_quantity',
+                            'product_offers.offer_id'
+                        );
+                    },
+                    'foodEstablishment' => function ($query) {
+                        $query->select('id', 'name', 'address');
+                    }
+                ])
                 ->map(function ($offer) {
-                    return [
-                        'id' => $offer->id,
-                        'offer_quantity' => $offer->quantity,
-                        'title' => $offer->title,
-                        'description' => $offer->description,
-                        'expiration_datetime' => $offer->expiration_datetime,
-                        'food_establishment_id' => $offer->food_establishment_id,
-                        'products' => $offer->products
-                    ];
+                    return $this->transformOfferToDTO($offer);
                 });
 
             return response()->json([
@@ -62,28 +61,25 @@ class OfferCustomerController extends Controller
         // Si no hay búsqueda, usar paginación normal
         $offers = Offer::where('state', OfferState::ACTIVE->value)
             ->where('expiration_datetime', '>=', now())
-            ->with(['products' => function ($query) {
-                $query->select(
-                    'products.id',
-                    'products.name',
-                    'products.description',
-                    'product_offers.price',
-                    'product_offers.quantity as product_quantity',
-                    'product_offers.offer_id'
-                );
-            }])
+            ->with([
+                'products' => function ($query) {
+                    $query->select(
+                        'products.id',
+                        'products.name',
+                        'products.description',
+                        'product_offers.price',
+                        'product_offers.quantity as product_quantity',
+                        'product_offers.offer_id'
+                    );
+                },
+                'foodEstablishment' => function ($query) {
+                    $query->select('id', 'name', 'address');
+                }
+            ])
             ->paginate($perPage, ['*'], 'page', $page);
 
         $transformedOffers = $offers->getCollection()->map(function ($offer) {
-            return [
-                'id' => $offer->id,
-                'offer_quantity' => $offer->quantity,
-                'title' => $offer->title,
-                'description' => $offer->description,
-                'expiration_datetime' => $offer->expiration_datetime,
-                'food_establishment_id' => $offer->food_establishment_id,
-                'products' => $offer->products
-            ];
+            return $this->transformOfferToDTO($offer);
         });
 
         return response()->json([
@@ -92,5 +88,33 @@ class OfferCustomerController extends Controller
             'per_page' => $offers->perPage(),
             'has_more' => $offers->hasMorePages()
         ]);
+    }
+
+    /**
+     * Transform an Offer model to OfferDTO
+     */
+    private function transformOfferToDTO(Offer $offer): OfferDTO
+    {
+        $productDTOs = $offer->products->map(function ($product) {
+            return new ProductOfferDTO(
+                name: $product->name,
+                description: $product->description,
+                quantity: $product->product_quantity,
+                price: $product->price
+            );
+        })->toArray();
+
+        return new OfferDTO(
+            id: $offer->id,
+            offer_quantity: $offer->quantity,
+            title: $offer->title,
+            description: $offer->description,
+            expiration_datetime: $offer->expiration_datetime,
+            establishment_id: $offer->foodEstablishment->id,
+            establishment_name: $offer->foodEstablishment->name,
+            establishment_address: $offer->foodEstablishment->address,
+            food_establishment_id: $offer->food_establishment_id,
+            products: $productDTOs
+        );
     }
 }

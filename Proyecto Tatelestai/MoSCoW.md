@@ -21,7 +21,6 @@
 			- Ver las ventas que se hicieron  🟢
 			-  Ser capaz de crear nuevos tipos de establecimientos 🟢
 			- Agregar detalles a la petición de un nuevo local (Para que los usuarios administradores puedan comunicarse) 🔴
-			- 
 		- Compradores 
 			- Ver las ofertas publicadas 🟢
 			- Agregar una oferta al carrito 🟢
@@ -31,6 +30,13 @@
 			- Quitar todas las ofertas del carrito 🟢
 			- Hacer la compra de un carrito  🟢
 			- Hacer la compra de una oferta 🟢
+			- Que los detalles de las ofertas tengan la dirección del establecimiento 🔴
+			- Que el carrito tenga la información del establecimiento 🔴
+			- El comprador recibe un mail con los datos para retirar su pedido una vez comprado 🔴
+				- El pedido tiene un QR y un Codigo 🔴
+				- Si la compra tiene varias ofertas el QR abarca todas 🔴
+			- El usuario puede ver los codigos para retirar la compra 🔴
+			- El usuario puede recibir notificación vie mail/app que su comra fue cancelada -> reembolso 🔴
 		- Vendedores
 			- Registrar su negocio 🟢
 				- Registrar la dirección del local 🟢
@@ -41,6 +47,11 @@
 			- Puede agregar un producto 🟢
 			- Crear oferta con uno o más productos 🟢
 			- Des-habilitar una oferta 🟢
+			- Confirmar la compra de un customer con el código/QR 🔴
+			- Poder cancelar la compra -> Notificar al comprador 🔴
+			- Los productos tienen fecha de caducidad 🔴
+			- Una oferta puede ser Única o Reiterada 🔴
+			- Una oferta Reiterada tiene Hora de Apertura,Cierre y Pick-Up 🔴
 2. **S - Should Have** 🔴
     
     - **Requisitos importantes**: Añaden gran valor, pero el proyecto puede funcionar sin ellos a corto plazo.

@@ -21,7 +21,7 @@
       <!-- Contenido del modal -->
       <div class="modal-content">
         <!-- Información del establecimiento -->
-        <div class="establishment-info" v-if="offer.food_establishment">
+        <div class="establishment-info"
           <h3 class="establishment-name">
             <svg
               width="20"
@@ -33,8 +33,20 @@
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            {{ offer.food_establishment.name }}
+            {{ offer.establishment_name }}
           </h3>
+          <p class="establishment-address" v-if="offer.establishment_address">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            {{ offer.establishment_address }}
+          </p>
         </div>
 
         <!-- Descripción de la oferta -->
@@ -303,6 +315,15 @@ const buyOffer = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.establishment-address {
+  margin: 4px 0 0 0;
+  font-size: 0.9em;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .offer-description {
