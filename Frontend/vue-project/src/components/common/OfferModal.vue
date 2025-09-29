@@ -21,7 +21,7 @@
       <!-- Contenido del modal -->
       <div class="modal-content">
         <!-- Información del establecimiento -->
-        <div class="establishment-info"
+        <div class="establishment-info">
           <h3 class="establishment-name">
             <svg
               width="20"
