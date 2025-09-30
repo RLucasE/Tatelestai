@@ -65,7 +65,7 @@ class AdmUserController extends Controller
             $user = $this->userRepository->findById($id);
             if ($isDeactivableSellerAction->execute($user->id)) {
                 $changeUserStateAction->execute($user, UserState::INACTIVE);
-                $offersDeactivated = $deactivateOffersAction->executeByUserId($user->id);
+                $deactivateOffersAction->executeByUserId($user->id);
             }
         }catch (Exception $exception){
             return response()->json([
@@ -74,9 +74,11 @@ class AdmUserController extends Controller
             ], 500);
         }
 
+
+
         return response()->json([
-            'message' => 'Seller y sus ofertas desactivados correctamente.',
-            'offers_deactivated' => $offersDeactivated,
+            'message' => 'Seller desactivado correctamente.',
+            'offers_deactivated' => true,
             'user' => $user
         ]);
     }

@@ -56,6 +56,17 @@
           />
         </div>
 
+        <div class="form-group">
+          <label for="productExpirationDate">Fecha de vencimiento</label>
+          <input
+            type="date"
+            id="productExpirationDate"
+            v-model="expirationDate"
+            required
+            placeholder="Fecha de vencimiento del producto"
+          />
+        </div>
+
         <div class="modal-actions">
           <button type="submit" :disabled="loading || !selectedProductId">
             {{ loading ? "Agregando..." : "Agregar Producto" }}
@@ -87,6 +98,7 @@ const emit = defineEmits(["update:visible", "productAdded"]);
 const selectedProductId = ref("");
 const quantity = ref(1);
 const productPrice = ref(0);
+const expirationDate = ref("");
 const loading = ref(false);
 const products = ref([]);
 
@@ -100,7 +112,7 @@ const availableProducts = computed(() => {
 // Computed para el producto seleccionado
 const selectedProduct = computed(() => {
   return products.value.find(
-    (product) => product.id == selectedProductId.value
+    (product) => product.id === selectedProductId.value
   );
 });
 
@@ -132,6 +144,7 @@ const resetForm = () => {
   selectedProductId.value = "";
   quantity.value = 1;
   productPrice.value = 0;
+  expirationDate.value = "";
 };
 
 // Función para manejar el envío del formulario
@@ -146,6 +159,7 @@ const handleSubmit = async () => {
     quantity: quantity.value,
     price: productPrice.value,
     total: quantity.value * productPrice.value,
+    expirationDate: expirationDate.value,
   };
 
   emit("productAdded", productToAdd);
@@ -224,7 +238,7 @@ select {
   background-color: var(--color-primary);
   padding: 1rem;
   border-radius: 4px;
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-focus);
 }
 
 .selected-product-info h4 {
@@ -239,7 +253,7 @@ select {
 }
 
 .price {
-  color: var(--color-accent);
+  color: var(--color-focus);
   font-weight: bold;
 }
 

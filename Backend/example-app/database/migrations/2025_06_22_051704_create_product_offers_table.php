@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('offer_id');
             $table->foreign('offer_id')->references('id')->on('offers')->onDelete('cascade');
             $table->integer('quantity')->default(1);
-
+            $table->date('expiration_date')->nullable();
             $table->unique(['product_id', 'offer_id'], 'unique_product_offer');
         });
     }

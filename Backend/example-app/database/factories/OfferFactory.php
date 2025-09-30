@@ -243,6 +243,7 @@ class OfferFactory extends Factory
                 $offer->products()->attach($product->id, [
                     'price' => $this->faker->randomDigit(1000,5000),
                     'quantity' => $this->faker->numberBetween(1, 10),
+                    'expiration_date' => $this->faker->dateTimeBetween('+1 day', '+1 week')->format('Y-m-d'),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

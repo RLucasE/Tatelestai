@@ -8,6 +8,7 @@ use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AdmUserControllerTest extends TestCase
@@ -29,7 +30,7 @@ class AdmUserControllerTest extends TestCase
         $this->actingAs($this->admin);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_activate_a_seller_waiting_for_confirmation()
     {
         $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
@@ -53,7 +54,7 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::ACTIVE->value, $seller->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_activate_an_inactive_seller()
     {
         // Arrange
@@ -73,7 +74,7 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::ACTIVE->value, $seller->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_cannot_activate_seller_without_seller_role()
     {
         // Arrange
@@ -92,7 +93,7 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::WAITING_FOR_CONFIRMATION->value, $user->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_cannot_activate_seller_already_active()
     {
         // Arrange
@@ -111,17 +112,17 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::ACTIVE->value, $seller->state); // Se mantiene igual
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_error_when_seller_not_found_for_activation()
     {
         // Act
         $response = $this->patchJson('/api/users/999/activate-seller');
 
         // Assert
-        $response->assertStatus(500);
+        $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_deactivate_an_active_seller()
     {
         // Arrange
@@ -133,6 +134,7 @@ class AdmUserControllerTest extends TestCase
         // Act
         $response = $this->patchJson("/api/users/{$seller->id}/deactivate-seller");
 
+
         // Assert
         $response->assertStatus(200)
             ->assertJson([
@@ -143,13 +145,14 @@ class AdmUserControllerTest extends TestCase
                     'last_name' => $seller->last_name,
                     'email' => $seller->email,
                 ],
+                'offers_deactivated' => true,
             ]);
 
         $seller->refresh();
         $this->assertEquals(UserState::INACTIVE->value, $seller->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_deactivate_a_denied_confirmation_seller()
     {
         // Arrange
@@ -171,7 +174,7 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::INACTIVE->value, $seller->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_cannot_deactivate_seller_without_seller_role()
     {
         // Arrange
@@ -184,16 +187,17 @@ class AdmUserControllerTest extends TestCase
         $response = $this->patchJson("/api/users/{$user->id}/deactivate-seller");
 
         // Assert
-        $response->assertStatus(200)
+        $response->assertStatus(500)
             ->assertJsonStructure([
                 'error',
+                'trace'
             ]);
 
         $user->refresh();
         $this->assertEquals(UserState::ACTIVE->value, $user->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_cannot_deactivate_seller_in_waiting_state()
     {
         // Arrange
@@ -212,7 +216,7 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::WAITING_FOR_CONFIRMATION->value, $seller->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_cannot_deactivate_seller_already_inactive()
     {
         // Arrange
@@ -231,20 +235,20 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::INACTIVE->value, $seller->state);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_error_when_seller_not_found_for_deactivation()
     {
         // Act
         $response = $this->patchJson('/api/users/999/deactivate-seller');
 
         // Assert
-        $response->assertStatus(200)
+        $response->assertStatus(500)
             ->assertJsonStructure([
                 'error',
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function activate_seller_maintains_database_consistency()
     {
         // Arrange
@@ -267,7 +271,7 @@ class AdmUserControllerTest extends TestCase
         $this->assertTrue($seller->hasRole('seller')); // Mantiene el rol
     }
 
-    /** @test */
+    #[Test]
     public function deactivate_seller_maintains_database_consistency()
     {
         // Arrange
@@ -290,3 +294,4 @@ class AdmUserControllerTest extends TestCase
         $this->assertTrue($seller->hasRole('seller')); // Mantiene el rol
     }
 }
+

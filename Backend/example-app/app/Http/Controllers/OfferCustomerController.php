@@ -39,7 +39,8 @@ class OfferCustomerController extends Controller
                             'products.description',
                             'product_offers.price',
                             'product_offers.quantity as product_quantity',
-                            'product_offers.offer_id'
+                            'product_offers.offer_id',
+                            'product_offers.expiration_date'
                         );
                     },
                     'foodEstablishment' => function ($query) {
@@ -69,7 +70,8 @@ class OfferCustomerController extends Controller
                         'products.description',
                         'product_offers.price',
                         'product_offers.quantity as product_quantity',
-                        'product_offers.offer_id'
+                        'product_offers.offer_id',
+                        'product_offers.expiration_date'
                     );
                 },
                 'foodEstablishment' => function ($query) {
@@ -100,7 +102,8 @@ class OfferCustomerController extends Controller
                 name: $product->name,
                 description: $product->description,
                 quantity: $product->product_quantity,
-                price: $product->price
+                price: $product->price,
+                expiration_date: $product->expiration_date
             );
         })->toArray();
 

@@ -223,6 +223,7 @@ const handleSubmit = async () => {
         id: product.id,
         quantity: product.quantity,
         price: product.price,
+        expirationDate: product.expirationDate
       })),
     };
     const response = await axiosInstance.post("/offer", offerPayload);
