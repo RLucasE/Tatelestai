@@ -19,16 +19,16 @@ class OfferSeeder extends Seeder
         if ($seller) {
 
             Offer::factory()
-                ->count(10000)
-                ->withProducts(10)
+                ->count(500)
+                ->withProducts(3)
                 ->for($seller->foodEstablishment)
                 ->create();
 
             echo "Mitad del OfferSeeder completada - Primera parte de ofertas creada\n";
 
             Offer::factory()
-                ->count(10000)
-                ->withProducts(random_int(1,5))
+                ->count(500)
+                ->withProducts(random_int(1,3))
                 ->for($seller->foodEstablishment)
                 ->create();
         }

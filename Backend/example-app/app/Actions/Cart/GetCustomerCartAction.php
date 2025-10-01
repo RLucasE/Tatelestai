@@ -25,7 +25,7 @@ class GetCustomerCartAction
             return null;
         }
 
-        $offers = OfferCart::with(['offer.products', 'offer'])
+        $offers = OfferCart::with(['offer.products', 'offer', 'offer.foodEstablishment'])
             ->where('user_cart_id', $cart->id)
             ->orderByDesc('created_at')
             ->get()
@@ -33,6 +33,8 @@ class GetCustomerCartAction
                 return [
                     'offer_id' => $offerCart->offer->id,
                     'establishment_id' => $offerCart->offer->food_establishment_id,
+                    'establishment_name' => $offerCart->offer->foodEstablishment->name,
+                    'establishment_address' => $offerCart->offer->foodEstablishment->address,
                     'offer_title' => $offerCart->offer->title,
                     'offer_description' => $offerCart->offer->description,
                     'offer_max_quantity' => $offerCart->offer->quantity,

@@ -1,7 +1,10 @@
 <template>
   <div class="seller-section">
     <div class="seller-header">
-      <h3>Vendedor {{ offers[0].establishment_id }}</h3>
+      <div class="establishment-info">
+        <h2 class="establishment-name">{{offers[0].establishment_name}}</h2>
+        <h3 class="establishment-address">{{offers[0].establishment_address}}</h3>
+      </div>
       <button
         class="delete-all-offers-btn"
         @click="confirmRemoveAllOffers"
@@ -279,22 +282,37 @@ const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
 }
 
 .seller-header {
-  padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
+  padding: 1.5rem 2.5rem;
   background: var(--color-secondary);
   border-bottom: 2px solid var(--color-focus);
   width: 100%;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
 }
 
-.seller-header h3 {
+.establishment-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.establishment-name {
   margin: 0;
-  font-size: 1.75rem; /* Aumentado el tamaño */
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--color-text);
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.establishment-address {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-text);
+  opacity: 0.8;
 }
 
 .delete-all-offers-btn {
@@ -706,8 +724,12 @@ const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
     gap: 1rem;
   }
 
-  .seller-header h3 {
+  .establishment-name {
     font-size: 1.4rem;
+  }
+
+  .establishment-address {
+    font-size: 1rem;
   }
 
   .offer-title {
