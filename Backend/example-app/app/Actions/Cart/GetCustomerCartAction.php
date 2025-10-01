@@ -25,7 +25,7 @@ class GetCustomerCartAction
             return null;
         }
 
-        $offers = OfferCart::with(['offer.products', 'offer', 'offer.foodEstablishment'])
+        $offers = OfferCart::with(['offer.fullProducts', 'offer','offer.foodEstablishment'])
             ->where('user_cart_id', $cart->id)
             ->orderByDesc('created_at')
             ->get()
@@ -41,16 +41,19 @@ class GetCustomerCartAction
                     'offer_state' => $offerCart->offer->state,
                     'offer_expiration_datetime' => $offerCart->offer->expiration_datetime,
                     'quantity' => $offerCart->quantity,
-                    'products' => $offerCart->offer->products->map(function ($product) {
+                    'products' => $offerCart->offer->fullProducts->map(function ($product) {
                         return [
                             'product_name' => $product->name,
                             'product_description' => $product->description,
                             'product_price' => $product->pivot->price,
                             'product_quantity' => $product->pivot->quantity,
+                            'product_expiration_date' => $product->pivot->expiration_date,
                         ];
                     })->toArray(),
                 ];
             });
+
+        dump($offers);
 
         return $offers->groupBy('establishment_id')->values();
     }

@@ -30,7 +30,7 @@
 			- Quitar todas las ofertas del carrito 🟢
 			- Hacer la compra de un carrito  🟢
 			- Hacer la compra de una oferta 🟢
-			- Que los detalles de las ofertas tengan la dirección del establecimiento 🔴
+			- Que los detalles de las ofertas tengan la dirección del establecimiento 🟢 
 			- Que el carrito tenga la información del establecimiento 🔴
 			- El comprador recibe un mail con los datos para retirar su pedido una vez comprado 🔴
 				- El pedido tiene un QR y un Codigo 🔴

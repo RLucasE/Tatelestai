@@ -35,6 +35,11 @@ class Offer extends Model
             ->withPivot(['price', 'quantity']);
     }
 
+    public function fullProducts(){
+        return $this->belongsToMany(Product::class, 'product_offers')
+            ->withPivot(['price', 'quantity','expiration_date']);
+    }
+
     public function productOffer()
     {
         return $this->hasMany(ProductOffer::class);
