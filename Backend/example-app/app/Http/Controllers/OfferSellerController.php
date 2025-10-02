@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Actions\Offers\GetUserOffersAction;
 use App\Actions\Offers\GetOfferAction;
 use App\Actions\Offers\ValidateOfferOwnershipAction;
+use App\Actions\Offers\ValidateExpirationDatesAction;
+use App\DTOs\CreateNewOfferDTO;
+use App\DTOs\PrepareOfferDTO;
 use App\Enums\OfferState;
 use App\Models\Offer;
 use Illuminate\Http\Request;
@@ -21,16 +24,24 @@ class OfferSellerController extends OfferController
         private GetOfferAction $getOffer,
         private ValidateOfferOwnershipAction $validateOfferOwnership,
         private ValidateProductOwnershipAction $validateProductOwnershipAction,
-        private CreateOfferAction $createOfferAction
+        private CreateOfferAction $createOfferAction,
+        private ValidateExpirationDatesAction $validateExpirationDatesAction
     ) {}
     public function store(Request $request)
     {
         $request->validate($this->getOfferValidationRules());
-        $products = $request->array('products');
-        $productIDs = $this->productsToProductsIDs($products);
+        $offerDTO = CreateNewOfferDTO::fromRequest($request);
+
         try {
+            // Validar fechas de expiración
+            $this->validateExpirationDatesAction->execute($offerDTO);
+
+            $products = $request->array('products');
+            $productIDs = $this->productsToProductsIDs($products);
+
             $this->validateProductOwnershipAction->execute($productIDs);
             $offer = $this->createOfferAction->execute($request);
+
             return response()->json([
                 'message' => 'Oferta creada exitosamente',
                 'offer' => $offer,
@@ -42,6 +53,10 @@ class OfferSellerController extends OfferController
                 'establishment_id' => $e->context()['establishment_id'],
                 'error' => $e->context()['error'],
             ], $e->getCode());
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
         }
     }
 

@@ -63,17 +63,7 @@ class OfferCustomerController extends Controller
         $offers = Offer::where('state', OfferState::ACTIVE->value)
             ->where('expiration_datetime', '>=', now())
             ->with([
-                'products' => function ($query) {
-                    $query->select(
-                        'products.id',
-                        'products.name',
-                        'products.description',
-                        'product_offers.price',
-                        'product_offers.quantity as product_quantity',
-                        'product_offers.offer_id',
-                        'product_offers.expiration_date'
-                    );
-                },
+                'fullProducts',
                 'foodEstablishment' => function ($query) {
                     $query->select('id', 'name', 'address');
                 }
@@ -94,30 +84,36 @@ class OfferCustomerController extends Controller
 
     /**
      * Transform an Offer model to OfferDTO
+     * @throws \Exception
      */
     private function transformOfferToDTO(Offer $offer): OfferDTO
     {
-        $productDTOs = $offer->products->map(function ($product) {
-            return new ProductOfferDTO(
-                name: $product->name,
-                description: $product->description,
-                quantity: $product->product_quantity,
-                price: $product->price,
-                expiration_date: $product->expiration_date
-            );
-        })->toArray();
+        try {
 
-        return new OfferDTO(
-            id: $offer->id,
-            offer_quantity: $offer->quantity,
-            title: $offer->title,
-            description: $offer->description,
-            expiration_datetime: $offer->expiration_datetime,
-            establishment_id: $offer->foodEstablishment->id,
-            establishment_name: $offer->foodEstablishment->name,
-            establishment_address: $offer->foodEstablishment->address,
-            food_establishment_id: $offer->food_establishment_id,
-            products: $productDTOs
-        );
+            $productDTOs = $offer->fullProducts->map(function ($product) {
+                return new ProductOfferDTO(
+                    name: $product->name ?? '',
+                    description: $product->description ?? '',
+                    quantity: $product->pivot->quantity ?? 0,
+                    price: $product->pivot->price ?? 0.0,
+                    expiration_date: $product->pivot->expiration_date ?? ''
+                );
+            })->toArray();
+
+            return new OfferDTO(
+                id: $offer->id,
+                offer_quantity: $offer->quantity,
+                title: $offer->title,
+                description: $offer->description,
+                expiration_datetime: $offer->expiration_datetime ?? '',
+                establishment_id: $offer->foodEstablishment->id,
+                establishment_name: $offer->foodEstablishment->name,
+                establishment_address: $offer->foodEstablishment->address,
+                food_establishment_id: $offer->food_establishment_id,
+                products: $productDTOs
+            );
+        }catch (\Exception $exception){
+            throw new \Exception($exception->getMessage());
+        }
     }
 }

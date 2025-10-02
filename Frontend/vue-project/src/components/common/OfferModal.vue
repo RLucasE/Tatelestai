@@ -79,9 +79,24 @@
               </p>
 
               <div class="product-footer">
-                <span class="product-price" v-if="product.pivot?.price">
-                  ${{ formatPrice(product.pivot.price) }}
-                </span>
+                <div class="product-info">
+                  <span class="product-price" v-if="product.pivot?.price">
+                    ${{ formatPrice(product.pivot.price) }}
+                  </span>
+                  <span class="product-expiration" v-if="product.expiration_date">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12,6 12,12 16,14"></polyline>
+                    </svg>
+                    Caduca: {{ formatDate(product.expiration_date) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -212,6 +227,14 @@ const formatPrice = (price) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(price);
+};
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 };
 
 const closeModal = () => {
@@ -405,9 +428,11 @@ const buyOffer = () => {
   line-height: 1.4;
 }
 
-.product-footer {
+.product-info {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .product-price {
@@ -417,6 +442,14 @@ const buyOffer = () => {
   border-radius: 8px;
   font-weight: 600;
   font-size: 1em;
+}
+
+.product-expiration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9em;
+  color: var(--color-text);
 }
 
 /* Total */
