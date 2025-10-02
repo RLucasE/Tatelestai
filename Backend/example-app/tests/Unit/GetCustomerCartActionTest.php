@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\UserCart;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -38,7 +39,7 @@ class GetCustomerCartActionTest extends TestCase
         $this->establishmentType = EstablishmentType::factory()->create();
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_null_when_user_has_no_active_cart()
     {
         $customer = User::factory()->withRole('customer')->create([
@@ -50,7 +51,7 @@ class GetCustomerCartActionTest extends TestCase
         expect($result)->toBeNull();
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_grouped_offers_by_establishment_when_user_has_active_cart()
     {
         $customer = User::factory()->withRole('customer')->create([
@@ -137,7 +138,7 @@ class GetCustomerCartActionTest extends TestCase
 
     }
 
-    /** @test */
+    #[Test]
     public function it_groups_offers_by_establishment_correctly()
     {
         $customer = User::factory()->withRole('customer')->create([
@@ -210,7 +211,7 @@ class GetCustomerCartActionTest extends TestCase
         expect($establishmentIds)->toContain($establishment2->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_includes_purchased_offers_with_correct_state()
     {
         $customer = User::factory()->withRole('customer')->create([
@@ -256,7 +257,7 @@ class GetCustomerCartActionTest extends TestCase
         expect($offerData['offer_max_quantity'])->toBe(0);
     }
 
-    /** @test */
+    #[Test]
     public function it_orders_offers_by_created_at_descending()
     {
         $customer = User::factory()->withRole('customer')->create([
