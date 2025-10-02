@@ -16,21 +16,25 @@ class EstablishmentTypeFactory extends Factory
      */
     public function definition(): array
     {
+        $establishmentTypes = [
+            'Restaurante',
+            'Pizzería',
+            'Cafetería',
+            'Panadería',
+            'Heladería',
+            'Bar',
+            'Comida Rápida',
+            'Pastelería',
+            'Marisquería',
+            'Asadero'
+        ];
+
+        $selectedType = fake()->randomElement($establishmentTypes);
+
         return [
-            'name' => $this->faker->randomElement([
-                'Restaurante',
-                'Pizzería',
-                'Cafetería',
-                'Panadería',
-                'Heladería',
-                'Bar',
-                'Comida Rápida',
-                'Pastelería',
-                'Marisquería',
-                'Asadero'
-            ]),
-            'slug' => $this->faker->unique()->slug(),
-            'description' => $this->faker->sentence(10),
+            'name' => $selectedType,
+            'slug' => strtolower(str_replace(' ', '-', $selectedType)) . '-' . fake()->unique()->numberBetween(1000, 9999),
+            'description' => fake()->sentence(),
         ];
     }
 }

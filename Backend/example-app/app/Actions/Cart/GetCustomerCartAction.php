@@ -53,7 +53,6 @@ class GetCustomerCartAction
                 ];
             });
 
-        dump($offers);
 
         return $offers->groupBy('establishment_id')->values();
     }

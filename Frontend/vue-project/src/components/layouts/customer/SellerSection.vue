@@ -87,6 +87,14 @@
             >
               {{ product.product_description }}
             </div>
+            <div
+              class="product-expiration"
+              v-if="product.product_expiration_date"
+            >
+              <i class="fas fa-calendar-alt"></i>
+              <span class="expiration-label">Vence:</span>
+              <span class="expiration-date">{{ formatExpirationDate(product.product_expiration_date) }}</span>
+            </div>
             <div class="product-footer">
               <span class="product-price">${{ product.product_price }}</span>
             </div>
@@ -256,6 +264,12 @@ const quantityExceedsMax = (offer) => {
 };
 
 const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
+
+const formatExpirationDate = (dateString) => {
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', options);
+};
 </script>
 
 <style scoped>
@@ -549,6 +563,25 @@ const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
   font-size: 0.9rem;
   color: var(--color-text);
 }
+
+.product-expiration {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  margin-top: 0.5rem;
+}
+
+.product-expiration i {
+  font-size: 1rem;
+  color: var(--color-focus);
+}
+
+.expiration-label {
+  font-weight: 600;
+}
+
 .product-footer {
   display: flex;
   justify-content: flex-end;
