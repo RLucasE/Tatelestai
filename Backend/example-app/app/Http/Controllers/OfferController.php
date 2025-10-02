@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Offer;
 use App\Actions\Offers\GetUserEstablishmentAction;
 use App\Actions\Offers\ResolveOfferAction;
-use App\Actions\Product\MapProductsToIdsAction;
 
 
 class OfferController extends Controller
