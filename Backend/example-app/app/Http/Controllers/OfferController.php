@@ -21,7 +21,7 @@ class OfferController extends Controller
             'products.*.id' => 'required|integer|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.price' => 'required|numeric|min:1',
-            'products·*.expiration_date' => 'required|date|after:today'
+            'products.*.expirationDate' => 'required|date|after:today'
         ];
     }
 

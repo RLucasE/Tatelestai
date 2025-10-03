@@ -3,6 +3,7 @@
 namespace App\Actions\Offers;
 
 use App\DTOs\CreateNewOfferDTO;
+use App\Exceptions\Offer\InvalidExpirationDateException;
 use Carbon\Carbon;
 
 class ValidateExpirationDatesAction
@@ -13,7 +14,7 @@ class ValidateExpirationDatesAction
      *
      * @param CreateNewOfferDTO $offerDTO
      * @return bool
-     * @throws \Exception
+     * @throws InvalidExpirationDateException
      */
     public function execute(CreateNewOfferDTO $offerDTO): bool
     {
@@ -22,7 +23,7 @@ class ValidateExpirationDatesAction
 
         // Validar que la fecha de expiración de la oferta sea mayor a ahora
         if ($offerExpirationDate <= $now) {
-            throw new \Exception("La fecha de expiración de la oferta debe ser mayor a la fecha actual");
+            throw InvalidExpirationDateException::offerDateTooEarly($offerExpirationDate->format('Y-m-d'));
         }
 
         // Validar que las fechas de expiración de los productos no sean mayores a la de la oferta
@@ -30,7 +31,11 @@ class ValidateExpirationDatesAction
             $productExpirationDate = Carbon::parse($product->expirationDate)->startOfDay();
 
             if ($productExpirationDate->startOfDay() < $offerExpirationDate->startOfDay()) {
-                throw new \Exception('la fecha de expiración del producto no puede ser anterior a la fecha de la oferta');
+                throw InvalidExpirationDateException::productDateAfterOfferDate(
+                    $product->id,
+                    $productExpirationDate->format('Y-m-d'),
+                    $offerExpirationDate->format('Y-m-d')
+                );
             }
         }
 

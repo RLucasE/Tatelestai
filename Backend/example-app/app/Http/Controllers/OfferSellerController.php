@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Actions\Offers\ValidateProductOwnershipAction;
 use App\Actions\Offers\CreateOfferAction;
 use App\Exceptions\Product\ProductOwnershipException;
+use App\Exceptions\Offer\InvalidExpirationDateException;
 use Illuminate\Http\Response;
 
 class OfferSellerController extends OfferController
@@ -46,6 +47,11 @@ class OfferSellerController extends OfferController
                 'message' => 'Oferta creada exitosamente',
                 'offer' => $offer,
             ], 201);
+        } catch (InvalidExpirationDateException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'context' => $e->context(),
+            ], $e->getCode());
         } catch (ProductOwnershipException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
