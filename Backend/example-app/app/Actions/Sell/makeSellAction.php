@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * -Offers exist
  */
 class makeSellAction{
-    public function __construct(private GetOfferAction $getOfferAction)
+    public function __construct(private GetOfferAction $getOfferAction, private GeneratePickupCodeAction $generatePickupCodeAction)
     {
     }
 
@@ -34,9 +34,12 @@ class makeSellAction{
      */
     public function execute(PreparePurchaseDTO $preparePurchaseDTO, int $bought_by, int $sold_by): array
     {
+        $pickupCode = $this->generatePickupCodeAction->execute($bought_by, $sold_by, $preparePurchaseDTO);
+
         $sell = Sell::create([
             'bought_by' => $bought_by,
             'sold_by' => $sold_by,
+            'pickup_code' => $pickupCode,
         ]);
 
 

@@ -17,6 +17,9 @@ return new class extends Migration
             $table->unsignedBigInteger('sold_by');
             $table->foreign('bought_by')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('sold_by')->references('id')->on('food_establishments')->onDelete('cascade');
+            $table->string('pickup_code');
+            $table->boolean('is_picked_up')->default(false);
+            $table->timestamp('picked_up_at')->nullable();
             $table->timestamps();
         });
     }

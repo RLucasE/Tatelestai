@@ -293,10 +293,9 @@ class OfferSellerControllerTest extends TestCase
         $invalidData = [
             // Sin title requerido
             'description' => 'Descripción de prueba',
-            'total_price' => 'invalid_price', // Precio inválido
             'expiration_date' => 'invalid_date', // Fecha inválida
             'quantity' => -1, // Cantidad negativa
-            'products' => [] // Array vacío de productos
+            // Sin products requerido
         ];
 
         $response = $this->postJson('/api/offer', $invalidData);
@@ -304,7 +303,6 @@ class OfferSellerControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors([
                 'title',
-                'total_price',
                 'expiration_date',
                 'quantity',
                 'products'

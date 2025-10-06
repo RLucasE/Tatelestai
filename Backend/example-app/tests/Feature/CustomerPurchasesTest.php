@@ -9,12 +9,16 @@ use App\Models\FoodEstablishment;
 use App\Models\EstablishmentType;
 use App\Models\Category;
 use App\Enums\UserState;
+use Spatie\Permission\Models\Role;
+use App\Actions\Sell\GeneratePickupCodeAction;
+use App\DTOs\PreparePurchaseDTO;
+use App\DTOs\PrepareOfferDTO;
 
 beforeEach(function () {
     // Crear datos base que se reutilizarán en todos los tests
     $this->establishmentType = EstablishmentType::factory()->create();
-    \Spatie\Permission\Models\Role::create(['name' => 'customer']);
-    \Spatie\Permission\Models\Role::create(['name' => 'seller']);
+    Role::create(['name' => 'customer']);
+    Role::create(['name' => 'seller']);
 });
 
 test('customer can retrieve their purchases successfully', function () {
@@ -23,7 +27,7 @@ test('customer can retrieve their purchases successfully', function () {
         'state' => UserState::ACTIVE->value
     ]);
 
-    // Crear un seller y su establecimiento usando factories
+    // Crear un seller y su estableciento usando factories
     $seller = User::factory()->withRole('seller')->create([
         'state' => UserState::ACTIVE->value
     ]);
@@ -51,10 +55,24 @@ test('customer can retrieve their purchases successfully', function () {
         'food_establishment_id' => $establishment->id,
     ]);
 
+    $offer1 = PrepareOfferDTO::createFromIdAndQuantity($offer1->id, $offer1->quantity);
+    $offer2 = PrepareOfferDTO::createFromIdAndQuantity($offer2->id, $offer2->quantity);
+
+    $generatePickupCodeAction = new GeneratePickupCodeAction();
+    $pickupCode = $generatePickupCodeAction->execute(
+        $customer->id,
+        $establishment->id,
+        new PreparePurchaseDTO(
+            food_establishment_id: $establishment->id,
+            offers: []
+        )
+    );
+
     // Crear venta usando factory
     $sell = Sell::factory()->create([
         'bought_by' => $customer->id,
-        'sold_by' => $establishment->id
+        'sold_by' => $establishment->id,
+        'pickup_code' => $pickupCode
     ]);
 
     // Crear detalles de venta usando factory
@@ -89,6 +107,9 @@ test('customer can retrieve their purchases successfully', function () {
                 'id',
                 'created_at',
                 'sold_by',
+                'pickup_code',
+                'is_picked_up',
+                'picked_up_at',
                 'sell_details' => [
                     '*' => [
                         'id',
@@ -107,20 +128,21 @@ test('customer can retrieve their purchases successfully', function () {
     // Verificar que los datos son correctos
     $responseData = $response->json('data');
 
-    expect($responseData)->toHaveCount(1);
-    expect($responseData[0]['id'])->toBe($sell->id);
-    expect($responseData[0]['sell_details'])->toHaveCount(2);
+
+    expect($responseData)->toHaveCount(1)
+        ->and($responseData[0]['id'])->toBe($sell->id)
+        ->and($responseData[0]['pickup_code'])->toBe($pickupCode)
+        ->and($responseData[0]['sell_details'])->toHaveCount(2);
 
     // Verificar detalles específicos
     $details = $responseData[0]['sell_details'];
-    expect($details[0]['product_name'])->toBe('Pizza Margherita');
-    expect($details[0]['offer_quantity'])->toBe(2);
-    expect($details[0]['product_quantity'])->toBe(1);
-    expect($details[0]['product_price'])->toBe(1500);
+    expect($details[0]['product_name'])->toBe('Pizza Margherita')
+        ->and($details[0]['offer_quantity'])->toBe(2)
+        ->and($details[0]['product_quantity'])->toBe(1)
+        ->and($details[0]['product_price'])->toBe(1500)
+        ->and($details[1]['product_name'])->toBe('Hamburguesa Clásica')
+        ->and($details[1]['offer_quantity'])->toBe(1)
+        ->and($details[1]['product_quantity'])->toBe(2)
+        ->and($details[1]['product_price'])->toBe(800);
 
-    expect($details[1]['product_name'])->toBe('Hamburguesa Clásica');
-    expect($details[1]['offer_quantity'])->toBe(1);
-    expect($details[1]['product_quantity'])->toBe(2);
-    expect($details[1]['product_price'])->toBe(800);
 });
-

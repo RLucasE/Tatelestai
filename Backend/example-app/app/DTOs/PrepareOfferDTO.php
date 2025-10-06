@@ -24,21 +24,23 @@ class PrepareOfferDTO
      */
     public static function createFromIdAndQuantity(int $id, int $quantity): self
     {
-        $offer = Offer::with('products')->find($id);
+        $offer = Offer::with('fullProducts')->find($id);
         $productsData = array_map(function ($product) {
             return [
                 'name' => $product['name'],
                 'description' => $product['description'],
                 'quantity' => $product['pivot']['quantity'],
                 'price' => $product['pivot']['price'],
+                'expiration_date' => $product['pivot']['expiration_date']
             ];
-        }, $offer->products->toArray());
+        }, $offer->fullProducts->toArray());
         $productsDTO = array_map(function ($productData) {
             return new ProductOfferDTO(
                 name: $productData['name'],
                 description: $productData['description'],
                 quantity: $productData['quantity'],
-                price: $productData['price']
+                price: $productData['price'],
+                expiration_date: $productData['expiration_date'],
             );
         }, $productsData);
         return new self(
@@ -57,7 +59,8 @@ class PrepareOfferDTO
                 name: $productData['name'],
                 description: $productData['description'],
                 quantity: $productData['quantity'],
-                price: $productData['price']
+                price: $productData['price'],
+                expiration_date: $productData['expiration_date']
             );
         }, $productsData);
     }

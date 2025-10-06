@@ -100,7 +100,10 @@ class SellController
                 'offers.*.quantity' => 'required|integer|min:1',
             ]);
 
+
             $preparePurchaseDTO = PreparePurchaseDTO::fromRequest($request);
+
+
 
             $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
             $this->validateOfferIsActiveAction->execute($preparePurchaseDTO->offers);

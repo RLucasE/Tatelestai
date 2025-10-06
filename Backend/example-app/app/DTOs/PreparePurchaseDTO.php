@@ -16,9 +16,12 @@ class PreparePurchaseDTO
 
     static function fromRequest(Request $request): PreparePurchaseDTO
     {
+
         $offersDTO = array_map(function ($offer) {
             return PrepareOfferDTO::createFromIdAndQuantity($offer['id'], $offer['quantity']);
         }, $request->get('offers'));
+
+
 
         return new self(
             food_establishment_id: $request->get('food_establishment_id'),
@@ -49,7 +52,8 @@ class PreparePurchaseDTO
                             name: $product->name,
                             description: $product->description,
                             quantity: $product->quantity,
-                            price: $product->price
+                            price: $product->price,
+                            expiration_date: $product->expiration_date,
                         );
                     }
                     return $product;
