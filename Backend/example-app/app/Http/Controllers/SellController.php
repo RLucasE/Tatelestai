@@ -36,6 +36,7 @@ class SellController
         private readonly makeSellAction                       $makeSellAction,
         private readonly VerifyPurchaseDataFreshnessAction    $verifyPurchaseDataFreshnessAction,
         private readonly \App\Actions\Sell\ValidatePickupCodeAction $validatePickupCodeAction,
+        private readonly \App\Actions\Sell\ValidateCustomerOwnershipAction $validateCustomerOwnershipAction,
     )
     {
     }
@@ -280,6 +281,35 @@ class SellController
 
         } catch (Exception $exception) {
             $statusCode = $exception->getCode() ?: 400;
+            return response()->json([
+                'error' => $exception->getMessage()
+            ], $statusCode);
+        }
+    }
+
+    public function getPurchaseCode(string $sellNumber)
+    {
+        try {
+            $customerId = Auth::id();
+
+            $sell = $this->validateCustomerOwnershipAction->execute($sellNumber, $customerId);
+
+            return response()->json([
+                'message' => 'Código de retiro obtenido exitosamente',
+                'data' => [
+                    'sell_id' => $sell->id,
+                    'pickup_code' => $sell->pickup_code,
+                    'establishment' => [
+                        'id' => $sell->foodEstablishment->id,
+                        'name' => $sell->foodEstablishment->name,
+                        'address' => $sell->foodEstablishment->address,
+                    ],
+                    'created_at' => $sell->created_at,
+                ]
+            ], 200);
+
+        } catch (Exception $exception) {
+            $statusCode = $exception->getCode() ?: 500;
             return response()->json([
                 'error' => $exception->getMessage()
             ], $statusCode);
