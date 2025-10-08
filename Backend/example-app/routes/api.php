@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::delete('/offer/{offerID}', [OfferSellerController::class, 'destroy']);
         Route::get('/sells', [SellController::class, 'sellerSells']);
         Route::put('/my-establishment', [FoodEstablishmentController::class, 'updateMyEstablishment']);
+        Route::post('/check-customer-code', [SellController::class, 'checkCustomerCode']);
     });
 });
 

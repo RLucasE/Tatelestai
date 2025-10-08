@@ -26,6 +26,11 @@ export default [
         component: () => import("@/components/layouts/seller/Ventas.vue"),
       },
       {
+        name: "verify-code",
+        path: "verify-code",
+        component: () => import("@/components/layouts/seller/VerifyCode.vue"),
+      },
+      {
         name: "create-product",
         path: "create-product",
         component: () =>

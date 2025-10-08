@@ -35,6 +35,7 @@ class SellController
         private readonly getCustomerSellsAction               $getCustomerSellsAction,
         private readonly makeSellAction                       $makeSellAction,
         private readonly VerifyPurchaseDataFreshnessAction    $verifyPurchaseDataFreshnessAction,
+        private readonly \App\Actions\Sell\ValidatePickupCodeAction $validatePickupCodeAction,
     )
     {
     }
@@ -86,6 +87,7 @@ class SellController
             ], 400);
         }
     }
+
 
     /**
      * @throws Exception
@@ -236,5 +238,51 @@ class SellController
         return response()->json([
             'purchases' => $purchases
         ], 200);
+    }
+
+    public function checkCustomerCode(Request $request)
+    {
+        $request->validate([
+            'pickup_code' => 'required|string',
+        ]);
+
+        try {
+            $pickupCode = $request->input('pickup_code');
+
+            $sell = $this->validatePickupCodeAction->execute($pickupCode, Auth::id());
+
+            $offers = $sell->sellDetails->map(function ($detail) {
+                return [
+                    'offer_id' => $detail->offer_id,
+                    'offer_title' => $detail->offer->title ?? 'N/A',
+                    'offer_quantity' => $detail->offer_quantity,
+                    'product_name' => $detail->product_name,
+                    'product_description' => $detail->product_description,
+                    'product_quantity' => $detail->product_quantity,
+                    'product_price' => $detail->product_price,
+                ];
+            });
+
+            return response()->json([
+                'message' => 'Código válido',
+                'data' => [
+                    'sell_id' => $sell->id,
+                    'pickup_code' => $sell->pickup_code,
+                    'customer' => [
+                        'id' => $sell->customer->id,
+                        'name' => $sell->customer->name,
+                        'email' => $sell->customer->email,
+                    ],
+                    'offers' => $offers,
+                    'created_at' => $sell->created_at,
+                ]
+            ], 200);
+
+        } catch (Exception $exception) {
+            $statusCode = $exception->getCode() ?: 400;
+            return response()->json([
+                'error' => $exception->getMessage()
+            ], $statusCode);
+        }
     }
 }
