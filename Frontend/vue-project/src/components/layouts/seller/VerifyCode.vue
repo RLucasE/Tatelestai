@@ -175,7 +175,7 @@ const confirmDelivery = async () => {
   successMessage.value = '';
 
   try {
-    const response = await axiosInstance.post(`/complete-sell/${orderData.value.sell_id}`, {
+    await axiosInstance.post(`/complete-sell/${orderData.value.sell_id}`, {
       pick_up_code: orderData.value.pickup_code
     });
 
