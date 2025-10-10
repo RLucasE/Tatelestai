@@ -22,6 +22,7 @@ class getCustomerSellsAction
             'sellDetails'
         ])
         ->where('bought_by', $userId)
+        ->where('is_picked_up', false)
         ->orderBy('created_at', 'desc')
         ->get();
 

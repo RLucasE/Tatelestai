@@ -4,12 +4,14 @@ use App\Enums\UserState;
 use App\Http\Controllers\AdmOfferController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
 use App\Http\Controllers\SellController;
+use App\Http\Controllers\SellerSellController;
 use App\Models\EstablishmentType;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserManagement;
@@ -25,13 +27,13 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
         Route::get('/customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
-        Route::post('/prepare-purchase', [SellController::class, 'prepareBuyOffers']);
-        Route::post('/buy-offers',[SellController::class, 'buyOffers']);
-        Route::get('/customer/purchases', [SellController::class, 'customerPurchases']);
+        Route::post('/prepare-purchase', [CustomerSellController::class, 'prepareBuyOffers']);
+        Route::post('/buy-offers', [CustomerSellController::class, 'buyOffers']);
+        Route::get('/customer/purchases', [CustomerSellController::class, 'customerPurchases']);
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);
         Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
-        Route::get('/purchase-code/{sellNumber}', [SellController::class, 'getPurchaseCode']);
+        Route::get('/purchase-code/{sellNumber}', [CustomerSellController::class, 'getPurchaseCode']);
     });
 });
 
@@ -53,9 +55,10 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::get('/offer/{offerID}', [OfferSellerController::class, 'offer']);
         Route::patch('/offer/{offerID}', [OfferSellerController::class, 'update']);
         Route::delete('/offer/{offerID}', [OfferSellerController::class, 'destroy']);
-        Route::get('/sells', [SellController::class, 'sellerSells']);
+        Route::get('/sells', [SellerSellController::class, 'sellerSells']);
         Route::put('/my-establishment', [FoodEstablishmentController::class, 'updateMyEstablishment']);
-        Route::post('/check-customer-code', [SellController::class, 'checkCustomerCode']);
+        Route::post('/check-customer-code', [SellerSellController::class, 'checkCustomerCode']);
+        Route::post('/complete-sell/{sellNumber}', [SellerSellController::class, 'completeSell']);
     });
 });
 
