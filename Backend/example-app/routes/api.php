@@ -34,6 +34,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
         Route::get('/purchase-code/{sellNumber}', [CustomerSellController::class, 'getPurchaseCode']);
+        Route::get('/customerHistorySell',[CustomerSellController::class, 'historySell']);
     });
 });
 

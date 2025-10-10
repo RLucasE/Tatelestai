@@ -169,5 +169,9 @@ class CustomerSellController extends Controller
             ], $statusCode);
         }
     }
+
+    public function historySell(){
+        return true;
+    }
 }
 

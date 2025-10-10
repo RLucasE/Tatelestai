@@ -27,6 +27,11 @@
         </button>
       </form>
 
+      <!-- Mensaje de éxito -->
+      <div v-if="successMessage" class="success-notification">
+        {{ successMessage }}
+      </div>
+
       <!-- Datos del pedido -->
       <div v-if="orderData" class="order-details">
         <div class="order-header">
@@ -82,16 +87,20 @@
           <span class="date-value">{{ formatDate(orderData.created_at) }}</span>
         </div>
 
-        <!-- Botón de confirmar (placeholder por ahora) -->
+        <!-- Botón de confirmar -->
         <div class="actions">
-          <button class="confirm-button" disabled>
-            Confirmar Entrega (Próximamente)
+          <button
+            class="confirm-button"
+            @click="confirmDelivery"
+            :disabled="confirmingDelivery"
+          >
+            <span v-if="!confirmingDelivery">Confirmar Entrega</span>
+            <span v-else>Confirmando...</span>
           </button>
         </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script setup>
@@ -102,6 +111,8 @@ const pickupCode = ref('');
 const orderData = ref(null);
 const loading = ref(false);
 const error = ref('');
+const confirmingDelivery = ref(false);
+const successMessage = ref('');
 
 const formatCode = (event) => {
   // Formatear el código mientras se escribe (agregar guiones automáticamente)
@@ -125,6 +136,7 @@ const verifyCode = async () => {
 
   loading.value = true;
   error.value = '';
+  successMessage.value = '';
   orderData.value = null;
 
   try {
@@ -149,6 +161,49 @@ const verifyCode = async () => {
     }
   } finally {
     loading.value = false;
+  }
+};
+
+const confirmDelivery = async () => {
+  if (!orderData.value || !orderData.value.sell_id) {
+    error.value = 'No hay datos del pedido para confirmar';
+    return;
+  }
+
+  confirmingDelivery.value = true;
+  error.value = '';
+  successMessage.value = '';
+
+  try {
+    const response = await axiosInstance.post(`/complete-sell/${orderData.value.sell_id}`, {
+      pick_up_code: orderData.value.pickup_code
+    });
+
+    successMessage.value = 'Entrega confirmada exitosamente';
+
+    // Limpiar los datos después de 2 segundos
+    setTimeout(() => {
+      orderData.value = null;
+      pickupCode.value = '';
+      successMessage.value = '';
+    }, 2000);
+
+  } catch (err) {
+    if (err.response) {
+      if (err.response.status === 404) {
+        error.value = 'Venta no encontrada';
+      } else if (err.response.status === 403) {
+        error.value = 'No tienes permiso para completar esta venta';
+      } else if (err.response.status === 422) {
+        error.value = err.response.data.error || 'Datos inválidos';
+      } else {
+        error.value = err.response.data.error || 'Error al confirmar la entrega';
+      }
+    } else {
+      error.value = 'Error de conexión. Por favor, intenta nuevamente';
+    }
+  } finally {
+    confirmingDelivery.value = false;
   }
 };
 
@@ -262,6 +317,28 @@ const formatDate = (dateString) => {
 .verify-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.success-notification {
+  padding: 1rem;
+  background: #10b981;
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .order-details {
@@ -460,7 +537,7 @@ const formatDate = (dateString) => {
 .confirm-button {
   width: 100%;
   padding: 1rem 1.5rem;
-  background: var(--color-primary);
+  background: var(--color-secondary);
   color: var(--color-text);
   border: none;
   border-radius: 8px;
@@ -471,13 +548,13 @@ const formatDate = (dateString) => {
 }
 
 .confirm-button:hover:not(:disabled) {
-  background: var(--color-secondary);
+  background: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .confirm-button:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -509,4 +586,3 @@ const formatDate = (dateString) => {
   }
 }
 </style>
-

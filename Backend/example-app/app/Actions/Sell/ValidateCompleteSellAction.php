@@ -39,4 +39,3 @@ class ValidateCompleteSellAction
         return $sell;
     }
 }
-

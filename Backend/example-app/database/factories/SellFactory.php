@@ -28,6 +28,9 @@ class SellFactory extends Factory
         return [
             'bought_by' => User::factory(),
             'sold_by' => FoodEstablishment::factory(),
+            'pickup_code' => strtoupper($this->faker->bothify('????-????-????')),
+            'is_picked_up' => false,
+            'picked_up_at' => null,
             'created_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
             'updated_at' => now(),
         ];

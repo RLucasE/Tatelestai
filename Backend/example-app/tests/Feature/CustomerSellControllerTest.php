@@ -333,5 +333,136 @@ class CustomerSellControllerTest extends TestCase
 
         $response->assertStatus(401);
     }
-}
 
+    #[Test]
+    public function it_can_get_customer_purchase_history(): void
+    {
+        $this->actingAs($this->customer);
+
+        // Crear múltiples ventas para el customer
+        $sell1 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'pickup_code' => 'CODE-001-ABC',
+            'is_picked_up' => true,
+            'created_at' => now()->subDays(5),
+        ]);
+
+        $sell2 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'pickup_code' => 'CODE-002-DEF',
+            'is_picked_up' => false,
+            'created_at' => now()->subDays(2),
+        ]);
+
+        $sell3 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'pickup_code' => 'CODE-003-GHI',
+            'is_picked_up' => true,
+            'created_at' => now()->subDay(),
+        ]);
+
+        // Crear detalles de venta para cada venta
+        \App\Models\SellDetail::factory()->create([
+            'sell_id' => $sell1->id,
+            'offer_id' => $this->offer->id,
+            'offer_quantity' => 2,
+            'product_quantity' => 1,
+            'product_price' => 250,
+            'product_name' => 'Product 1',
+            'product_description' => 'Description 1'
+        ]);
+
+        \App\Models\SellDetail::factory()->create([
+            'sell_id' => $sell2->id,
+            'offer_id' => $this->offer->id,
+            'offer_quantity' => 3,
+            'product_quantity' => 2,
+            'product_price' => 250,
+            'product_name' => 'Product 2',
+            'product_description' => 'Description 2'
+        ]);
+
+        \App\Models\SellDetail::factory()->create([
+            'sell_id' => $sell3->id,
+            'offer_id' => $this->offer->id,
+            'offer_quantity' => 1,
+            'product_quantity' => 1,
+            'product_price' => 300,
+            'product_name' => 'Product 3',
+            'product_description' => 'Description 3'
+        ]);
+
+        // Crear una venta de otro usuario (no debe aparecer en el historial)
+        $anotherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+
+        \App\Models\Sell::factory()->create([
+            'bought_by' => $anotherCustomer->id,
+            'sold_by' => $this->establishment->id,
+            'pickup_code' => 'CODE-004-JKL',
+        ]);
+
+        // Obtener el historial de compras
+        $response = $this->getJson('/api/customerHistorySell');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    '*' => [
+                        'sell_id',
+                        'is_picked_up',
+                        'created_at',
+                        'establishment' => [
+                            'id',
+                            'name',
+                            'address',
+                        ],
+                        'offers' => [
+                            '*' => [
+                                'offer_id',
+                                'offer_quantity',
+                                'product_name',
+                                'product_description',
+                                'product_quantity',
+                                'product_price',
+                            ]
+                        ]
+                    ]
+                ]
+            ])
+            ->assertJson([
+                'message' => 'Historial de compras obtenido exitosamente',
+            ]);
+
+        // Verificar que solo se devuelven las 3 compras del customer autenticado
+        $responseData = $response->json('data');
+        $this->assertCount(3, $responseData);
+
+        // Verificar que las ventas están ordenadas por fecha (más reciente primero)
+        $this->assertEquals($sell3->id, $responseData[0]['sell_id']);
+        $this->assertEquals($sell2->id, $responseData[1]['sell_id']);
+        $this->assertEquals($sell1->id, $responseData[2]['sell_id']);
+
+        // Verificar que no incluye el pickup_code
+        $this->assertArrayNotHasKey('pickup_code', $responseData[0]);
+    }
+
+    #[Test]
+    public function it_returns_empty_array_when_customer_has_no_purchases(): void
+    {
+        $this->actingAs($this->customer);
+
+        $response = $this->getJson('/api/customerHistorySell');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Historial de compras obtenido exitosamente',
+                'data' => []
+            ]);
+    }
+}

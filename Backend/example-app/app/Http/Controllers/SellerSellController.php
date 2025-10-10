@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Sell\ValidatePickupCodeAction;
 use App\Actions\Sell\ValidateCompleteSellAction;
+use App\Actions\Sell\ValidatePickupCodeFromSellAction;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use Exception;
@@ -15,6 +16,7 @@ class SellerSellController extends Controller
     public function __construct(
         private readonly ValidateCompleteSellAction $validateCompleteSellAction,
         private readonly ValidatePickupCodeAction   $validatePickupCodeAction,
+        private readonly ValidatePickupCodeFromSellAction $validatePickupCodeFromSellAction,
     )
     {
     }
@@ -113,10 +115,14 @@ class SellerSellController extends Controller
         }
     }
 
-    public function completeSell(string $sellNumber)
+    public function completeSell(Request $request,string $sellNumber)
     {
+        $validatedRequest = $request->validate([
+            'pick_up_code' => 'required|string',
+        ]);
         try {
             $validatedSell = $this->validateCompleteSellAction->execute($sellNumber, Auth::id());
+            $validatedSell = $this->validatePickupCodeFromSellAction->execute($validatedSell->id, $validatedRequest['pick_up_code']);
             $validatedSell->update(
                 [
                     'is_picked_up' => true,
@@ -138,4 +144,4 @@ class SellerSellController extends Controller
             ], $statusCode);
         }
     }
-    }
+}
