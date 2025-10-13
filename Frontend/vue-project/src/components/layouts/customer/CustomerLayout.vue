@@ -31,6 +31,12 @@
       >Compras
       </RouterLink
       >
+      <RouterLink
+          class="py-2 px-4 leading-normal customer-nav-link"
+          to="/customer/history"
+      >Historial
+      </RouterLink
+      >
       <RouterLink to="/customer/carrito"> Carrito</RouterLink>
     </div>
   </nav>

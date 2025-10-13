@@ -37,6 +37,16 @@ export default [
           import("@/components/layouts/customer/CustomerPurchases.vue"),
       },
       {
+        path: "history",
+        name: "customer-history",
+        component: () =>
+          import("@/components/layouts/customer/CustomerHistory.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
+      },
+      {
         path: "purchase-confirmation/:token",
         name: "purchase-confirmation",
         component: () =>

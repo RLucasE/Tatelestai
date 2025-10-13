@@ -170,8 +170,50 @@ class CustomerSellController extends Controller
         }
     }
 
-    public function historySell(){
-        return true;
+    public function historySell(): JsonResponse
+    {
+        try {
+            $customerId = Auth::id();
+
+            $sells = \App\Models\Sell::with(['foodEstablishment', 'sellDetails.offer'])
+                ->where('bought_by', $customerId)
+                ->where('is_picked_up', true)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $history = $sells->map(function ($sell) {
+                return [
+                    'sell_id' => $sell->id,
+                    'is_picked_up' => $sell->is_picked_up,
+                    'created_at' => $sell->created_at,
+                    'establishment' => [
+                        'id' => $sell->foodEstablishment->id,
+                        'name' => $sell->foodEstablishment->name,
+                        'address' => $sell->foodEstablishment->address,
+                    ],
+                    'offers' => $sell->sellDetails->map(function ($detail) {
+                        return [
+                            'offer_id' => $detail->offer_id,
+                            'offer_quantity' => $detail->offer_quantity,
+                            'product_name' => $detail->product_name,
+                            'product_description' => $detail->product_description,
+                            'product_quantity' => $detail->product_quantity,
+                            'product_price' => $detail->product_price,
+                        ];
+                    })->toArray(),
+                ];
+            });
+
+            return response()->json([
+                'message' => 'Historial de compras obtenido exitosamente',
+                'data' => $history
+            ], 200);
+
+        } catch (Exception $exception) {
+            $statusCode = $exception->getCode() ?: 500;
+            return response()->json([
+                'error' => $exception->getMessage()
+            ], $statusCode);
+        }
     }
 }
-

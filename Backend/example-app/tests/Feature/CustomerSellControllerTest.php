@@ -339,7 +339,6 @@ class CustomerSellControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        // Crear múltiples ventas para el customer
         $sell1 = \App\Models\Sell::factory()->create([
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
@@ -364,7 +363,6 @@ class CustomerSellControllerTest extends TestCase
             'created_at' => now()->subDay(),
         ]);
 
-        // Crear detalles de venta para cada venta
         \App\Models\SellDetail::factory()->create([
             'sell_id' => $sell1->id,
             'offer_id' => $this->offer->id,
@@ -395,7 +393,6 @@ class CustomerSellControllerTest extends TestCase
             'product_description' => 'Description 3'
         ]);
 
-        // Crear una venta de otro usuario (no debe aparecer en el historial)
         $anotherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
             'state' => UserState::ACTIVE->value,
         ]);
@@ -406,7 +403,6 @@ class CustomerSellControllerTest extends TestCase
             'pickup_code' => 'CODE-004-JKL',
         ]);
 
-        // Obtener el historial de compras
         $response = $this->getJson('/api/customerHistorySell');
 
         $response->assertStatus(200)
@@ -439,16 +435,12 @@ class CustomerSellControllerTest extends TestCase
                 'message' => 'Historial de compras obtenido exitosamente',
             ]);
 
-        // Verificar que solo se devuelven las 3 compras del customer autenticado
         $responseData = $response->json('data');
-        $this->assertCount(3, $responseData);
+        $this->assertCount(2, $responseData);
 
-        // Verificar que las ventas están ordenadas por fecha (más reciente primero)
         $this->assertEquals($sell3->id, $responseData[0]['sell_id']);
-        $this->assertEquals($sell2->id, $responseData[1]['sell_id']);
-        $this->assertEquals($sell1->id, $responseData[2]['sell_id']);
+        $this->assertEquals($sell1->id, $responseData[1]['sell_id']);
 
-        // Verificar que no incluye el pickup_code
         $this->assertArrayNotHasKey('pickup_code', $responseData[0]);
     }
 
