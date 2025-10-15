@@ -2,13 +2,18 @@
 
 namespace Database\Factories;
 
+use App\Actions\Sell\GeneratePickupCodeAction;
+use App\DTOs\PreparePurchaseDTO;
+use App\Enums\UserState;
+use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use App\Models\User;
-use App\Models\FoodEstablishment;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/** @extends Factory<Sell> */
-
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Sell>
+ */
 class SellFactory extends Factory
 {
     /**
@@ -25,13 +30,42 @@ class SellFactory extends Factory
      */
     public function definition(): array
     {
+        $customer = User::whereHas('roles', function ($query) {
+            $query->where('name', UserRole::CUSTOMER->value);
+            $query->where('state', UserState::ACTIVE->value);
+        })->inRandomOrder()->first();
+
+        $establishment = FoodEstablishment::inRandomOrder()->first();
+
+        $isPickedUp = $this->faker->boolean();
+
+        $pickedUpAt = null;
+        $createdAt = $this->faker->dateTimeBetween('-1 month', 'now');
+
+        if ($isPickedUp) {
+            $pickedUpAt = $this->faker->dateTimeBetween('now', '+10 days');
+            $createdAt = $this->faker->dateTimeBetween('-1 month', $pickedUpAt);
+        }
+
+        $generatePickupCodeAction = new GeneratePickupCodeAction();
+        $mockDTO = new PreparePurchaseDTO(
+            food_establishment_id: $establishment->id,
+            offers: [],
+        );
+
+        $pickupCode = $generatePickupCodeAction->execute(
+            $customer->id,
+            $establishment->id,
+            $mockDTO
+        );
+
         return [
-            'bought_by' => User::factory(),
-            'sold_by' => FoodEstablishment::factory(),
-            'pickup_code' => strtoupper($this->faker->bothify('????-????-????')),
-            'is_picked_up' => false,
-            'picked_up_at' => null,
-            'created_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
+            'bought_by' => $customer->id,
+            'sold_by' => $establishment->id,
+            'pickup_code' => $pickupCode,
+            'is_picked_up' => $isPickedUp,
+            'picked_up_at' => $pickedUpAt,
+            'created_at' => $createdAt,
             'updated_at' => now(),
         ];
     }

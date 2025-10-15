@@ -12,7 +12,6 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
 use App\Http\Controllers\SellController;
 use App\Http\Controllers\SellerSellController;
-use App\Models\EstablishmentType;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserManagement;
 use App\Http\Controllers\OfferCustomerController;
@@ -85,6 +84,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::delete('/adm-establishments/types/{id}', [EstablishmentTypeController::class, 'destroy']);
         Route::get('/adm-establishments/types-trashed', [EstablishmentTypeController::class, 'trashed']);
         Route::patch('/adm-establishments/types/{id}/restore', [EstablishmentTypeController::class, 'restore']);
+        Route::get('/adm/last-sells', [SellController::class, 'lastSells']);
 
 
 

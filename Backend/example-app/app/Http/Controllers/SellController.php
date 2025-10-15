@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Sell;
 use App\Models\User;
+use App\Models\FoodEstablishment;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class SellController extends Controller
 {
@@ -73,6 +76,37 @@ class SellController extends Controller
 
         return response()->json([
             'purchases' => $purchases
+        ], 200);
+    }
+
+    public function lastSells()
+    {
+        $currentTime = now();
+        $startTime = $currentTime->copy()->subDay();
+
+        $sells = Sell::whereBetween('created_at', [$startTime, $currentTime])
+            ->get();
+
+        $intervals = [];
+        for ($i = 0; $i < 12; $i++) {
+            $intervalStart = $startTime->copy()->addHours($i * 2);
+            $intervalEnd = $intervalStart->copy()->addHours(2);
+
+            $sellsInInterval = $sells->filter(function ($sell) use ($intervalStart, $intervalEnd) {
+                $sellTime = Carbon::parse($sell->created_at);
+                return $sellTime->between($intervalStart, $intervalEnd, false);
+            })->count();
+
+            $intervals[] = [
+                'from' => $intervalStart->format('H:i'),
+                'to' => $intervalEnd->format('H:i'),
+                'count' => $sellsInInterval
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Ventas de las últimas 24 horas obtenidas exitosamente',
+            'data' => $intervals
         ], 200);
     }
 }
