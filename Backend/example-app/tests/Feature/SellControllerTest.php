@@ -24,6 +24,7 @@ class SellControllerTest extends TestCase
 
     protected User $customer;
     protected User $seller;
+    protected User $adm;
     protected FoodEstablishment $establishment;
     protected Offer $offer;
     protected Product $product;
@@ -39,6 +40,10 @@ class SellControllerTest extends TestCase
         ]);
 
         $this->seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+
+        $this->adm = User::factory()->withRole(UserRole::ADMIN->value)->create([
             'state' => UserState::ACTIVE->value,
         ]);
 
@@ -568,5 +573,162 @@ class SellControllerTest extends TestCase
             'El pickup_code no debe estar presente en la respuesta JSON');
         $this->assertStringNotContainsString($pickupCode2, $responseString,
             'El pickup_code no debe estar presente en la respuesta JSON');
+    }
+
+    #[Test]
+    public function it_can_get_last_sells_in_24_hours_with_2_hour_intervals(): void
+    {
+        $this->actingAs($this->adm);
+
+        $currentTime = now()->setTime(16, 0, 0);
+        $this->travelTo($currentTime);
+
+        $this->travelTo($currentTime->copy()->subDay()->setTime(17, 30, 0));
+        $sell1 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+
+        $this->travelTo($currentTime->copy()->subDay()->setTime(17, 45, 0));
+        $sell2 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+
+        $this->travelTo($currentTime->copy()->subDay()->setTime(19, 45, 0));
+        $sell3 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+
+        $this->travelTo($currentTime->copy()->subDay()->setTime(21, 15, 0));
+        $sell4 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+
+        $this->travelTo($currentTime->copy()->setTime(8, 30, 0));
+        $sell5 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+
+        $this->travelTo($currentTime->copy()->setTime(14, 20, 0));
+        $sell6 = \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+
+        $this->travelTo($currentTime);
+
+        $response = $this->getJson('/api/adm/last-sells');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    '*' => [
+                        'from',
+                        'to',
+                        'count'
+                    ]
+                ]
+            ]);
+
+        $data = $response->json('data');
+
+        $this->assertCount(12, $data);
+
+        foreach ($data as $interval) {
+            $this->assertArrayHasKey('from', $interval);
+            $this->assertArrayHasKey('to', $interval);
+            $this->assertArrayHasKey('count', $interval);
+        }
+
+        $this->assertEquals(6, array_sum(array_column($data, 'count')));
+
+        $intervals = collect($data);
+
+        $interval16to18 = $intervals->first(function ($item) {
+            return $item['from'] === '16:00' && $item['to'] === '18:00';
+        });
+        $this->assertNotNull($interval16to18);
+        $this->assertEquals(2, $interval16to18['count']);
+
+        $interval18to20 = $intervals->first(function ($item) {
+            return $item['from'] === '18:00' && $item['to'] === '20:00';
+        });
+        $this->assertNotNull($interval18to20);
+        $this->assertEquals(1, $interval18to20['count']);
+
+        $interval20to22 = $intervals->first(function ($item) {
+            return $item['from'] === '20:00' && $item['to'] === '22:00';
+        });
+        $this->assertNotNull($interval20to22);
+        $this->assertEquals(1, $interval20to22['count']);
+
+        $interval8to10 = $intervals->first(function ($item) {
+            return $item['from'] === '08:00' && $item['to'] === '10:00';
+        });
+        $this->assertNotNull($interval8to10);
+        $this->assertEquals(1, $interval8to10['count']);
+
+        $interval14to16 = $intervals->first(function ($item) {
+            return $item['from'] === '14:00' && $item['to'] === '16:00';
+        });
+        $this->assertNotNull($interval14to16);
+        $this->assertEquals(1, $interval14to16['count']);
+
+        $emptyIntervals = $intervals->where('count', 0);
+        $this->assertGreaterThan(0, $emptyIntervals->count());
+    }
+    #[Test]
+    public function it_returns_empty_intervals_when_no_sells_in_last_24_hours(): void
+    {
+        $this->actingAs($this->adm);
+
+        $this->travelTo(now()->subHours(25));
+        \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+        ]);
+        $this->travelBack();
+
+        $response = $this->getJson('/api/adm/last-sells');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    '*' => [
+                        'from',
+                        'to',
+                        'count'
+                    ]
+                ]
+            ])
+            ->assertJson([
+                'message' => 'Ventas de las últimas 24 horas obtenidas exitosamente'
+            ]);
+
+        $data = $response->json('data');
+
+        $this->assertCount(12, $data);
+
+        foreach ($data as $interval) {
+            $this->assertArrayHasKey('from', $interval);
+            $this->assertArrayHasKey('to', $interval);
+            $this->assertArrayHasKey('count', $interval);
+            $this->assertEquals(0, $interval['count']);
+        }
+
+        $this->assertEquals(0, array_sum(array_column($data, 'count')));
     }
 }
