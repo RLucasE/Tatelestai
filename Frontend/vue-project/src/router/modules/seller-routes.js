@@ -33,8 +33,7 @@ export default [
       {
         name: "create-product",
         path: "create-product",
-        component: () =>
-          import("@/components/layouts/seller/CreateProduct.vue"),
+        component: () => import(("@/components/layouts/seller/CreateProduct.vue")),
       },
       {
         name: "my-products",
@@ -56,6 +55,6 @@ export default [
       requiresAuth: true,
       requiresSeller: true,
       requiresActive: true,
-    },
-  },
+    }
+  }
 ];

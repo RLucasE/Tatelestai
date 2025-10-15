@@ -5,6 +5,11 @@ export default [
     component: () => import("@/components/layouts/admin/AdminLayout.vue"),
     children: [
         {
+            path: "dashboard",
+            name: "admin-dashboard",
+            component: () => import('@/views/DashboardView.vue'),
+        },
+        {
             path: "users",
             name: "admin-users",
             component: () => import('@/components/layouts/admin/Users.vue'),
