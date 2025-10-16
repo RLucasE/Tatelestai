@@ -143,7 +143,6 @@ const loadSalesData = async () => {
 
     const intervals = response.data.data
 
-    console.log(response.data);
 
     salesData.value.labels = intervals.map(interval => `${interval.from}-${interval.to}`)
     salesData.value.values = intervals.map(interval => interval.count)

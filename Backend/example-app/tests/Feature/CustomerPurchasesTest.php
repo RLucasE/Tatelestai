@@ -72,6 +72,7 @@ test('customer can retrieve their purchases successfully', function () {
     $sell = Sell::factory()->create([
         'bought_by' => $customer->id,
         'sold_by' => $establishment->id,
+        'is_picked_up' => false,
         'pickup_code' => $pickupCode
     ]);
 
@@ -98,6 +99,8 @@ test('customer can retrieve their purchases successfully', function () {
 
     // Hacer la petición como customer autenticado
     $response = $this->actingAs($customer)->getJson('/api/customer/purchases');
+
+    $response->dump();
 
     // Verificar respuesta exitosa
     $response->assertStatus(200);
