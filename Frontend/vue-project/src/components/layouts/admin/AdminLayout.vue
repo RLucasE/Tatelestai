@@ -28,6 +28,7 @@ const isSidebarOpen = ref(false);
       <div class="sidebar-panel">
         <h2 class="sidebar-title">Panel</h2>
         <ul class="menu">
+          <li><RouterLink to="/adm/dashboard" class="menu-link">Estadísticas</RouterLink></li>
           <li><RouterLink to="/adm/users" class="menu-link">Usuarios</RouterLink></li>
           <li><RouterLink to="/adm/sells" class="menu-link">Ventas</RouterLink></li>
           <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>

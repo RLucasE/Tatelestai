@@ -137,4 +137,33 @@ class AdmUserController extends Controller
             'user' => $user,
         ]);
     }
+
+    public function userStats(): JsonResponse
+    {
+        try {
+            $stats = User::select('state', \DB::raw('count(*) as count'))
+                ->groupBy('state')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'state' => $item->state,
+                        'count' => $item->count
+                    ];
+                });
+
+            $total = User::count();
+
+            return response()->json([
+                'message' => 'Estadísticas de usuarios obtenidas exitosamente',
+                'total' => $total,
+                'data' => $stats
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener las estadísticas de usuarios',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

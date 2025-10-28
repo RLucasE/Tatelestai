@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\User;
+use Couchbase\KeyLockedException;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -293,5 +294,51 @@ class AdmUserControllerTest extends TestCase
         $this->assertEquals(UserState::INACTIVE->value, $seller->state);
         $this->assertTrue($seller->hasRole('seller')); // Mantiene el rol
     }
-}
 
+    #[Test]
+    public function it_returns_user_statistics_grouped_by_state()
+    {
+        User::factory()->count(5)->create(['state' => UserState::ACTIVE->value]);
+        User::factory()->count(3)->create(['state' => UserState::INACTIVE->value]);
+        User::factory()->count(2)->create(['state' => UserState::WAITING_FOR_CONFIRMATION->value]);
+        User::factory()->count(1)->create(['state' => UserState::DENIED_CONFIRMATION->value]);
+        User::factory()->count(4)->create(['state' => UserState::SELECTING->value]);
+        User::factory()->count(2)->create(['state' => UserState::REGISTERING->value]);
+
+        $response = $this->getJson('/api/adm/user-stats');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'total',
+                'data' => [
+                    '*' => [
+                        'state',
+                        'count'
+                    ]
+                ]
+            ]);
+
+        $response->dump();
+
+        $data = $response->json('data');
+        $total = $response->json('total');
+
+        $activeCount = collect($data)->firstWhere('state', UserState::ACTIVE->value)['count'] ?? 0;
+        $inactiveCount = collect($data)->firstWhere('state', UserState::INACTIVE->value)['count'] ?? 0;
+        $waitingCount = collect($data)->firstWhere('state', UserState::WAITING_FOR_CONFIRMATION->value)['count'] ?? 0;
+        $deniedCount = collect($data)->firstWhere('state', UserState::DENIED_CONFIRMATION->value)['count'] ?? 0;
+        $selectingCount = collect($data)->firstWhere('state', UserState::SELECTING->value)['count'] ?? 0;
+        $registeringCount = collect($data)->firstWhere('state', UserState::REGISTERING->value)['count'] ?? 0;
+
+        $this->assertEquals(6, $activeCount);
+        $this->assertEquals(3, $inactiveCount);
+        $this->assertEquals(2, $waitingCount);
+        $this->assertEquals(1, $deniedCount);
+        $this->assertEquals(4, $selectingCount);
+        $this->assertEquals(2, $registeringCount);
+
+        $this->assertEquals(18, $total);
+        $this->assertEquals($activeCount + $inactiveCount + $waitingCount + $deniedCount + $selectingCount + $registeringCount, $total);
+    }
+}

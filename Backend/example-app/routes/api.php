@@ -86,6 +86,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::patch('/adm-establishments/types/{id}/restore', [EstablishmentTypeController::class, 'restore']);
         Route::get('/adm/last-sells', [SellController::class, 'lastSells']);
         Route::get('/adm/offer-stats', [AdmOfferController::class, 'offerStats']);
+        Route::get('/adm/user-stats', [AdmUserController::class, 'userStats']);
     });
 });
 
