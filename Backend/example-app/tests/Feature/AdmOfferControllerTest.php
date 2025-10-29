@@ -169,4 +169,121 @@ class AdmOfferControllerTest extends TestCase
                 'data' => []
             ]);
     }
+
+    #[Test]
+    public function it_returns_active_offers_count_grouped_by_establishment_type_from_last_7_days(): void
+    {
+        $panaderia = EstablishmentType::where('name', 'Panadería')->first();
+        $restaurante = EstablishmentType::where('name', 'Restaurante')->first();
+
+        if (!$panaderia) {
+            $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
+        }
+        if (!$restaurante) {
+            $restaurante = EstablishmentType::factory()->create(['name' => 'Restaurante']);
+        }
+
+        $seller1 = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $seller2 = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+
+        $establishment1 = FoodEstablishment::factory()->create([
+            'user_id' => $seller1->id,
+            'establishment_type_id' => $panaderia->id,
+        ]);
+        $establishment2 = FoodEstablishment::factory()->create([
+            'user_id' => $seller2->id,
+            'establishment_type_id' => $restaurante->id,
+        ]);
+
+        for ($i = 0; $i < 15; $i++) {
+            Offer::factory()->create([
+                'food_establishment_id' => $establishment1->id,
+                'state' => OfferState::ACTIVE->value,
+                'created_at' => now()->subDays(rand(0, 6)),
+            ]);
+        }
+
+        for ($i = 0; $i < 10; $i++) {
+            Offer::factory()->create([
+                'food_establishment_id' => $establishment2->id,
+                'state' => OfferState::ACTIVE->value,
+                'created_at' => now()->subDays(rand(0, 6)),
+            ]);
+        }
+
+        Offer::factory()->create([
+            'food_establishment_id' => $establishment1->id,
+            'state' => OfferState::INACTIVE->value,
+            'created_at' => now()->subDays(3),
+        ]);
+
+        Offer::factory()->create([
+            'food_establishment_id' => $establishment1->id,
+            'state' => OfferState::ACTIVE->value,
+            'created_at' => now()->subDays(10),
+        ]);
+
+        Offer::factory()->create([
+            'food_establishment_id' => $establishment2->id,
+            'state' => OfferState::ACTIVE->value,
+            'created_at' => now()->subDays(8),
+        ]);
+
+        $response = $this->getJson('/api/adm/active-offers-count');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'establishment_type',
+                        'count'
+                    ]
+                ],
+                'message'
+            ])
+            ->assertJson([
+                'message' => 'Cantidad de ofertas activas obtenidas exitosamente',
+                'data' => [
+                    [
+                        'establishment_type' => 'Panadería',
+                        'count' => 15
+                    ],
+                    [
+                        'establishment_type' => 'Restaurante',
+                        'count' => 10
+                    ]
+                ]
+            ]);
+    }
+
+    #[Test]
+    public function it_returns_empty_data_when_no_active_offers_in_last_7_days_for_active_offers_count(): void
+    {
+        $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishment = FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'establishment_type_id' => $panaderia->id,
+        ]);
+
+        Offer::factory()->create([
+            'food_establishment_id' => $establishment->id,
+            'state' => OfferState::ACTIVE->value,
+            'created_at' => now()->subDays(10),
+        ]);
+
+        $response = $this->getJson('/api/adm/active-offers-count');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Cantidad de ofertas activas obtenidas exitosamente',
+                'data' => []
+            ]);
+    }
 }

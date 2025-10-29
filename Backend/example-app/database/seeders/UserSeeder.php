@@ -34,6 +34,14 @@ class UserSeeder extends Seeder
             'password' => 12345678,
         ]);
 
+        User::factory()->withRole(UserRole::SELLER->value)->create([
+            'name' => 'Pedro',
+            'last_name' => 'Gomez',
+            'email' => 'seller2@gmail.com',
+            'state' => UserState::ACTIVE->value,
+            'password' => 12345678,
+        ]);
+
         User::factory()->withRole(UserRole::CUSTOMER->value)->create([]);
         User::factory()->withRole(UserRole::ADMIN->value)->create([
             'name' => 'Admin',

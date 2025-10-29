@@ -123,4 +123,35 @@ class AdmOfferController extends Controller
             ], 500);
         }
     }
+
+    public function activeOffersCount(): JsonResponse
+    {
+        try {
+            $stats = Offer::where('state', \App\Enums\OfferState::ACTIVE->value)
+                ->where('created_at', '>=', now()->subDays(7))
+                ->with('foodEstablishment.establishmentType')
+                ->get()
+                ->groupBy(function ($offer) {
+                    return $offer->foodEstablishment->establishmentType->name;
+                })
+                ->map(function ($group, $establishmentType) {
+                    return [
+                        'establishment_type' => $establishmentType,
+                        'count' => $group->count()
+                    ];
+                })
+                ->values();
+
+            return response()->json([
+                'message' => 'Cantidad de ofertas activas obtenidas exitosamente',
+                'data' => $stats
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener la cantidad de ofertas activas',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

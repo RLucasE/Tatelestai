@@ -76,7 +76,7 @@ const fetchOfferStats = async () => {
   try {
     loading.value = true
     error.value = null
-    const response = await axiosInstance.get('/adm/offer-stats')
+    const response = await axiosInstance.get('/adm/active-offers-count')
 
     if (response.data && response.data.data) {
       statsData.value = response.data.data

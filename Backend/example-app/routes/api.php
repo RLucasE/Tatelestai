@@ -87,6 +87,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/last-sells', [SellController::class, 'lastSells']);
         Route::get('/adm/offer-stats', [AdmOfferController::class, 'offerStats']);
         Route::get('/adm/user-stats', [AdmUserController::class, 'userStats']);
+        Route::get('/adm/active-offers-count', [AdmOfferController::class, 'activeOffersCount']);
     });
 });
 

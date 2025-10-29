@@ -19,5 +19,10 @@ class FoodEstablishmentSeeder extends Seeder
             'user_id' =>User::where('email','seller@gmail.com')->first()->id,
             'establishment_type_id' => 1,
         ]);
+
+        FoodEstablishment::factory()->create([
+            'user_id' =>User::where('email','seller2@gmail.com')->first()->id,
+            'establishment_type_id' => 2,
+        ]);
     }
 }
