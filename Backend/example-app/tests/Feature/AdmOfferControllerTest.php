@@ -113,7 +113,6 @@ class AdmOfferControllerTest extends TestCase
         // Hacer la petición al endpoint
         $response = $this->getJson('/api/adm/offer-stats');
 
-        $response->dump();
 
         // Verificar respuesta
         $response->assertStatus(200)

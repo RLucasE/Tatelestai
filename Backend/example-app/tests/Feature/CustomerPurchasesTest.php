@@ -100,7 +100,6 @@ test('customer can retrieve their purchases successfully', function () {
     // Hacer la petición como customer autenticado
     $response = $this->actingAs($customer)->getJson('/api/customer/purchases');
 
-    $response->dump();
 
     // Verificar respuesta exitosa
     $response->assertStatus(200);

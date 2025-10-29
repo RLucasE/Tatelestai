@@ -85,6 +85,7 @@ class SellController extends Controller
         $startTime = $currentTime->copy()->subDay();
 
         $sells = Sell::whereBetween('created_at', [$startTime, $currentTime])
+            ->where('is_picked_up', true)
             ->get();
 
         $intervals = [];

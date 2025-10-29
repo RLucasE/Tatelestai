@@ -588,6 +588,7 @@ class SellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'created_at' => now(),
+            'is_picked_up' => true,
         ]);
 
         $this->travelTo($currentTime->copy()->subDay()->setTime(17, 45, 0));
@@ -595,6 +596,7 @@ class SellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'created_at' => now(),
+            'is_picked_up' => true,
         ]);
 
         $this->travelTo($currentTime->copy()->subDay()->setTime(19, 45, 0));
@@ -602,6 +604,7 @@ class SellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'created_at' => now(),
+            'is_picked_up' => true,
         ]);
 
         $this->travelTo($currentTime->copy()->subDay()->setTime(21, 15, 0));
@@ -609,6 +612,7 @@ class SellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'created_at' => now(),
+            'is_picked_up' => true,
         ]);
 
         $this->travelTo($currentTime->copy()->setTime(8, 30, 0));
@@ -616,6 +620,7 @@ class SellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'created_at' => now(),
+            'is_picked_up' => true,
         ]);
 
         $this->travelTo($currentTime->copy()->setTime(14, 20, 0));
@@ -623,6 +628,7 @@ class SellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'created_at' => now(),
+            'is_picked_up' => true,
         ]);
 
         $this->travelTo($currentTime);
@@ -730,5 +736,59 @@ class SellControllerTest extends TestCase
         }
 
         $this->assertEquals(0, array_sum(array_column($data, 'count')));
+    }
+    #[Test]
+    public function it_only_counts_picked_up_sells_in_last_24_hours(): void
+    {
+        $this->actingAs($this->adm);
+
+        $currentTime = now()->setTime(14, 0, 0);
+        $this->travelTo($currentTime);
+
+        $this->travelTo($currentTime->copy()->setTime(10, 30, 0));
+        \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+            'is_picked_up' => true,
+        ]);
+
+        \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+            'is_picked_up' => true,
+        ]);
+
+        \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+            'is_picked_up' => false,
+        ]);
+
+        \App\Models\Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'created_at' => now(),
+            'is_picked_up' => false,
+        ]);
+
+        $this->travelTo($currentTime);
+
+        $response = $this->getJson('/api/adm/last-sells');
+
+        $response->assertStatus(200);
+
+        $data = $response->json('data');
+
+        $this->assertEquals(2, array_sum(array_column($data, 'count')));
+
+        $intervals = collect($data);
+        $interval10to12 = $intervals->first(function ($item) {
+            return $item['from'] === '10:00' && $item['to'] === '12:00';
+        });
+        $this->assertNotNull($interval10to12);
+        $this->assertEquals(2, $interval10to12['count']);
     }
 }

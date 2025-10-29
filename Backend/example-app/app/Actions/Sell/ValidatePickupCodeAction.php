@@ -18,9 +18,11 @@ class ValidatePickupCodeAction
      */
     public function execute(string $pickupCode, int $userId): Sell
     {
+
         $sell = Sell::with(['customer', 'sellDetails.offer', 'foodEstablishment'])
             ->where('pickup_code', $pickupCode)
             ->first();
+
 
         if (!$sell) {
             throw new Exception('Código de pickup no encontrado', 404);

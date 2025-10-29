@@ -69,4 +69,44 @@ class SellFactory extends Factory
             'updated_at' => now(),
         ];
     }
+
+    /**
+     * Create sell with details (SellDetail records)
+     *
+     * @param int $count Number of sell details to create
+     * @return static
+     */
+    public function withDetails(int $count = 3): static
+    {
+        return $this->afterCreating(function (Sell $sell) use ($count) {
+            $establishment = FoodEstablishment::find($sell->sold_by);
+
+            $offers = \App\Models\Offer::where('food_establishment_id', $establishment->id)
+                ->where('state', \App\Enums\OfferState::ACTIVE->value)
+                ->inRandomOrder()
+                ->limit($count)
+                ->get();
+
+            if ($offers->isEmpty()) {
+                $offers = \App\Models\Offer::factory()
+                    ->count($count)
+                    ->create([
+                        'food_establishment_id' => $establishment->id,
+                        'state' => \App\Enums\OfferState::ACTIVE->value,
+                    ]);
+            }
+
+            foreach ($offers as $offer) {
+                \App\Models\SellDetail::factory()->create([
+                    'sell_id' => $sell->id,
+                    'offer_id' => $offer->id,
+                    'offer_quantity' => $this->faker->numberBetween(1, 5),
+                    'product_quantity' => $this->faker->numberBetween(1, 3),
+                    'product_price' => $this->faker->numberBetween(300, 2000),
+                    'product_name' => $this->faker->words(3, true),
+                    'product_description' => $this->faker->sentence(),
+                ]);
+            }
+        });
+    }
 }

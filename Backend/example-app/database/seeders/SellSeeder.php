@@ -44,7 +44,9 @@ class SellSeeder extends Seeder
                     }
                 }
 
-                Sell::factory()->create([
+                Sell::factory()
+                    ->withDetails()
+                    ->create([
                     'created_at' => $createdAt,
                     'updated_at' => $pickedUpAt ?? $createdAt->copy()->addMinutes(rand(1, 30)),
                     'is_picked_up' => $isPickedUp,

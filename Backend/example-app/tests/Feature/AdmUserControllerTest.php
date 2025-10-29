@@ -318,7 +318,6 @@ class AdmUserControllerTest extends TestCase
                 ]
             ]);
 
-        $response->dump();
 
         $data = $response->json('data');
         $total = $response->json('total');

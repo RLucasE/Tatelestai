@@ -80,6 +80,7 @@ class SellerSellController extends Controller
 
             $sell = $this->validatePickupCodeAction->execute($pickupCode, Auth::id());
 
+
             $offers = $sell->sellDetails->map(function ($detail) {
                 return [
                     'offer_id' => $detail->offer_id,
