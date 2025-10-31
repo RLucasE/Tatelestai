@@ -7,6 +7,7 @@ use App\Actions\IsDeactivableSellerAction;
 use App\Actions\ChangeUserStateAction;
 use App\Actions\DeactivateEstablishmentOffersAction;
 use App\DTOs\BasicUserDTO;
+use App\Exports\DashboardExport;
 use App\Models\User;
 use App\Enums\UserState;
 use App\Repositories\UserRepository;
@@ -162,6 +163,36 @@ class AdmUserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las estadísticas de usuarios',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function exportDashboard()
+    {
+        try {
+            $stats = User::select('state', \DB::raw('count(*) as count'))
+                ->groupBy('state')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'state' => $item->state,
+                        'count' => $item->count
+                    ];
+                });
+
+            $total = User::count();
+
+            $userStats = [
+                'total' => $total,
+                'data' => $stats
+            ];
+
+            return (new DashboardExport($userStats))->download('dashboard-stats.xlsx');
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al exportar el dashboard',
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/active-offers-count', [AdmOfferController::class, 'activeOffersCount']);
     });
 });
+Route::get('/adm/export-dashboard', [AdmUserController::class, 'exportDashboard']);
 
 Route::get('/test', function () {
     return "test";
