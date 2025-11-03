@@ -5,6 +5,7 @@ use App\Http\Controllers\AdmOfferController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\CustomerSellController;
+use App\Http\Controllers\DashboardExportController;
 use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\OfferSellerController;
@@ -90,7 +91,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/active-offers-count', [AdmOfferController::class, 'activeOffersCount']);
     });
 });
-Route::get('/adm/export-dashboard', [AdmUserController::class, 'exportDashboard']);
+Route::get('/adm/export-dashboard', [DashboardExportController::class, 'export']);
+
 
 Route::get('/test', function () {
     return "test";

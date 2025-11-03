@@ -10,16 +10,22 @@ class DashboardExport implements WithMultipleSheets
     use Exportable;
 
     protected $userStats;
+    protected $lastSells;
+    protected $activeOffers;
 
-    public function __construct($userStats)
+    public function __construct($userStats, $lastSells, $activeOffers)
     {
         $this->userStats = $userStats;
+        $this->lastSells = $lastSells;
+        $this->activeOffers = $activeOffers;
     }
 
     public function sheets(): array
     {
         return [
-            'UserStatsSheet' => new UserStatsSheet($this->userStats),
+            new UserStatsSheet($this->userStats),
+            new LastSellsSheet($this->lastSells),
+            new ActiveOffersSheet($this->activeOffers),
         ];
     }
 }
