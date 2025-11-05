@@ -285,4 +285,148 @@ class AdmOfferControllerTest extends TestCase
                 'data' => []
             ]);
     }
+
+    #[Test]
+    public function it_returns_expiring_offers_count_grouped_by_day_of_week(): void
+    {
+        $panaderia = EstablishmentType::where('name', 'Panadería')->first();
+        if (!$panaderia) {
+            $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
+        }
+
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+
+        $establishment = FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'establishment_type_id' => $panaderia->id,
+        ]);
+
+        $product = Product::factory()->create([
+            'food_establishment_id' => $establishment->id,
+        ]);
+
+        // Crear ofertas activas
+        $offer1 = Offer::factory()->create([
+            'food_establishment_id' => $establishment->id,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        $offer2 = Offer::factory()->create([
+            'food_establishment_id' => $establishment->id,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        // Crear productos que expiran en diferentes días de esta semana
+        $today = now()->startOfDay();
+
+        // Producto que expira mañana (día 1)
+        \DB::table('product_offers')->insert([
+            'offer_id' => $offer1->id,
+            'product_id' => $product->id,
+            'price' => 10.00,
+            'quantity' => 5,
+            'expiration_date' => $today->copy()->addDays(1),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Producto que expira en 3 días (día 3)
+        \DB::table('product_offers')->insert([
+            'offer_id' => $offer2->id,
+            'product_id' => $product->id,
+            'price' => 15.00,
+            'quantity' => 3,
+            'expiration_date' => $today->copy()->addDays(3),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Producto que expira fuera del rango (no debe contarse)
+        \DB::table('product_offers')->insert([
+            'offer_id' => $offer1->id,
+            'product_id' => $product->id,
+            'price' => 20.00,
+            'quantity' => 2,
+            'expiration_date' => $today->copy()->addDays(10),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/adm/expiring-offers-count');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'day',
+                        'count'
+                    ]
+                ],
+                'message'
+            ])
+            ->assertJson([
+                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente'
+            ]);
+
+        // Verificar que se devuelven 7 días
+        $data = $response->json('data');
+        $this->assertCount(7, $data);
+
+        // Verificar que todos los días de la semana están presentes
+        $daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        foreach ($data as $index => $dayData) {
+            $this->assertEquals($daysOfWeek[$index], $dayData['day']);
+            $this->assertIsInt($dayData['count']);
+        }
+    }
+
+    #[Test]
+    public function it_returns_zero_counts_when_no_offers_expiring_this_week(): void
+    {
+        $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishment = FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'establishment_type_id' => $panaderia->id,
+        ]);
+
+        $product = Product::factory()->create([
+            'food_establishment_id' => $establishment->id,
+        ]);
+
+        $offer = Offer::factory()->create([
+            'food_establishment_id' => $establishment->id,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        // Crear producto que expira fuera del rango
+        \DB::table('product_offers')->insert([
+            'offer_id' => $offer->id,
+            'product_id' => $product->id,
+            'price' => 10.00,
+            'quantity' => 5,
+            'expiration_date' => now()->addDays(15),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/adm/expiring-offers-count');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente'
+            ]);
+
+        $data = $response->json('data');
+        $this->assertCount(7, $data);
+
+        // Verificar que todos los días tienen count = 0
+        foreach ($data as $dayData) {
+            $this->assertEquals(0, $dayData['count']);
+        }
+    }
 }

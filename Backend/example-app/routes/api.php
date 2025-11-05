@@ -89,9 +89,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/offer-stats', [AdmOfferController::class, 'offerStats']);
         Route::get('/adm/user-stats', [AdmUserController::class, 'userStats']);
         Route::get('/adm/active-offers-count', [AdmOfferController::class, 'activeOffersCount']);
+        Route::get('/adm/export-dashboard', [DashboardExportController::class, 'export']);
+        Route::get('/adm/expiring-offers-count', [AdmOfferController::class, 'expiringOffersCount']);
     });
 });
-Route::get('/adm/export-dashboard', [DashboardExportController::class, 'export']);
+
 
 
 Route::get('/test', function () {

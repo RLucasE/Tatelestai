@@ -23,15 +23,12 @@ class DashboardExportController extends Controller
     public function export()
     {
         try {
-            // Reutilizar lastSells de SellController
             $lastSellsResponse = $this->sellController->lastSells();
             $lastSells = json_decode($lastSellsResponse->getContent(), true)['data'];
 
-            // Reutilizar offerStats de AdmOfferController
             $offerStatsResponse = $this->admOfferController->offerStats();
             $offerStats = json_decode($offerStatsResponse->getContent(), true)['data'];
 
-            // Reutilizar userStats de AdmUserController
             $userStatsResponse = $this->admUserController->userStats();
             $userStatsData = json_decode($userStatsResponse->getContent(), true);
             $userStats = [
@@ -39,12 +36,13 @@ class DashboardExportController extends Controller
                 'data' => $userStatsData['data']
             ];
 
-            // Reutilizar activeOffersCount de AdmOfferController
             $activeOffersResponse = $this->admOfferController->activeOffersCount();
             $activeOffers = json_decode($activeOffersResponse->getContent(), true)['data'];
 
+            $expiringOffersResponse = $this->admOfferController->expiringOffersCount();
+            $expiringOffers = json_decode($expiringOffersResponse->getContent(), true)['data'];
 
-            return (new DashboardExport($userStats, $lastSells, $activeOffers))
+            return (new DashboardExport($userStats, $lastSells, $activeOffers, $expiringOffers))
                 ->download('dashboard-stats.xlsx');
 
         } catch (\Exception $e) {

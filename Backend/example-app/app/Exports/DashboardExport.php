@@ -12,12 +12,14 @@ class DashboardExport implements WithMultipleSheets
     protected $userStats;
     protected $lastSells;
     protected $activeOffers;
+    protected $expiringOffers;
 
-    public function __construct($userStats, $lastSells, $activeOffers)
+    public function __construct($userStats, $lastSells, $activeOffers, $expiringOffers)
     {
         $this->userStats = $userStats;
         $this->lastSells = $lastSells;
         $this->activeOffers = $activeOffers;
+        $this->expiringOffers = $expiringOffers;
     }
 
     public function sheets(): array
@@ -26,6 +28,7 @@ class DashboardExport implements WithMultipleSheets
             new UserStatsSheet($this->userStats),
             new LastSellsSheet($this->lastSells),
             new ActiveOffersSheet($this->activeOffers),
+            new ExpiringOffersSheet($this->expiringOffers),
         ];
     }
 }

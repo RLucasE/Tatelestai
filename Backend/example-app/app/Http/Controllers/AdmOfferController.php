@@ -118,8 +118,7 @@ class AdmOfferController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al obtener las estadísticas de ofertas',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener las estadísticas de ofertas', 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -154,5 +153,55 @@ class AdmOfferController extends Controller
             ], 500);
         }
     }
-}
 
+    public function expiringOffersCount(): JsonResponse
+    {
+        try {
+            $today = now()->startOfDay();
+            $nextWeek = now()->addDays(7)->endOfDay();
+
+            // Obtener todas las ofertas activas con sus productos
+            $offers = Offer::where('state', \App\Enums\OfferState::ACTIVE->value)
+                ->with(['productOffer' => function($query) use ($today, $nextWeek) {
+                    $query->whereBetween('expiration_date', [$today, $nextWeek]);
+                }])
+                ->get();
+
+            // Agrupar por día de la semana
+            $daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            $stats = [];
+
+            foreach ($daysOfWeek as $index => $day) {
+                $stats[] = [
+                    'day' => $day,
+                    'count' => 0
+                ];
+            }
+
+            // Contar ofertas por día
+            foreach ($offers as $offer) {
+                foreach ($offer->productOffer as $productOffer) {
+                    if ($productOffer->expiration_date) {
+                        $expirationDate = \Carbon\Carbon::parse($productOffer->expiration_date);
+                        if ($expirationDate->between($today, $nextWeek)) {
+                            // Carbon usa 1=Lunes, 7=Domingo, ajustamos para nuestro array (0-6)
+                            $dayIndex = $expirationDate->dayOfWeekIso - 1;
+                            $stats[$dayIndex]['count']++;
+                        }
+                    }
+                }
+            }
+
+            return response()->json([
+                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente',
+                'data' => $stats
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener las ofertas que expiran',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}
