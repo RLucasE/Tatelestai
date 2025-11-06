@@ -24,7 +24,7 @@ class FoodEstablishment extends Model
 
     public function establishmentType()
     {
-        return $this->belongsTo(EstablishmentType::class);
+        return $this->belongsTo(EstablishmentType::class, 'establishment_type_id', 'id');
     }
 
     public function products()

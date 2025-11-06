@@ -35,6 +35,11 @@ export default [
             component: () => import('@/components/layouts/admin/AdminOffers.vue'),
         },
         {
+            path: "pending-offers",
+            name: "admin-pending-offers",
+            component: () => import('@/components/layouts/admin/PendingOffers.vue'),
+        },
+        {
             path: "sellers/:id/offers",
             name: "admin-seller-offers",
             component: () => import('@/components/layouts/admin/SellerOffers.vue'),

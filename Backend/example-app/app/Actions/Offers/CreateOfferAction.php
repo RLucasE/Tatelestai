@@ -43,7 +43,7 @@ class CreateOfferAction
                 'time' => $request->date('expiration_date')->toTimeString(),
                 'expiration_datetime' => $request->date('expiration_date')->toDateTimeString(),
                 'food_establishment_id' => $establishment->getAttribute('id'),
-                'state' => OfferState::ACTIVE->value,
+                'state' => OfferState::VERIFIYING->value,
                 'quantity' => $request->integer('quantity', 1),
                 'created_at' => now(),
                 'updated_at' => now(),

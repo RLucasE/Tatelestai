@@ -366,6 +366,12 @@ class OfferCustomerControllerTest extends TestCase
             'food_establishment_id' => $this->establishment->id
         ]);
 
+        $verifyingOffer = Offer::factory()->create([
+            'state' => OfferState::VERIFIYING->value,
+            'expiration_datetime' => now()->addDays(1),
+            'food_establishment_id' => $this->establishment->id
+        ]);
+
         $expiredOffer = Offer::factory()->create([
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->subDays(1),
@@ -437,5 +443,60 @@ class OfferCustomerControllerTest extends TestCase
                 'per_page' => 20,
                 'has_more' => false
             ]);
+    }
+
+    #[Test]
+    public function it_does_not_return_verifying_offers_in_search_results(): void
+    {
+        $activeOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(1),
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pizza Special Active',
+            'description' => 'Active pizza offer'
+        ]);
+
+        $verifyingOffer = Offer::factory()->create([
+            'state' => OfferState::VERIFIYING->value,
+            'expiration_datetime' => now()->addDays(1),
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pizza Special Verifying',
+            'description' => 'Verifying pizza offer'
+        ]);
+
+        $product = Product::factory()->create([
+            'food_establishment_id' => $this->establishment->id,
+        ]);
+
+        ProductOffer::create([
+            'offer_id' => $activeOffer->id,
+            'product_id' => $product->id,
+            'price' => 10,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(10)
+        ]);
+
+        ProductOffer::create([
+            'offer_id' => $verifyingOffer->id,
+            'product_id' => $product->id,
+            'price' => 12,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(10)
+        ]);
+
+        $activeOffer->searchable();
+        $verifyingOffer->searchable();
+
+        $response = $this->getJson('/api/offers?search=Pizza');
+
+        $response->assertStatus(200);
+        $responseData = $response->json();
+
+        $this->assertCount(1, $responseData['data']);
+        $this->assertEquals($activeOffer->id, $responseData['data'][0]['id']);
+        $this->assertEquals('Pizza Special Active', $responseData['data'][0]['title']);
+
+        $verifyingOfferFound = collect($responseData['data'])->contains('id', $verifyingOffer->id);
+        $this->assertFalse($verifyingOfferFound, 'La oferta en estado VERIFYING no debería aparecer en los resultados de búsqueda');
     }
 }

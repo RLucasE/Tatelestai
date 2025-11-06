@@ -185,8 +185,7 @@ class OfferFactory extends Factory
             'quantity' => $this->faker->numberBetween(1, 50),
             'state' => $this->faker->randomElement([
                 OfferState::ACTIVE->value,
-                OfferState::ACTIVE->value, // Más probabilidad de que esté activa
-                OfferState::ACTIVE->value,
+                OfferState::VERIFIYING->value,
                 OfferState::PURCHASED->value
             ]),
         ];

@@ -32,6 +32,7 @@ const isSidebarOpen = ref(false);
           <li><RouterLink to="/adm/users" class="menu-link">Usuarios</RouterLink></li>
           <li><RouterLink to="/adm/sells" class="menu-link">Ventas</RouterLink></li>
           <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>
+          <li><RouterLink to="/adm/pending-offers" class="menu-link">Verificar Ofertas</RouterLink></li>
           <li>
             <DropdownMenu
                 title="Establecimientos"

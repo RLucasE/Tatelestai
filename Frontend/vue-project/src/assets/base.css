@@ -42,6 +42,13 @@
   --color-focus: #3e3b39;
   --color-darkest:  #22201f  ;  
 
+  --color-success: #48bb78;
+  --color-success-hover: #38a169;
+  --color-danger: #f56565;
+  --color-danger-hover: #e53e3e;
+  --color-warning: #fbbf24;
+  --color-warning-text: #78350f;
+
   --border-radius: 0.5rem;
 }
 

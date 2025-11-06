@@ -204,4 +204,146 @@ class AdmOfferController extends Controller
             ], 500);
         }
     }
+
+    public function pendingOffers(): JsonResponse
+    {
+        try {
+            $offers = Offer::where('state', \App\Enums\OfferState::VERIFIYING->value)
+                ->with([
+                    'foodEstablishment:id,name,address,user_id,establishment_type_id',
+                    'foodEstablishment.establishmentType:id,name',
+                    'foodEstablishment.user:id,name,email',
+                    'products:id,name,description',
+                ])
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->map(function ($offer) {
+                    return [
+                        'id' => $offer->id,
+                        'title' => $offer->title,
+                        'description' => $offer->description,
+                        'state' => $offer->state,
+                        'quantity' => $offer->quantity,
+                        'expiration_datetime' => $offer->expiration_datetime,
+                        'created_at' => $offer->created_at,
+                        'establishment' => [
+                            'id' => $offer->foodEstablishment->id,
+                            'name' => $offer->foodEstablishment->name,
+                            'address' => $offer->foodEstablishment->address,
+                            'type' => $offer->foodEstablishment->establishmentType->name,
+                        ],
+                        'seller' => [
+                            'id' => $offer->foodEstablishment->user->id,
+                            'name' => $offer->foodEstablishment->user->name,
+                            'email' => $offer->foodEstablishment->user->email,
+                        ],
+                        'products' => $offer->products->map(function ($product) {
+                            return [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'description' => $product->description,
+                                'price' => $product->pivot->price ?? 0,
+                                'quantity' => $product->pivot->quantity ?? 0,
+                                'expiration_date' => $product->pivot->expiration_date ?? null,
+                            ];
+                        }),
+                    ];
+                });
+
+            return response()->json([
+                'data' => $offers,
+                'message' => 'Ofertas pendientes obtenidas exitosamente'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener las ofertas pendientes',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function approveOffer(int $id, ChangeOfferStatusAction $changeOfferStatusAction): JsonResponse
+    {
+        if (!is_numeric($id)) {
+            return response()->json(['message' => 'ID inválido'], 422);
+        }
+
+        try {
+            $offer = Offer::findOrFail($id);
+
+            if ($offer->state !== \App\Enums\OfferState::VERIFIYING->value) {
+                return response()->json([
+                    'message' => 'La oferta no está en estado de verificación',
+                ], 400);
+            }
+
+            $offer = $changeOfferStatusAction->execute($id, \App\Enums\OfferState::ACTIVE->value);
+
+            return response()->json([
+                'message' => 'Oferta aprobada exitosamente',
+                'data' => [
+                    'id' => $offer->id,
+                    'state' => $offer->state
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Oferta no encontrada'
+            ], 404);
+        } catch (OfferStatusChangeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error' => $e->context()
+            ], $e->getCode());
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al aprobar la oferta',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function rejectOffer(int $id, ChangeOfferStatusAction $changeOfferStatusAction): JsonResponse
+    {
+        if (!is_numeric($id)) {
+            return response()->json(['message' => 'ID inválido'], 422);
+        }
+
+        try {
+            $offer = Offer::findOrFail($id);
+
+            if ($offer->state !== \App\Enums\OfferState::VERIFIYING->value) {
+                return response()->json([
+                    'message' => 'La oferta no está en estado de verificación',
+                ], 400);
+            }
+
+            $offer = $changeOfferStatusAction->execute($id, \App\Enums\OfferState::INACTIVE->value);
+
+            return response()->json([
+                'message' => 'Oferta rechazada exitosamente',
+                'data' => [
+                    'id' => $offer->id,
+                    'state' => $offer->state
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Oferta no encontrada'
+            ], 404);
+        } catch (OfferStatusChangeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error' => $e->context()
+            ], $e->getCode());
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al rechazar la oferta',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

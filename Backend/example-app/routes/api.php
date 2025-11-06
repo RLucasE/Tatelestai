@@ -75,6 +75,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/new-sellers/{id}', [AdmUserController::class, 'showNewSeller']);
         Route::get('/adm-offers', [AdmOfferController::class, 'index']);
         Route::patch('/adm-offers/{id}/status', [AdmOfferController::class, 'update']);
+        Route::get('/adm-pending-offers', [AdmOfferController::class, 'pendingOffers']);
+        Route::patch('/adm-offers/{id}/approve', [AdmOfferController::class, 'approveOffer']);
+        Route::patch('/adm-offers/{id}/reject', [AdmOfferController::class, 'rejectOffer']);
         Route::get('/adm-sells', [SellController::class, 'adminSells']);
         Route::get('/adm-sells/{id}', [SellController::class, 'adminSellDetail']);
         Route::get('/adm-customer-purchases/{id}', [SellController::class, 'adminCustomerSells']);
