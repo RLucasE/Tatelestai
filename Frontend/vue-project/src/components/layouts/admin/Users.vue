@@ -62,110 +62,135 @@ onMounted(getUsers);
 
 <template>
   <div class="users-page">
-    <div class="users-container">
-      <div class="header">
-        <h1 class="title">Usuarios</h1>
-        <p class="subtitle">Listado de usuarios agrupados por rol</p>
-      </div>
+    <div class="admin-header">
+      <h1 class="page-title">Usuarios</h1>
+      <p class="page-subtitle">Gestión de usuarios del sistema</p>
+    </div>
 
-      <div v-if="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Cargando usuarios...</p>
-      </div>
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Cargando usuarios...</p>
+    </div>
 
-      <div v-else-if="error" class="error">
-        <p>{{ error }}</p>
-        <button class="retry-btn" @click="getUsers">Reintentar</button>
-      </div>
+    <div v-else-if="error" class="error-container">
+      <p>{{ error }}</p>
+      <button class="retry-btn" @click="getUsers">Reintentar</button>
+    </div>
 
-      <div v-else class="content">
-        <div class="role-sections">
-          <UsersByRole
-              v-for="role in rolesOrder"
-              :key="role"
-              :role="role"
-              :title="roleLabels[role]"
-              :users="usersByRole[role]"
-          />
-        </div>
-      </div>
+    <div v-else class="users-list">
+      <UsersByRole
+          v-for="role in rolesOrder"
+          :key="role"
+          :role="role"
+          :title="roleLabels[role]"
+          :users="usersByRole[role]"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
 .users-page {
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.users-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 2rem;
+  max-width: 1400px;
   margin: 0 auto;
+  min-height: 100vh;
+}
+
+.admin-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 2.25rem;
+  font-weight: 700;
   color: var(--color-text);
-  width: 100%;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.5px;
 }
 
-.header {
-  margin-bottom: 16px;
-}
-
-.title {
+.page-subtitle {
+  color: var(--color-text);
+  opacity: 0.6;
+  font-size: 1rem;
   margin: 0;
-  font-size: 1.8rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 400;
 }
 
-.subtitle {
-  margin: 4px 0 0 0;
-  opacity: 0.85;
-}
-
-.loading, .error {
+.loading-container,
+.error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  background: var(--color-darkest);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
-  border-top: 4px solid var(--color-primary);
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 14px;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.5rem;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
+  to {
     transform: rotate(360deg);
   }
 }
 
+.error-container {
+  color: var(--color-text);
+}
+
+.error-container p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1rem;
+}
+
 .retry-btn {
-  margin-top: 12px;
-  padding: 10px 16px;
-  background: var(--color-primary);
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-accent);
   color: var(--color-text);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background-color: var(--color-accent-hover);
+  transform: translateY(-1px);
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .users-page {
+    padding: 1.5rem;
+  }
+
+  .page-title {
+    font-size: 1.875rem;
+  }
+
+  .admin-header {
+    margin-bottom: 2rem;
+  }
+
+  .users-list {
+    gap: 1.5rem;
+  }
 }
 </style>

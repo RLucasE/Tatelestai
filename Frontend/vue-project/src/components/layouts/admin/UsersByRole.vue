@@ -57,96 +57,157 @@ const usersCount = computed(() => (Array.isArray(props.users) ? props.users.leng
 
 <style scoped>
 .role-section {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-focus);
+  background: var(--color-darkest);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.role-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .role-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 1.75rem 2rem;
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.4));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .role-title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
   color: var(--color-text);
+  letter-spacing: -0.2px;
 }
 
 .role-count {
-  background: var(--color-primary);
-  border: 1px solid var(--color-focus);
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-weight: 700;
-  color: var(--color-text);
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 0.375rem 0.875rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-accent-light);
+  min-width: 2.5rem;
+  text-align: center;
 }
 
 .empty-role {
-  background: var(--color-darkest);
-  border: 1px dashed var(--color-focus);
-  border-radius: 10px;
-  padding: 16px;
+  padding: 4rem 2rem;
   text-align: center;
   color: var(--color-text);
+  opacity: 0.5;
+}
+
+.empty-role p {
+  margin: 0;
+  font-size: 0.9375rem;
 }
 
 .users-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  padding: 2rem;
 }
 
 .user-card {
-  background: var(--color-primary);
-  border: 1px solid var(--color-focus);
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.4), rgba(37, 43, 58, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  padding: 12px;
-  color: var(--color-text);
+  padding: 1.25rem;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-info));
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
 .card-link {
   text-decoration: none;
   display: block;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.card-link:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+
+.card-link:hover .user-card {
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.5));
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card-link:hover .user-card::before {
+  opacity: 1;
+}
+
+.user-main {
+  margin-bottom: 1rem;
+}
 
 .user-name {
-  margin: 0 0 6px 0;
-  font-size: 1.05rem;
-  font-weight: 700;
+  margin: 0 0 0.375rem 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.2px;
 }
 
 .user-email {
   margin: 0;
-  opacity: 0.85;
-  font-size: 0.95rem;
+  opacity: 0.6;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 400;
 }
 
 .user-roles {
-  margin-top: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .role-chip {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-focus);
-  border-radius: 999px;
-  padding: 4px 8px;
-  font-size: 0.8rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 16px;
+  padding: 0.3125rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-accent-light);
+  text-transform: capitalize;
 }
 
 @media (max-width: 1024px) {
-  .users-grid { grid-template-columns: repeat(2, 1fr); }
+  .users-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+  }
 }
-@media (max-width: 640px) {
-  .users-grid { grid-template-columns: 1fr; }
+
+@media (max-width: 768px) {
+  .users-grid {
+    grid-template-columns: 1fr;
+    padding: 1.25rem;
+  }
+
+  .role-header {
+    padding: 1.25rem 1.5rem;
+  }
 }
 </style>

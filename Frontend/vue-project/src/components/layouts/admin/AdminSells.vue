@@ -1,45 +1,45 @@
 <template>
   <div class="sells-container">
-    <h1 class="page-title">Ventas Recientes</h1>
+    <div class="admin-header">
+      <h1 class="page-title">Ventas Recientes</h1>
+      <p class="page-subtitle">Historial de transacciones del sistema</p>
+    </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>Cargando ventas...</p>
     </div>
 
-    <!-- Error State -->
     <div v-else-if="error" class="error-container">
       <p>{{ error }}</p>
       <button @click="getSells" class="retry-btn">Reintentar</button>
     </div>
 
-    <!-- Empty State -->
     <div v-else-if="sells.length === 0" class="empty-container">
       <p>No se han realizado ventas aún</p>
     </div>
 
-    <!-- Sells Grid -->
-    <div v-else class="sells-grid">
-      <SellCard
-        v-for="sell in sells"
-        :key="sell.id"
-        :sell="sell"
-      />
-    </div>
+    <div v-else>
+      <div class="sells-grid">
+        <SellCard
+          v-for="sell in sells"
+          :key="sell.id"
+          :sell="sell"
+        />
+      </div>
 
-    <!-- Pagination or Load More could be added here -->
-    <div v-if="sells.length > 0" class="stats-container">
-      <div class="stats-card">
-        <h3>Estadísticas</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">Total de Ventas:</span>
-            <span class="stat-value">{{ sells.length }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Ingresos Totales:</span>
-            <span class="stat-value">${{ calculateTotalRevenue() }}</span>
+      <div class="stats-container">
+        <div class="stats-card">
+          <h3 class="stats-title">Resumen General</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">Total de Ventas</span>
+              <span class="stat-value">{{ sells.length }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Ingresos Totales</span>
+              <span class="stat-value">${{ calculateTotalRevenue() }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -88,167 +88,187 @@ onMounted(() => {
 
 <style scoped>
 .sells-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 2rem;
+  max-width: 1400px;
   margin: 0 auto;
-  background-color: var(--color-bg);
   min-height: 100vh;
 }
 
-.page-title {
-  color: var(--color-text);
-  font-size: 2.5em;
-  font-weight: 700;
+.admin-header {
+  margin-bottom: 2.5rem;
   text-align: center;
-  margin-bottom: 30px;
-  text-shadow: 2px 2px 4px rgba(34, 32, 31, 0.3);
+}
+
+.page-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  color: var(--color-text);
+  opacity: 0.6;
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 400;
 }
 
 .sells-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-/* Loading State */
-.loading-container {
+.loading-container,
+.error-container,
+.empty-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  color: var(--color-text);
+  padding: 4rem 2rem;
+  text-align: center;
 }
 
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--color-secondary);
-  border-top: 4px solid var(--color-text);
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.5rem;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Error State */
 .error-container {
-  text-align: center;
-  padding: 40px 20px;
   color: var(--color-text);
+}
+
+.error-container p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1rem;
 }
 
 .retry-btn {
-  background: var(--color-primary);
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-accent);
   color: var(--color-text);
-  border: 2px solid var(--color-text);
-  padding: 12px 24px;
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 1em;
   font-weight: 600;
-  margin-top: 15px;
-  transition: all 0.3s ease;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
 }
 
 .retry-btn:hover {
-  background: var(--color-secondary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(34, 32, 31, 0.3);
+  background-color: var(--color-accent-hover);
+  transform: translateY(-1px);
 }
 
-/* Empty State */
 .empty-container {
-  text-align: center;
-  padding: 60px 20px;
   color: var(--color-text);
-  font-size: 1.2em;
-  opacity: 0.8;
+  opacity: 0.5;
 }
 
-/* Stats Section */
+.empty-container p {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .stats-container {
-  margin-top: 30px;
-  padding: 20px 0;
+  margin-top: 2rem;
 }
 
 .stats-card {
-  background: var(--color-primary);
+  background: var(--color-darkest);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 6px rgba(34, 32, 31, 0.3);
-  border: 2px solid var(--color-text);
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.stats-card h3 {
+.stats-title {
   color: var(--color-text);
-  font-size: 1.5em;
+  font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin: 0 0 1.5rem 0;
   text-align: center;
+  letter-spacing: -0.2px;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 15px;
-  background: var(--color-secondary);
-  border-radius: 8px;
-  border: 1px solid var(--color-focus);
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.4), rgba(37, 43, 58, 0.3));
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.25s ease;
+}
+
+.stat-item:hover {
+  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.5));
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
 }
 
 .stat-label {
-  font-size: 0.9em;
+  font-size: 0.875rem;
   color: var(--color-text);
-  opacity: 0.8;
-  margin-bottom: 5px;
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  font-weight: 500;
 }
 
 .stat-value {
-  font-size: 1.3em;
+  font-size: 1.875rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-success);
+  letter-spacing: -0.5px;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .sells-container {
-    padding: 15px;
+    padding: 1.5rem;
   }
 
   .page-title {
-    font-size: 2em;
-    margin-bottom: 20px;
+    font-size: 1.875rem;
+  }
+
+  .admin-header {
+    margin-bottom: 2rem;
   }
 
   .stats-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-title {
-    font-size: 1.8em;
-  }
-
-  .sells-container {
-    padding: 10px;
+    gap: 1rem;
   }
 
   .stats-card {
-    padding: 15px;
+    padding: 1.5rem;
+  }
+
+  .stat-item {
+    padding: 1.25rem;
   }
 }
 </style>

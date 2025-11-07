@@ -35,19 +35,26 @@
 
   --section-gap: 160px;
 
-  --color-text: #ffffff;     
-  --color-bg: #1a1918;
-  --color-primary: #2d2b29;
-  --color-secondary: #3a3836;
-  --color-focus: #4a4745;
-  --color-darkest: #0f0e0d;
+  --color-text: #e8eaf6;
+  --color-bg: #1a1625;
+  --color-primary: #2d2438;
+  --color-secondary: #3d3450;
+  --color-focus: #4a4058;
+  --color-darkest: #0f0d15;
 
-  --color-success: #48bb78;
-  --color-success-hover: #38a169;
-  --color-danger: #f56565;
-  --color-danger-hover: #e53e3e;
-  --color-warning: #fbbf24;
+  --color-accent: #7c3aed;
+  --color-accent-hover: #6d28d9;
+  --color-accent-light: #a78bfa;
+
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-warning: #f59e0b;
   --color-warning-text: #78350f;
+
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
 
   --border-radius: 0.5rem;
 }
