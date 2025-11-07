@@ -36,11 +36,11 @@
   --section-gap: 160px;
 
   --color-text: #ffffff;     
-  --color-bg: #afadab;        
-  --color-primary: #6f6c69;   
-  --color-secondary: #5f5c59; 
-  --color-focus: #3e3b39;
-  --color-darkest:  #22201f  ;  
+  --color-bg: #1a1918;
+  --color-primary: #2d2b29;
+  --color-secondary: #3a3836;
+  --color-focus: #4a4745;
+  --color-darkest: #0f0e0d;
 
   --color-success: #48bb78;
   --color-success-hover: #38a169;
