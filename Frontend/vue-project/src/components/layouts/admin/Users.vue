@@ -62,17 +62,15 @@ onMounted(getUsers);
 
 <template>
   <div class="users-page">
-    <div class="admin-header">
+    <div class="page-header">
       <h1 class="page-title">Usuarios</h1>
-      <p class="page-subtitle">Gestión de usuarios del sistema</p>
     </div>
 
-    <div v-if="loading" class="loading-container">
-      <div class="loading-spinner"></div>
+    <div v-if="loading" class="loading">
       <p>Cargando usuarios...</p>
     </div>
 
-    <div v-else-if="error" class="error-container">
+    <div v-else-if="error" class="error">
       <p>{{ error }}</p>
       <button class="retry-btn" @click="getUsers">Reintentar</button>
     </div>
@@ -91,106 +89,52 @@ onMounted(getUsers);
 
 <style scoped>
 .users-page {
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 1.5rem;
+  max-width: 1200px;
   margin: 0 auto;
-  min-height: 100vh;
 }
 
-.admin-header {
-  margin-bottom: 2.5rem;
-  text-align: center;
+.page-header {
+  margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .page-title {
-  font-size: 2.25rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 0.75rem 0;
-  letter-spacing: -0.5px;
-}
-
-.page-subtitle {
-  color: var(--color-text);
-  opacity: 0.6;
-  font-size: 1rem;
   margin: 0;
-  font-weight: 400;
 }
 
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
+.loading,
+.error {
+  padding: 2rem;
   text-align: center;
-}
-
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--color-accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 1.5rem;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.error-container {
   color: var(--color-text);
 }
 
-.error-container p {
-  margin: 0 0 1.5rem 0;
-  font-size: 1rem;
+.error p {
+  margin: 0 0 1rem 0;
 }
 
 .retry-btn {
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   background-color: var(--color-accent);
   color: var(--color-text);
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
 }
 
 .retry-btn:hover {
   background-color: var(--color-accent-hover);
-  transform: translateY(-1px);
 }
 
 .users-list {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-}
-
-@media (max-width: 768px) {
-  .users-page {
-    padding: 1.5rem;
-  }
-
-  .page-title {
-    font-size: 1.875rem;
-  }
-
-  .admin-header {
-    margin-bottom: 2rem;
-  }
-
-  .users-list {
-    gap: 1.5rem;
-  }
 }
 </style>

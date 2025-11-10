@@ -1,38 +1,38 @@
 <template>
   <div class="sell-card">
     <div class="card-header">
-      <div class="sell-info">
-        <span class="sell-date">{{ formatDate(sell.created_at) }}</span>
-        <div class="participants">
-          <span class="customer">Cliente: {{ sell.customer_name }}</span>
-          <span class="establishment">Establecimiento: {{ sell.establishment_name }}</span>
-        </div>
-      </div>
+      <span class="sell-date">{{ formatDate(sell.created_at) }}</span>
+      <span class="customer">{{ sell.customer_name }}</span>
+      <span class="establishment">{{ sell.establishment_name }}</span>
     </div>
 
-    <div class="card-content">
-      <div class="sell-details">
-        <div v-for="detail in sell.sell_details" :key="detail.id" class="detail-row">
-          <div class="detail-main">
+    <table class="details-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cant.</th>
+          <th>Precio</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="detail in sell.sell_details" :key="detail.id">
+          <td>
             <span class="product-name">{{ detail.product_name }}</span>
-            <span class="product-description">{{ detail.product_description }}</span>
-          </div>
-          <div class="detail-info">
-            <span class="offer-multiplier">x{{ detail.offer_quantity }}</span>
-            <span class="product-quantity">Cantidad: {{ detail.product_quantity }}</span>
-            <span class="product-price">Precio: ${{ detail.product_price }}</span>
-            <span class="subtotal">Subtotal: ${{ (detail.offer_quantity * detail.product_quantity * detail.product_price).toFixed(2) }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card-footer">
-      <div class="total-section">
-        <span class="total-label">Total de la venta:</span>
-        <span class="total-amount">${{ calculateTotal() }}</span>
-      </div>
-    </div>
+            <span v-if="detail.offer_quantity > 1" class="offer-mult">×{{ detail.offer_quantity }}</span>
+          </td>
+          <td class="quantity">{{ detail.product_quantity }}</td>
+          <td class="price">${{ detail.product_price }}</td>
+          <td class="subtotal">${{ (detail.offer_quantity * detail.product_quantity * detail.product_price).toFixed(2) }}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="total-label">Total</td>
+          <td class="total-amount">${{ calculateTotal() }}</td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 </template>
 
@@ -68,241 +68,160 @@ export default {
 <style scoped>
 .sell-card {
   background: var(--color-darkest);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
   overflow: hidden;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.sell-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--color-accent), var(--color-info));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.sell-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
-}
-
-.sell-card:hover::before {
-  opacity: 1;
 }
 
 .card-header {
-  padding: 1.75rem 2rem;
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.4));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.sell-info {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.8125rem;
 }
 
 .sell-date {
-  font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--color-accent-light);
-  letter-spacing: -0.1px;
-}
-
-.participants {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-  text-align: right;
+  color: var(--color-text);
 }
 
 .customer,
 .establishment {
-  font-size: 0.875rem;
   color: var(--color-text);
-  opacity: 0.7;
-  font-weight: 400;
+  opacity: 0.6;
 }
 
-.card-content {
-  padding: 2rem;
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.3), rgba(37, 43, 58, 0.2));
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.2s ease;
+.details-table thead th {
+  text-align: left;
+  padding: 0.625rem 1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.5;
+  background: var(--color-bg);
 }
 
-.detail-row:hover {
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.5), rgba(37, 43, 58, 0.4));
-  border-color: rgba(255, 255, 255, 0.1);
+.details-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
 }
 
-.detail-row:last-child {
-  margin-bottom: 0;
+.details-table tbody tr:last-child {
+  border-bottom: none;
 }
 
-.detail-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.detail-info {
-  display: flex;
-  gap: 1.25rem;
-  align-items: center;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.details-table tbody td {
+  padding: 0.75rem 1rem;
+  color: var(--color-text);
+  font-size: 0.8125rem;
 }
 
 .product-name {
+  color: var(--color-text);
+}
+
+.offer-mult {
+  display: inline-block;
+  margin-left: 0.5rem;
+  color: var(--color-accent);
   font-weight: 600;
-  font-size: 1.0625rem;
-  color: var(--color-text);
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.2px;
+  font-size: 0.75rem;
 }
 
-.product-description {
-  font-size: 0.875rem;
-  color: var(--color-text);
-  opacity: 0.6;
-  line-height: 1.4;
-}
-
-.detail-info span {
-  font-size: 0.875rem;
-  color: var(--color-text);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.offer-multiplier {
-  font-weight: 700 !important;
-  font-size: 0.9375rem !important;
-  color: var(--color-accent-light) !important;
-  background: rgba(99, 102, 241, 0.1);
-  padding: 0.25rem 0.625rem;
-  border-radius: 6px;
-  border: 1px solid rgba(99, 102, 241, 0.25);
-}
-
-.product-quantity {
-  opacity: 0.7;
-}
-
-.product-price {
-  font-weight: 600;
-  color: var(--color-success);
-  font-size: 1rem;
-}
-
+.quantity,
+.price,
 .subtotal {
-  font-weight: 700 !important;
-  color: var(--color-success) !important;
-  font-size: 1rem !important;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 0.25rem 0.625rem;
-  border-radius: 6px;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.card-footer {
-  padding: 1.75rem 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.4));
-}
-
-.total-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.details-table tfoot td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
 }
 
 .total-label {
-  font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text);
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 .total-amount {
-  font-size: 1.875rem;
+  text-align: right;
   font-weight: 700;
-  color: var(--color-success);
-  letter-spacing: -0.5px;
-}
-
-@media (max-width: 1024px) {
-  .detail-info {
-    gap: 1rem;
-  }
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 768px) {
-  .card-header,
-  .card-content,
-  .card-footer {
-    padding: 1.5rem;
-  }
-
-  .detail-row {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-  }
-
-  .detail-info {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 0.75rem;
-  }
-
-  .sell-info {
+  .card-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.25rem;
   }
 
-  .participants {
+  .details-table {
+    font-size: 0.75rem;
+  }
+
+  .details-table thead {
+    display: none;
+  }
+
+  .details-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .details-table tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .details-table tbody td {
+    padding: 0;
+  }
+
+  .quantity::before {
+    content: "Cant: ";
+    opacity: 0.5;
+  }
+
+  .price::before {
+    content: "Precio: ";
+    opacity: 0.5;
+  }
+
+  .subtotal {
+    grid-column: 1 / -1;
     text-align: left;
+    font-weight: 600;
   }
 
-  .total-amount {
-    font-size: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .card-header,
-  .card-content,
-  .card-footer {
-    padding: 1.25rem;
+  .subtotal::before {
+    content: "Subtotal: ";
+    opacity: 0.5;
   }
 
-  .detail-info {
-    flex-direction: column;
-    align-items: flex-start;
+  .details-table tfoot tr {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
   }
 
-  .detail-info span {
-    width: 100%;
+  .details-table tfoot td {
+    padding: 0;
   }
 }
 </style>

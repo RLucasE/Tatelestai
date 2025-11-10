@@ -1,44 +1,46 @@
 <template>
   <div class="purchase-card">
     <div class="card-header">
-      <div class="purchase-info">
-        <span class="purchase-date">{{ formatDate(purchase.created_at) }}</span>
-        <span class="purchase-seller">Vendedor: {{ purchase.sold_by }}</span>
-      </div>
+      <span class="purchase-date">{{ formatDate(purchase.created_at) }}</span>
+      <span class="purchase-seller">{{ purchase.sold_by }}</span>
     </div>
 
     <div class="card-content">
-      <div class="purchase-details">
-        <div v-for="detail in purchase.sell_details" :key="detail.id" class="detail-row">
-          <div class="detail-main">
-            <span class="product-name">{{ detail.product_name }}</span>
-            <span class="product-description">{{ detail.product_description }}</span>
-          </div>
-          <div class="detail-info">
-            <span class="offer-multiplier">x{{ detail.offer_quantity }}</span>
-            <span class="product-quantity">Cantidad: {{ detail.product_quantity }}</span>
-            <span class="product-price">Precio: ${{ detail.product_price }}</span>
-            <span class="subtotal">Subtotal: ${{ (detail.offer_quantity * detail.product_quantity * detail.product_price).toFixed(2) }}</span>
-          </div>
-        </div>
-      </div>
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="detail in purchase.sell_details" :key="detail.id">
+            <td>
+              <div class="product-info">
+                <span class="product-name">{{ detail.product_name }}</span>
+                <span class="product-description">{{ detail.product_description }}</span>
+                <span class="offer-badge">x{{ detail.offer_quantity }}</span>
+              </div>
+            </td>
+            <td class="quantity">{{ detail.product_quantity }}</td>
+            <td class="price">${{ detail.product_price }}</td>
+            <td class="subtotal">${{ (detail.offer_quantity * detail.product_quantity * detail.product_price).toFixed(2) }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="card-footer">
       <div class="total-section">
-        <span class="total-label">Total de la compra:</span>
+        <span class="total-label">Total</span>
         <span class="total-amount">${{ calculateTotal() }}</span>
       </div>
-      <div class="pickup-code-section">
-        <button @click="toggleCodeVisibility" class="toggle-code-btn">
-          <span v-if="showCode">{{ formatPickupCode(purchase.pickup_code) }}</span>
-          <span v-else class="code-hidden">
-            Código de retiro:
-            <svg class="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 5C7 5 2.73 8.11 1 12.5C2.73 16.89 7 20 12 20C17 20 21.27 16.89 23 12.5C21.27 8.11 17 5 12 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="12" cy="12.5" r="3.5" stroke="currentColor" stroke-width="2"/>
-            </svg>
-          </span>
+      <div class="pickup-section">
+        <button @click="toggleCodeVisibility" class="code-btn">
+          <span v-if="showCode" class="code-visible">{{ formatPickupCode(purchase.pickup_code) }}</span>
+          <span v-else class="code-label">Ver código de retiro</span>
         </button>
       </div>
     </div>
@@ -88,203 +90,217 @@ export default {
 
 <style scoped>
 .purchase-card {
-  background: var(--color-primary);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(34, 32, 31, 0.3);
-  transition: all 0.3s ease;
+  background: var(--color-darkest);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
   overflow: hidden;
-  position: relative;
-  border: 2px solid transparent;
-  color: var(--color-text);
-  margin-bottom: 20px;
-}
-
-.purchase-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(34, 32, 31, 0.4);
-  border-color: var(--color-text);
-  background: var(--color-secondary);
 }
 
 .card-header {
-  padding: 20px 20px 10px;
-  border-bottom: 1px solid var(--color-focus);
-  background: var(--color-secondary);
-}
-
-.purchase-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-primary);
 }
 
 .purchase-date {
-  font-size: 1.1em;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text);
 }
 
 .purchase-seller {
-  font-size: 0.9em;
+  font-size: 0.875rem;
   color: var(--color-text);
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .card-content {
-  padding: 15px 20px;
+  padding: 0;
 }
 
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding: 12px;
-  background: var(--color-focus);
-  border-radius: 8px;
-  border: 1px solid var(--color-darkest);
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.detail-main {
-  flex: 2;
+.details-table thead th {
+  text-align: left;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+  opacity: 0.7;
+}
+
+.details-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.details-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.details-table tbody td {
+  padding: 0.875rem 1.25rem;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.product-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.detail-info {
-  flex: 3;
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-  align-items: center;
-  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 .product-name {
-  font-weight: 600;
-  font-size: 1.1em;
-  color: var(--color-text);
-}
-
-.product-description {
-  font-size: 0.9em;
-  color: var(--color-text);
-  opacity: 0.8;
-}
-
-.detail-info span {
-  font-size: 0.85em;
-  color: var(--color-text);
-  background: var(--color-darkest);
-  padding: 4px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.offer-multiplier {
-  font-size: 1em !important;
-  font-weight: 700 !important;
-  background: var(--color-secondary) !important;
-  border: 2px solid var(--color-text) !important;
-  color: var(--color-text) !important;
-}
-
-.card-footer {
-  padding: 15px 20px;
-  border-top: 1px solid var(--color-focus);
-  background: var(--color-secondary);
-}
-
-.total-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.total-label {
-  font-size: 1em;
   font-weight: 500;
   color: var(--color-text);
 }
 
+.product-description {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.offer-badge {
+  display: inline-block;
+  background: var(--color-accent);
+  color: var(--color-text);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: fit-content;
+  margin-top: 0.25rem;
+}
+
+.quantity,
+.price,
+.subtotal {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.subtotal {
+  font-weight: 600;
+}
+
+.card-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.total-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.total-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  opacity: 0.7;
+}
+
 .total-amount {
-  font-size: 1.2em;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--color-text);
 }
 
-.pickup-code-section {
-  margin-top: 15px;
+.pickup-section {
   display: flex;
-  justify-content: center;
 }
 
-.toggle-code-btn {
-  background: var(--color-focus);
+.code-btn {
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
   color: var(--color-text);
-  border: 2px solid var(--color-text);
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
+  min-width: 140px;
+  text-align: center;
 }
 
-.toggle-code-btn span {
-  font-size: 1.3em;
-  letter-spacing: 2px;
+.code-btn:hover {
+  background: var(--color-focus);
 }
 
-.toggle-code-btn:hover {
-  background: var(--color-darkest);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(34, 32, 31, 0.3);
+.code-visible {
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  font-family: monospace;
 }
 
-.toggle-code-btn:active {
-  transform: translateY(0);
-}
-
-.code-hidden {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1em !important;
-  letter-spacing: normal !important;
-}
-
-.eye-icon {
-  width: 24px;
-  height: 24px;
-  color: var(--color-text);
-  transition: all 0.3s ease;
-}
-
-.toggle-code-btn:hover .eye-icon {
-  transform: scale(1.1);
+.code-label {
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
-  .detail-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .details-table {
+    display: block;
+    overflow-x: auto;
   }
 
-  .detail-info {
-    justify-content: flex-start;
+  .details-table thead {
+    display: none;
   }
 
-  .purchase-info {
+  .details-table tbody,
+  .details-table tr,
+  .details-table td {
+    display: block;
+  }
+
+  .details-table tbody tr {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .details-table tbody td {
+    padding: 0.25rem 0;
+    text-align: left !important;
+  }
+
+  .details-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: inline-block;
+    width: 100px;
+    opacity: 0.7;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .total-section {
+    justify-content: space-between;
+  }
+
+  .code-btn {
+    width: 100%;
+  }
+
+  .card-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px;
+    gap: 0.5rem;
   }
 }
 </style>

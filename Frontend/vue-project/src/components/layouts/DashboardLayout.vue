@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import Sidevar from "./seller/Sidevar.vue";
+import Logo from "@/components/common/Logo.vue";
 
 const isSidebarOpen = ref(false);
 </script>
@@ -19,13 +20,12 @@ const isSidebarOpen = ref(false);
         <span></span>
         <span></span>
       </button>
+      <RouterLink to="/seller/dashboard" class="logo-link">
+        <Logo />
+      </RouterLink>
     </div>
     <div>
-      <RouterLink
-        class="py-2 px-4 leading-normal customer-nav-link"
-        to="/customer/offers"
-        >aaa</RouterLink
-      >
+      <!-- Espacio para navegación adicional -->
     </div>
   </nav>
   <main class="customer-cards-box">
@@ -56,13 +56,8 @@ nav {
   border-bottom: 1px solid var(--color-border);
 }
 
-.customer-nav-link {
-  color: var(--color-text);
+.logo-link {
   text-decoration: none;
-}
-
-.customer-nav-link:hover {
-  color: var(--color-primary);
 }
 
 .nav-toggle {

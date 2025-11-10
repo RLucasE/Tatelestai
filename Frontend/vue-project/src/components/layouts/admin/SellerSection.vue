@@ -1,3 +1,55 @@
+<template>
+  <section class="seller-section">
+    <div class="section-header">
+      <h2 class="section-title">Información de Vendedor</h2>
+      <div class="seller-status">
+        <span class="status-label">Estado:</span>
+        <span class="status-badge" :class="user.state === 'active' ? 'active' : 'inactive'">
+          {{ user.state === 'active' ? 'Activo' : 'Inactivo' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="label">Fecha de registro</span>
+        <span class="value">{{ formatDate(user.created_at) }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Productos</span>
+        <span class="value">0</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Ofertas activas</span>
+        <span class="value">0</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Ventas</span>
+        <span class="value">0</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Ingresos</span>
+        <span class="value">$0.00</span>
+      </div>
+    </div>
+
+    <div class="actions-section">
+      <button
+        class="action-btn primary"
+        @click="user.state === 'active' ? desactivarSeller() : activarSeller()"
+      >
+        {{ user.state === 'active' ? 'Desactivar' : 'Activar' }}
+      </button>
+      <button class="action-btn" @click="verOfertas">
+        Ver Ofertas
+      </button>
+      <button class="action-btn" @click="verVentas">
+        Ver Ventas
+      </button>
+    </div>
+  </section>
+</template>
+
 <script setup>
 import { defineProps, defineEmits } from 'vue';
 import { useRouter } from 'vue-router';
@@ -12,6 +64,16 @@ const props = defineProps({
     required: true
   }
 });
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return 'No disponible';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('es-AR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
 
 const activarSeller = async () => {
   try {
@@ -40,140 +102,146 @@ const verVentas = () => {
 };
 </script>
 
-<template>
-  <section class="seller-section">
-    <h2 class="section-title">Información de Vendedor</h2>
-    <div class="seller-info">
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Estado del vendedor</span>
-          <span class="value">{{user.state || null}}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Fecha de registro</span>
-          <span class="value">{{ user.created_at || 'No disponible' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Productos registrados</span>
-          <span class="value">0</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Ofertas activas</span>
-          <span class="value">0</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Ventas realizadas</span>
-          <span class="value">0</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Total de ingresos</span>
-          <span class="value">$0.00</span>
-        </div>
-      </div>
-
-      <div class="seller-actions">
-        <h3 class="sub-title">Acciones disponibles</h3>
-        <div class="actions-grid">
-          <button class="action-btn" @click="user.state === 'active' ? desactivarSeller() : activarSeller()">
-            {{ user.state === 'active' ? 'Desactivar Seller' : 'Activar Seller' }}
-          </button>
-          <button class="action-btn secondary" @click="verOfertas">
-            Ver Ofertas
-          </button>
-          <button class="action-btn secondary" @click="verVentas">
-            Ver Ventas
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-</template>
-
 <style scoped>
 .seller-section {
-  margin-top: 20px;
+  background: var(--color-darkest);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .section-title {
-  margin: 0 0 16px 0;
-  font-size: 1.2rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--color-text);
 }
 
-.seller-info {
+.seller-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-label {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+}
+
+.status-badge.active {
+  background: var(--color-success);
+  color: var(--color-text);
+  border-color: var(--color-success);
+}
+
+.status-badge.inactive {
   background: var(--color-secondary);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
-  padding: 16px;
+  color: var(--color-text);
+  opacity: 0.7;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
 }
 
 .label {
-  opacity: 0.7;
-  font-size: 0.85rem;
-  margin-bottom: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
 }
 
 .value {
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.sub-title {
-  margin: 0 0 12px 0;
-  font-size: 1rem;
-  color: var(--color-text);
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+.actions-section {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .action-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-primary);
-  color: white;
-  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  background: var(--color-secondary);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 120px;
 }
 
 .action-btn:hover {
-  background: var(--color-primary);
-  transform: translateY(-2px);
+  background: var(--color-focus);
 }
 
-.action-btn.secondary {
-  background: var(--color-focus);
-  color: var(--color-text);
+.action-btn.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
-.action-btn.secondary:hover {
-  background: var(--color-focus);
+.action-btn.primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 @media (max-width: 640px) {
-  .info-grid {
-    grid-template-columns: 1fr;
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 
-  .actions-grid {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .actions-section {
     flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
   }
 }
 </style>

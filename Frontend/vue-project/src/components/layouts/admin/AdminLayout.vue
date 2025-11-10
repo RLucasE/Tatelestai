@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { RouterLink, RouterView } from "vue-router";
 import DropdownMenu from "@/components/common/DropdownMenu.vue";
+import Logo from "@/components/common/Logo.vue";
 
 const isSidebarOpen = ref(false);
 </script>
@@ -21,6 +22,9 @@ const isSidebarOpen = ref(false);
           <span></span>
           <span></span>
         </button>
+        <RouterLink to="/adm/dashboard" class="logo-link">
+          <Logo />
+        </RouterLink>
       </nav>
     </header>
 
@@ -174,5 +178,10 @@ const isSidebarOpen = ref(false);
 
 @media (min-width: 1024px) {
   .content { padding: 24px; margin-left: 0; }
+}
+
+.logo-link {
+  text-decoration: none;
+  margin-left: 1rem;
 }
 </style>

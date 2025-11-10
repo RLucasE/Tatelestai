@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink, RouterView } from "vue-router";
+import Logo from "@/components/common/Logo.vue";
 </script>
 
 <template class="p-0">
@@ -7,7 +8,9 @@ import { RouterLink, RouterView } from "vue-router";
     <div class="bg-[var(--color-background)]/80 backdrop-blur border-b border-[var(--color-border)]">
       <nav class="max-w-6xl mx-auto px-4">
         <div class="flex items-center justify-between h-14">
-          <RouterLink to="/" class="text-[var(--color-heading)] font-semibold">Home</RouterLink>
+          <RouterLink to="/" class="logo-link">
+            <Logo />
+          </RouterLink>
           <div class="flex items-center gap-2">
             <RouterLink
               to="/register"
@@ -31,3 +34,9 @@ import { RouterLink, RouterView } from "vue-router";
     </div>
   </main>
 </template>
+
+<style scoped>
+.logo-link {
+  text-decoration: none;
+}
+</style>

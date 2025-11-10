@@ -167,7 +167,7 @@ onMounted(async () => {
   background: var(--color-bg);
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
   height: 100%;
 }
 

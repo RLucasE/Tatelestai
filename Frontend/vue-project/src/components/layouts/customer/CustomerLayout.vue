@@ -1,43 +1,44 @@
 <script setup>
+import Logo from '@/components/common/Logo.vue';
 </script>
 
 <template>
   <nav class="flex justify-between items-center pl-6 pr-6 h-16">
-    <div>
+    <div class="nav-left">
       <RouterLink
-          class="py-2 px-4 leading-normal customer-nav-link"
+          class="logo-link"
           to="/customer/offers"
-      >Logotipo
-      </RouterLink
       >
+        <Logo />
+      </RouterLink>
       <RouterLink
           class="py-2 px-4 leading-normal customer-nav-link"
           to="/customer/profile"
       >Perfil
-      </RouterLink
-      >
+      </RouterLink>
     </div>
     <div>
       <RouterLink
           class="py-2 px-4 leading-normal customer-nav-link"
           to="/customer/offers"
       >Ofertas
-      </RouterLink
-      >
+      </RouterLink>
 
       <RouterLink
           class="py-2 px-4 leading-normal customer-nav-link"
           to="/customer/purchases"
       >Compras
-      </RouterLink
-      >
+      </RouterLink>
       <RouterLink
           class="py-2 px-4 leading-normal customer-nav-link"
           to="/customer/history"
       >Historial
-      </RouterLink
-      >
-      <RouterLink to="/customer/carrito"> Carrito</RouterLink>
+      </RouterLink>
+      <RouterLink
+          class="py-2 px-4 leading-normal customer-nav-link"
+          to="/customer/carrito"
+      >Carrito
+      </RouterLink>
     </div>
   </nav>
   <main class="customer-cards-box">
@@ -61,12 +62,23 @@ nav {
   border-bottom: 1px solid var(--color-border);
 }
 
-.customer-nav-link {
-  color: var(--color-text);
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-link {
   text-decoration: none;
 }
 
+.customer-nav-link {
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
 .customer-nav-link:hover {
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 </style>

@@ -30,76 +30,71 @@ const usersCount = computed(() => (Array.isArray(props.users) ? props.users.leng
       <p>No hay usuarios con este rol</p>
     </div>
 
-    <div v-else class="users-grid">
-      <router-link
-        v-for="user in users"
-        :key="user.id"
-        class="user-card card-link"
-        :to="{ name: 'admin-user-detail', params: { id: user.id } }"
-      >
-        <div class="user-main">
-          <h3 class="user-name">{{ user.name }} {{ user.last_name }}</h3>
-          <p class="user-email">{{ user.email }}</p>
-        </div>
-        <div class="user-roles" v-if="Array.isArray(user.roles) && user.roles.length">
-          <span
-            v-for="r in user.roles"
-            :key="typeof r === 'string' ? r : r.name"
-            class="role-chip"
-          >
-            {{ typeof r === 'string' ? r : r.name }}
-          </span>
-        </div>
-      </router-link>
-    </div>
+    <table v-else class="users-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Roles</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="user in users"
+          :key="user.id"
+          class="user-row"
+          @click="$router.push({ name: 'admin-user-detail', params: { id: user.id } })"
+        >
+          <td class="user-name">{{ user.name }} {{ user.last_name }}</td>
+          <td class="user-email">{{ user.email }}</td>
+          <td class="user-roles">
+            <span
+              v-for="r in user.roles"
+              :key="typeof r === 'string' ? r : r.name"
+              class="role-chip"
+            >
+              {{ typeof r === 'string' ? r : r.name }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 </template>
 
 <style scoped>
 .role-section {
   background: var(--color-darkest);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  transition: box-shadow 0.3s ease;
-}
-
-.role-section:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
 }
 
 .role-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.75rem 2rem;
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.4));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .role-title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--color-text);
-  letter-spacing: -0.2px;
 }
 
 .role-count {
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  padding: 0.375rem 0.875rem;
-  border-radius: 20px;
-  font-weight: 600;
+  background: var(--color-primary);
+  border: 1px solid var(--color-border);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius);
   font-size: 0.875rem;
-  color: var(--color-accent-light);
-  min-width: 2.5rem;
-  text-align: center;
+  color: var(--color-text);
 }
 
 .empty-role {
-  padding: 4rem 2rem;
+  padding: 2rem;
   text-align: center;
   color: var(--color-text);
   opacity: 0.5;
@@ -107,107 +102,104 @@ const usersCount = computed(() => (Array.isArray(props.users) ? props.users.leng
 
 .empty-role p {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
 }
 
-.users-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.25rem;
-  padding: 2rem;
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.user-card {
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.4), rgba(37, 43, 58, 0.3));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 1.25rem;
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
+.users-table thead th {
+  text-align: left;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+  opacity: 0.7;
 }
 
-.user-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--color-accent), var(--color-info));
-  opacity: 0;
-  transition: opacity 0.25s ease;
+.user-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.card-link {
-  text-decoration: none;
-  display: block;
+.user-row:last-child {
+  border-bottom: none;
 }
 
-.card-link:hover .user-card {
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.6), rgba(37, 43, 58, 0.5));
-  border-color: rgba(99, 102, 241, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.user-row:hover {
+  background: var(--color-primary);
 }
 
-.card-link:hover .user-card::before {
-  opacity: 1;
-}
-
-.user-main {
-  margin-bottom: 1rem;
+.user-row td {
+  padding: 0.875rem 1.25rem;
+  color: var(--color-text);
+  font-size: 0.875rem;
 }
 
 .user-name {
-  margin: 0 0 0.375rem 0;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  color: var(--color-text);
-  letter-spacing: -0.2px;
+  font-weight: 500;
 }
 
 .user-email {
-  margin: 0;
-  opacity: 0.6;
-  font-size: 0.875rem;
-  color: var(--color-text);
-  font-weight: 400;
+  opacity: 0.7;
 }
 
 .user-roles {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .role-chip {
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  border-radius: 16px;
-  padding: 0.3125rem 0.75rem;
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-accent-light);
+  color: var(--color-text);
   text-transform: capitalize;
-}
-
-@media (max-width: 1024px) {
-  .users-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-    padding: 1.5rem;
-  }
+  min-width: 80px;
+  text-align: center;
+  display: inline-block;
 }
 
 @media (max-width: 768px) {
-  .users-grid {
-    grid-template-columns: 1fr;
-    padding: 1.25rem;
+  .users-table {
+    display: block;
+    overflow-x: auto;
   }
 
-  .role-header {
-    padding: 1.25rem 1.5rem;
+  .users-table thead {
+    display: none;
+  }
+
+  .users-table tbody,
+  .users-table tr,
+  .users-table td {
+    display: block;
+  }
+
+  .user-row {
+    padding: 1rem 1.25rem;
+  }
+
+  .user-row td {
+    padding: 0.25rem 0;
+  }
+
+  .user-name {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .user-email {
+    margin-bottom: 0.5rem;
   }
 }
 </style>
