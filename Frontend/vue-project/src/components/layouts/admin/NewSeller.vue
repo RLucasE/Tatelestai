@@ -76,54 +76,51 @@ onMounted(fetchSeller);
 <template>
   <div class="new-seller-page">
     <div class="new-seller-container">
-      <div class="header">
-        <button class="back-btn" @click="goBack">← Volver</button>
-        <h1 class="title">Solicitud de Vendedor</h1>
+      <div class="top-bar">
+        <button class="back-btn" @click="goBack">
+          <span class="back-icon">←</span>
+          <span>Volver</span>
+        </button>
       </div>
 
-      <div v-if="loading" class="loading">
+      <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>Cargando información del vendedor...</p>
+        <p>Cargando información...</p>
       </div>
 
-      <div v-else-if="error" class="error">
+      <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
         <button class="retry-btn" @click="fetchSeller">Reintentar</button>
       </div>
 
       <div v-else-if="seller" class="content">
-        <!-- Información básica del usuario -->
-        <section class="card">
-          <h2 class="section-title">Información del Usuario</h2>
-          <div class="data-grid">
-            <div class="data-item">
-              <span class="label">Numero Usuario</span>
-              <span class="value">{{ seller.id }}</span>
+        <div class="header">
+          <h1 class="title">Revisión de Solicitud</h1>
+          <div class="status-chip" :class="seller.state">
+            {{ seller.state === 'waiting_for_confirmation' ? 'Pendiente' : seller.state }}
+          </div>
+        </div>
+
+        <!-- Información del Usuario -->
+        <section class="section">
+          <h2 class="section-title">Usuario</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">ID</span>
+              <span class="value">#{{ seller.id }}</span>
             </div>
-            <div class="data-item">
-              <span class="label">Nombre</span>
-              <span class="value">{{ seller.name }}</span>
+            <div class="info-item">
+              <span class="label">Nombre completo</span>
+              <span class="value">{{ seller.name }} {{ seller.last_name }}</span>
             </div>
-            <div class="data-item">
-              <span class="label">Apellido</span>
-              <span class="value">{{ seller.last_name }}</span>
-            </div>
-            <div class="data-item full">
+            <div class="info-item span-full">
               <span class="label">Email</span>
               <span class="value">{{ seller.email }}</span>
             </div>
-            <div class="data-item">
-              <span class="label">Estado</span>
-              <span class="value status-waiting">{{ seller.state }}</span>
-            </div>
-            <div class="data-item">
-              <span class="label">Roles</span>
-              <div class="roles">
-                <span
-                  v-for="role in seller.roles"
-                  :key="role"
-                  class="role-chip"
-                >
+            <div class="info-item" v-if="seller.roles && seller.roles.length > 0">
+              <span class="label">Rol</span>
+              <div class="role-badges">
+                <span v-for="role in seller.roles" :key="role" class="role-badge">
                   {{ role.name }}
                 </span>
               </div>
@@ -131,50 +128,60 @@ onMounted(fetchSeller);
           </div>
         </section>
 
-        <!-- Información del establecimiento -->
-        <section class="card" v-if="seller.food_establishment">
-          <h2 class="section-title">Establecimiento de Comida</h2>
-          <div class="establishment-details">
-            <div class="establishment-item">
-              <span class="label">Nombre del Establecimiento</span>
+        <!-- Información del Establecimiento -->
+        <section class="section" v-if="seller.food_establishment">
+          <h2 class="section-title">Establecimiento</h2>
+          <div class="info-grid">
+            <div class="info-item span-full">
+              <span class="label">Nombre</span>
               <span class="value">{{ seller.food_establishment.name }}</span>
             </div>
-            <div class="establishment-item" v-if="seller.food_establishment.establishment_type">
-              <span class="label">Tipo de Establecimiento</span>
+            <div class="info-item" v-if="seller.food_establishment.establishment_type">
+              <span class="label">Tipo</span>
               <span class="value">{{ seller.food_establishment.establishment_type.name }}</span>
             </div>
-            <div class="establishment-item">
-              <span class="label">Dirección del Establecimiento</span>
+            <div class="info-item span-full">
+              <span class="label">Dirección</span>
               <span class="value">{{ seller.food_establishment.address || 'No especificada' }}</span>
             </div>
           </div>
         </section>
 
         <!-- Acciones -->
-        <section class="card actions-card">
+        <section class="section actions-section" v-if="seller.state === 'waiting_for_confirmation'">
           <h2 class="section-title">Acciones</h2>
-          <div class="actions">
+          <div class="actions-grid">
             <button
-              class="activate-btn"
+              class="action-btn approve-btn"
               @click="activateSeller"
-              :disabled="activating || rejecting || seller.state !== 'waiting_for_confirmation'"
+              :disabled="activating || rejecting"
             >
-              <span v-if="activating">Activando...</span>
-              <span v-else>✓ Activar Vendedor</span>
+              <span v-if="activating" class="btn-loader"></span>
+              <span v-else>
+                <span class="btn-icon">✓</span>
+                <span>Aprobar Vendedor</span>
+              </span>
             </button>
             <button
-              class="reject-btn"
+              class="action-btn reject-btn"
               @click="denySeller"
-              :disabled="rejecting || activating || seller.state !== 'waiting_for_confirmation'"
+              :disabled="rejecting || activating"
             >
-              <span v-if="rejecting">Rechazando...</span>
-              <span v-else>✗ Rechazar</span>
+              <span v-if="rejecting" class="btn-loader"></span>
+              <span v-else>
+                <span class="btn-icon">✕</span>
+                <span>Rechazar Solicitud</span>
+              </span>
             </button>
           </div>
-          <p class="action-note">
-            Al activar al vendedor, su estado cambiará a "activo" y podrá comenzar a usar la plataforma.
+          <p class="action-hint">
+            Al aprobar, el vendedor recibirá un correo de notificación y podrá acceder a su panel.
           </p>
         </section>
+
+        <div v-else class="info-message">
+          Esta solicitud ya ha sido procesada.
+        </div>
       </div>
     </div>
   </div>
@@ -184,7 +191,7 @@ onMounted(fetchSeller);
 .new-seller-page {
   min-height: 100vh;
   background: var(--color-bg);
-  padding: 2rem;
+  padding: 2rem 1rem;
 }
 
 .new-seller-container {
@@ -192,57 +199,54 @@ onMounted(fetchSeller);
   margin: 0 auto;
 }
 
-.header {
-  text-align: center;
+.top-bar {
   margin-bottom: 2rem;
-  color: var(--color-text);
-  position: relative;
 }
 
 .back-btn {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
   color: var(--color-text);
-  border: 1px solid var(--color-focus);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border: none;
+  padding: 0.5rem 0;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .back-btn:hover {
-  background: var(--color-focus);
+  color: var(--color-heading);
 }
 
-.title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.back-icon {
+  font-size: 1.25rem;
+  transition: transform 0.2s;
 }
 
-.loading {
+.back-btn:hover .back-icon {
+  transform: translateX(-4px);
+}
+
+.loading-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
-  color: var(--color-text);
+  padding: 4rem 2rem;
+  text-align: center;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--color-border);
   border-radius: 50%;
-  border-top-color: var(--color-primary);
-  animation: spin 1s ease-in-out infinite;
+  border-top-color: var(--color-heading);
+  animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
 }
 
@@ -250,28 +254,56 @@ onMounted(fetchSeller);
   to { transform: rotate(360deg); }
 }
 
-.error {
-  text-align: center;
-  padding: 2rem;
-  background: var(--color-darkest);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
+.loading-state p,
+.error-state p {
   color: var(--color-text);
+  margin: 0;
 }
 
 .retry-btn {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
+  padding: 0.625rem 1.25rem;
+  background: var(--color-background);
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .retry-btn:hover {
-  background: var(--color-focus);
+  background: var(--color-background-soft);
+  border-color: var(--color-heading);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.status-chip {
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  padding: 0.375rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .content {
@@ -280,147 +312,175 @@ onMounted(fetchSeller);
   gap: 1.5rem;
 }
 
-.card {
+.section {
   background: var(--color-background);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(34, 32, 31, 0.2);
   border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
 }
 
 .section-title {
-  font-size: 1.4rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--color-heading);
-  margin-bottom: 1rem;
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: 0.5rem;
+  margin: 0 0 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8125rem;
+  opacity: 0.7;
 }
 
-.data-grid {
+.info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
 }
 
-.data-item {
+.info-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.375rem;
 }
 
-.data-item.full {
+.info-item.span-full {
   grid-column: 1 / -1;
 }
 
-.establishment-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.establishment-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
 .label {
-  font-weight: 600;
-  color: var(--color-primary);
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  opacity: 0.6;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
+  font-weight: 500;
 }
 
 .value {
+  font-size: 0.9375rem;
   color: var(--color-heading);
-  font-size: 1.1rem;
+  font-weight: 500;
 }
 
-.status-waiting {
-  color: var(--color-focus);
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.roles {
+.role-badges {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.role-chip {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  color: var(--color-text);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
+.role-badge {
+  background: var(--color-background-soft);
+  color: var(--color-heading);
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
   font-weight: 500;
+  border: 1px solid var(--color-border);
 }
 
-.actions-card {
+.actions-section {
   border: 2px solid var(--color-border);
 }
 
-.actions {
-  display: flex;
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.activate-btn {
-  background: var(--color-primary);
-  color: var(--color-text);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
+  transition: all 0.2s;
+  border: none;
 }
 
-.activate-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background: var(--color-focus);
-  box-shadow: 0 4px 12px rgba(111, 108, 105, 0.3);
+.approve-btn {
+  background: var(--color-accent);
+  color: white;
 }
 
-.activate-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.approve-btn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
 }
 
 .reject-btn {
-  background: linear-gradient(135deg, #b91c1c, #7f1d1d);
-  color: #fff;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  flex: 1;
-  box-shadow: 0 4px 12px rgba(185,28,28,0.3);
+  background: transparent;
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
 }
 
 .reject-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.05);
+  background: var(--color-background-soft);
+  border-color: var(--color-heading);
 }
 
-.reject-btn:disabled {
-  opacity: 0.55;
+.action-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
-.action-note {
-  color: var(--color-primary);
-  font-size: 0.9rem;
-  font-style: italic;
+.btn-icon {
+  font-size: 1.125rem;
+}
+
+.btn-loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+}
+
+.action-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  opacity: 0.6;
   margin: 0;
+  font-style: italic;
+}
+
+.info-message {
+  padding: 1rem;
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  text-align: center;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 640px) {
+  .new-seller-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .info-grid,
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-item.span-full {
+    grid-column: 1;
+  }
 }
 </style>

@@ -34,8 +34,8 @@ onMounted(fetchNewSellers);
   <div class="new-sellers-page">
     <div class="new-sellers-container">
       <div class="header">
-        <h1 class="title">Solicitudes de Nuevos Vendedores</h1>
-        <p class="subtitle">Usuarios en espera de confirmación de establecimiento</p>
+        <h1 class="title">Solicitudes Pendientes</h1>
+        <p class="subtitle">{{ newSellers.length }} vendedor{{ newSellers.length !== 1 ? 'es' : '' }} esperando aprobación</p>
       </div>
 
       <div v-if="loading" class="loading">
@@ -43,40 +43,46 @@ onMounted(fetchNewSellers);
         <p>Cargando solicitudes...</p>
       </div>
 
-      <div v-else-if="error" class="error">
+      <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
         <button class="retry-btn" @click="fetchNewSellers">Reintentar</button>
       </div>
 
       <div v-else class="content">
-        <div v-if="newSellers.length === 0" class="no-data">
-          <p>No hay solicitudes de vendedores pendientes</p>
+        <div v-if="newSellers.length === 0" class="empty-state">
+          <div class="empty-icon">✓</div>
+          <p class="empty-title">Todo al día</p>
+          <p class="empty-text">No hay solicitudes pendientes en este momento</p>
         </div>
 
-        <div v-else class="sellers-grid">
+        <div v-else class="sellers-list">
           <div
             v-for="seller in newSellers"
             :key="seller.id"
             class="seller-card"
             @click="viewSellerDetail(seller.id)"
           >
-            <div class="seller-info">
-              <h3 class="seller-name">Vendedor: {{seller.name}}</h3>
-              <p class="seller-email">{{ seller.email }}</p>
-              <div class="establishment-info" v-if="seller.food_establishment">
-                <p class="establishment-name">
-                  <strong>Establecimiento:</strong> {{ seller.food_establishment.name }}
-                </p>
-                <p class="establishment-type" v-if="seller.food_establishment.establishment_type">
-                  <strong>Tipo:</strong> {{ seller.food_establishment.establishment_type.name }}
-                </p>
+            <div class="card-header">
+              <div class="user-info">
+                <h3 class="name">{{ seller.name }} {{ seller.last_name }}</h3>
+                <p class="email">{{ seller.email }}</p>
               </div>
-              <div class="status">
-                <span class="status-badge waiting">Esperando confirmación</span>
+              <div class="status-badge">Pendiente</div>
+            </div>
+
+            <div class="card-body" v-if="seller.food_establishment">
+              <div class="info-row">
+                <span class="info-label">Establecimiento</span>
+                <span class="info-value">{{ seller.food_establishment.name }}</span>
+              </div>
+              <div class="info-row" v-if="seller.food_establishment.establishment_type">
+                <span class="info-label">Tipo</span>
+                <span class="info-value">{{ seller.food_establishment.establishment_type.name }}</span>
               </div>
             </div>
-            <div class="actions">
-              <button class="view-btn">Ver detalles →</button>
+
+            <div class="card-footer">
+              <span class="view-link">Ver detalles →</span>
             </div>
           </div>
         </div>
@@ -89,34 +95,31 @@ onMounted(fetchNewSellers);
 .new-sellers-page {
   min-height: 100vh;
   background: var(--color-bg);
-  padding: 2rem;
+  padding: 2rem 1rem;
 }
 
 .new-sellers-container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
 .header {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--color-text);
+  margin-bottom: 2.5rem;
 }
 
 .title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
-  font-size: 1.1rem;
-  opacity: 0.9;
+  font-size: 0.9375rem;
   color: var(--color-text);
+  opacity: 0.7;
+  margin: 0;
 }
 
 .loading {
@@ -124,17 +127,17 @@ onMounted(fetchNewSellers);
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  padding: 4rem 2rem;
   color: var(--color-text);
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--color-border);
   border-radius: 50%;
-  border-top-color: var(--color-primary);
-  animation: spin 1s ease-in-out infinite;
+  border-top-color: var(--color-heading);
+  animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
 }
 
@@ -142,129 +145,190 @@ onMounted(fetchNewSellers);
   to { transform: rotate(360deg); }
 }
 
-.error {
+.error-state {
   text-align: center;
-  padding: 2rem;
-  background: var(--color-darkest);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
+  padding: 3rem 2rem;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.error-state p {
   color: var(--color-text);
+  margin: 0 0 1rem;
 }
 
 .retry-btn {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
+  padding: 0.625rem 1.25rem;
+  background: var(--color-background);
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .retry-btn:hover {
-  background: var(--color-focus);
+  background: var(--color-background-soft);
+  border-color: var(--color-heading);
 }
 
-.no-data {
+.empty-state {
   text-align: center;
-  padding: 3rem;
-  background: var(--color-darkest);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
-  color: var(--color-text);
-  font-size: 1.1rem;
+  padding: 4rem 2rem;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
 }
 
-.sellers-grid {
+.empty-icon {
+  font-size: 3rem;
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+.empty-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin: 0 0 0.5rem;
+}
+
+.empty-text {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  opacity: 0.7;
+  margin: 0;
+}
+
+.sellers-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .seller-card {
-  background: var(--color-secondary);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(34, 32, 31, 0.2);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.25rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid var(--color-secondary);
+  transition: all 0.2s;
 }
 
 .seller-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(34, 32, 31, 0.3);
-  border-color: var(--color-focus);
+  border-color: var(--color-heading);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.seller-info {
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 1rem;
-
+  gap: 1rem;
 }
 
-.seller-name {
-  font-size: 1.25rem;
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
-}
-
-.seller-email {
-  color: var(--color-text);
-  margin-bottom: 1rem;
-}
-
-.establishment-info {
-  background: var(--color-background-soft);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  border: 1px solid var(--color-border);
-}
-
-.establishment-name,
-.establishment-type {
-  margin: 0.25rem 0;
   color: var(--color-heading);
-  font-size: 0.95rem;
+  margin: 0 0 0.25rem;
 }
 
-.status {
-  margin-bottom: 1rem;
+.email {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  opacity: 0.7;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-badge {
-  display: inline-block;
+  background: var(--color-background-soft);
+  color: var(--color-text);
   padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.card-body {
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.info-label {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   font-weight: 500;
 }
 
-.status-badge.waiting {
-  background: var(--color-primary);
-  color: var(--color-text);
+.info-value {
+  font-size: 0.9375rem;
+  color: var(--color-heading);
+  font-weight: 500;
+  text-align: right;
 }
 
-.actions {
+.card-footer {
+  margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
 }
 
-.view-btn {
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  color: var(--color-text);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+.view-link {
+  font-size: 0.875rem;
+  color: var(--color-heading);
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
-.view-btn:hover {
-  transform: translateX(2px);
-  box-shadow: 0 4px 12px rgba(111, 108, 105, 0.3);
+.seller-card:hover .view-link {
+  transform: translateX(4px);
+}
+
+@media (max-width: 640px) {
+  .new-sellers-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .info-value {
+    text-align: left;
+  }
 }
 </style>
