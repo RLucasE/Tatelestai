@@ -13,6 +13,10 @@ use App\Enums\UserState;
 use App\Repositories\UserRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SellerActivated;
+use App\Mail\SellerDeactivated;
+use App\Mail\SellerDenied;
 
 class AdmUserController extends Controller
 {
@@ -43,7 +47,11 @@ class AdmUserController extends Controller
         $isSellerActivableAction = new IsSellerActivableAction();
         try {
             if ($isSellerActivableAction->execute($basicUserDTO->id)) {
-                $this->userRepository->changeUserState($basicUserDTO, UserState::ACTIVE);
+                $updated = $this->userRepository->changeUserState($basicUserDTO, UserState::ACTIVE);
+                if ($updated) {
+                    // Enviar email de notificación al seller
+                    Mail::to($basicUserDTO->email)->send(new SellerActivated($basicUserDTO));
+                }
             }
         } catch (Exception $exception) {
             return response()->json([
@@ -67,6 +75,7 @@ class AdmUserController extends Controller
             if ($isDeactivableSellerAction->execute($user->id)) {
                 $changeUserStateAction->execute($user, UserState::INACTIVE);
                 $deactivateOffersAction->executeByUserId($user->id);
+                Mail::to($user->email)->send(new SellerDeactivated($user));
             }
         }catch (Exception $exception){
             return response()->json([
@@ -74,8 +83,6 @@ class AdmUserController extends Controller
                 'trace' => $exception->getTrace()
             ], 500);
         }
-
-
 
         return response()->json([
             'message' => 'Seller desactivado correctamente.',
@@ -132,6 +139,8 @@ class AdmUserController extends Controller
 
         $user->state = UserState::DENIED_CONFIRMATION;
         $user->save();
+        $basicUserDTO = BasicUserDTO::fromModel($user);
+        Mail::to($user->email)->send(new SellerDenied($basicUserDTO));
 
         return response()->json([
             'message' => 'Seller denegado correctamente.',
