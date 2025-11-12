@@ -9,11 +9,13 @@ use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\VerifyPurchaseDataFreshnessAction;
 use App\DTOs\PreparePurchaseDTO;
+use App\Mail\PurchaseConfirmation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class CustomerSellController extends Controller
 {
@@ -48,7 +50,9 @@ class CustomerSellController extends Controller
 
             $preparePurchaseDTO = PreparePurchaseDTO::clone($purchaseData['preparePurchaseDTO']);
 
-            DB::transaction(function () use ($preparePurchaseDTO) {
+            $sellResult = null;
+
+            DB::transaction(function () use ($preparePurchaseDTO, &$sellResult) {
                 $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
                 $this->validateOfferIsActiveAction->execute($preparePurchaseDTO->offers);
                 $this->offerIsFromFoodEstablishmentAction->execute(
@@ -56,12 +60,21 @@ class CustomerSellController extends Controller
                     $preparePurchaseDTO->food_establishment_id
                 );
                 $this->verifyPurchaseDataFreshnessAction->execute($preparePurchaseDTO);
-                $this->makeSellAction->execute(
+                $sellResult = $this->makeSellAction->execute(
                     $preparePurchaseDTO,
                     Auth::id(),
                     $preparePurchaseDTO->food_establishment_id
                 );
+
             });
+            $sell = \App\Models\Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
+                ->find($sellResult['sell_id']);
+
+            if ($sell && $sell->customer && $sell->customer->email) {
+                Mail::to($sell->customer->email)->send(new PurchaseConfirmation($sell));
+            }
+
+            session()->forget('purchase_' . $purchaseToken);
 
             return response()->json([
                 'message' => 'Compra realizada con éxito',
