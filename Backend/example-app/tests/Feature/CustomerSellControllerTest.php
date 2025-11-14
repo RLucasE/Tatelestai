@@ -9,6 +9,7 @@ use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Product;
 use App\Models\User;
+use Carbon\Carbon;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,6 +158,56 @@ class CustomerSellControllerTest extends TestCase
         $this->assertDatabaseHas('sell_details', [
             'offer_id' => $this->offer->id,
         ]);
+    }
+
+    #[Test]
+    public function it_sets_max_pickup_datetime_to_closest_offer_expiration(): void
+    {
+        Carbon::setTestNow(now());
+
+        $this->actingAs($this->customer);
+
+        $closestExpiration = now()->copy()->addHours(6);
+        $farExpiration = now()->copy()->addDay();
+
+        $closestOffer = Offer::factory()->active()->withProducts(2)->create([
+            'food_establishment_id' => $this->establishment->id,
+            'quantity' => 5,
+            'expiration_datetime' => $closestExpiration,
+        ]);
+
+        $farOffer = Offer::factory()->active()->withProducts(2)->create([
+            'food_establishment_id' => $this->establishment->id,
+            'quantity' => 5,
+            'expiration_datetime' => $farExpiration,
+        ]);
+
+        $requestData = [
+            'food_establishment_id' => $this->establishment->id,
+            'offers' => [
+                ['id' => $closestOffer->id, 'quantity' => 2],
+                ['id' => $farOffer->id, 'quantity' => 1],
+            ]
+        ];
+
+        $response = $this->postJson('/api/prepare-purchase', $requestData);
+
+        $purchaseToken = $response->json('data.purchase_token');
+
+        // Realizar la compra
+        $buyResponse = $this->postJson('/api/buy-offers', [
+            'purchase_token' => $purchaseToken
+        ]);
+
+        $buyResponse->assertStatus(200);
+
+        $this->assertDatabaseHas('sells', [
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'max_pickup_datetime' => $closestExpiration->toDateTimeString(),
+        ]);
+
+        Carbon::setTestNow();
     }
 
     #[Test]
