@@ -189,6 +189,41 @@ class SellerSellControllerTest extends TestCase
     }
 
     #[Test]
+    public function it_fails_to_check_expired_sell(): void
+    {
+        $this->actingAs($this->seller);
+
+        $pickupCode = '2X3Y-4Z5A-6B7C';
+        $sell = Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'pickup_code' => $pickupCode,
+            'max_pickup_datetime' => now()->subHours(1), // Venta expirada hace 1 hora
+        ]);
+
+        // Crear detalles de venta
+        SellDetail::factory()->create([
+            'sell_id' => $sell->id,
+            'offer_id' => $this->offer->id,
+            'offer_quantity' => 2,
+            'product_quantity' => 1,
+            'product_price' => 400,
+            'product_name' => 'chincong',
+            'product_description' => 'aojefjijoijioajeoifj'
+        ]);
+
+        // Intentar verificar el código expirado
+        $response = $this->postJson('/api/check-customer-code', [
+            'pickup_code' => $pickupCode
+        ]);
+
+        $response->assertStatus(410)
+            ->assertJson([
+                'error' => 'El tiempo para recoger esta venta ha expirado'
+            ]);
+    }
+
+    #[Test]
     public function it_does_not_expose_sensitive_data_in_seller_sells(): void
     {
         $this->actingAs($this->seller);
@@ -508,5 +543,53 @@ class SellerSellControllerTest extends TestCase
         ]);
 
         $response->assertStatus(401);
+    }
+
+    #[Test]
+    public function it_fails_to_complete_expired_sell(): void
+    {
+        $this->actingAs($this->seller);
+
+        // Crear una venta expirada
+        $pickupCode = 'ABC-123-XYZ';
+        $sell = Sell::factory()->create([
+            'bought_by' => $this->customer->id,
+            'sold_by' => $this->establishment->id,
+            'pickup_code' => $pickupCode,
+            'is_picked_up' => false,
+            'picked_up_at' => null,
+            'max_pickup_datetime' => now()->subHours(2), // Expirada hace 2 horas
+        ]);
+
+        // Crear detalles de venta
+        SellDetail::factory()->create([
+            'sell_id' => $sell->id,
+            'offer_id' => $this->offer->id,
+            'offer_quantity' => 2,
+            'product_quantity' => 1,
+            'product_price' => 400,
+            'product_name' => 'Test Product',
+            'product_description' => 'Test Description'
+        ]);
+
+        // Intentar completar la venta expirada
+        $response = $this->postJson("/api/complete-sell/{$sell->id}", [
+            'pick_up_code' => $pickupCode
+        ]);
+
+        $response->assertStatus(410)
+            ->assertJson([
+                'error' => 'El tiempo para recoger esta venta ha expirado'
+            ]);
+
+        // Verificar que NO se actualizó
+        $this->assertDatabaseHas('sells', [
+            'id' => $sell->id,
+            'is_picked_up' => false,
+        ]);
+
+        $sell->refresh();
+        $this->assertFalse($sell->is_picked_up);
+        $this->assertNull($sell->picked_up_at);
     }
 }

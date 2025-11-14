@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Sell\ValidatePickupCodeAction;
 use App\Actions\Sell\ValidateCompleteSellAction;
 use App\Actions\Sell\ValidatePickupCodeFromSellAction;
+use App\Actions\Sell\ValidateMaxPickupDatetimeAction;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use Exception;
@@ -17,6 +18,7 @@ class SellerSellController extends Controller
         private readonly ValidateCompleteSellAction $validateCompleteSellAction,
         private readonly ValidatePickupCodeAction   $validatePickupCodeAction,
         private readonly ValidatePickupCodeFromSellAction $validatePickupCodeFromSellAction,
+        private readonly ValidateMaxPickupDatetimeAction $validateMaxPickupDatetimeAction,
     )
     {
     }
@@ -79,7 +81,7 @@ class SellerSellController extends Controller
             $pickupCode = $request->input('pickup_code');
 
             $sell = $this->validatePickupCodeAction->execute($pickupCode, Auth::id());
-
+            $sell = $this->validateMaxPickupDatetimeAction->execute($sell);
 
             $offers = $sell->sellDetails->map(function ($detail) {
                 return [
@@ -124,6 +126,8 @@ class SellerSellController extends Controller
         try {
             $validatedSell = $this->validateCompleteSellAction->execute($sellNumber, Auth::id());
             $validatedSell = $this->validatePickupCodeFromSellAction->execute($validatedSell->id, $validatedRequest['pick_up_code']);
+            $validatedSell = $this->validateMaxPickupDatetimeAction->execute($validatedSell);
+
             $validatedSell->update(
                 [
                     'is_picked_up' => true,

@@ -21,7 +21,11 @@ use Illuminate\Support\Facades\DB;
  * -Offers exist
  */
 class makeSellAction{
-    public function __construct(private GetOfferAction $getOfferAction, private GeneratePickupCodeAction $generatePickupCodeAction)
+    public function __construct(
+        private GetOfferAction $getOfferAction,
+        private GeneratePickupCodeAction $generatePickupCodeAction,
+        private CalculateMaxPickupDatetimeAction $calculateMaxPickupDatetimeAction
+    )
     {
     }
 
@@ -36,10 +40,13 @@ class makeSellAction{
     {
         $pickupCode = $this->generatePickupCodeAction->execute($bought_by, $sold_by, $preparePurchaseDTO);
 
+        $maxPickupDatetime = $this->calculateMaxPickupDatetimeAction->execute($preparePurchaseDTO->offers);
+
         $sell = Sell::create([
             'bought_by' => $bought_by,
             'sold_by' => $sold_by,
             'pickup_code' => $pickupCode,
+            'max_pickup_datetime' => $maxPickupDatetime,
         ]);
 
 

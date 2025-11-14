@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Enums\UserState;
 use Spatie\Permission\Models\Role;
 use App\Actions\Sell\GeneratePickupCodeAction;
+use App\Actions\Sell\CalculateMaxPickupDatetimeAction;
 use App\DTOs\PreparePurchaseDTO;
 use App\DTOs\PrepareOfferDTO;
 
@@ -21,7 +22,7 @@ beforeEach(function () {
     Role::create(['name' => 'seller']);
 });
 
-test('customer can retrieve their purchases successfully', function () {
+test('customer can retrieve their purchases successfully and includes pickup deadline and state', function () {
     // Crear un customer autenticado usando factory
     $customer = User::factory()->withRole('customer')->create([
         'state' => UserState::ACTIVE->value
@@ -58,6 +59,10 @@ test('customer can retrieve their purchases successfully', function () {
     $offer1 = PrepareOfferDTO::createFromIdAndQuantity($offer1->id, $offer1->quantity);
     $offer2 = PrepareOfferDTO::createFromIdAndQuantity($offer2->id, $offer2->quantity);
 
+    // Calcular max_pickup_datetime usando el Action
+    $calculateMaxPickupAction = new CalculateMaxPickupDatetimeAction();
+    $maxPickupDatetime = $calculateMaxPickupAction->execute([$offer1, $offer2]);
+
     $generatePickupCodeAction = new GeneratePickupCodeAction();
     $pickupCode = $generatePickupCodeAction->execute(
         $customer->id,
@@ -68,12 +73,13 @@ test('customer can retrieve their purchases successfully', function () {
         )
     );
 
-    // Crear venta usando factory
+    // Crear venta usando factory con max_pickup_datetime generado por el action
     $sell = Sell::factory()->create([
         'bought_by' => $customer->id,
         'sold_by' => $establishment->id,
         'is_picked_up' => false,
-        'pickup_code' => $pickupCode
+        'pickup_code' => $pickupCode,
+        'max_pickup_datetime' => $maxPickupDatetime, // fecha generada por el action
     ]);
 
     // Crear detalles de venta usando factory
@@ -112,6 +118,8 @@ test('customer can retrieve their purchases successfully', function () {
                 'pickup_code',
                 'is_picked_up',
                 'picked_up_at',
+                'max_pickup_datetime',
+                'state',
                 'sell_details' => [
                     '*' => [
                         'id',
@@ -127,14 +135,15 @@ test('customer can retrieve their purchases successfully', function () {
         ]
     ]);
 
-    // Verificar que los datos son correctos
+    // Verificar que los datos son correctos y que max_pickup_datetime coincide con el calculado por el action
     $responseData = $response->json('data');
-
 
     expect($responseData)->toHaveCount(1)
         ->and($responseData[0]['id'])->toBe($sell->id)
         ->and($responseData[0]['pickup_code'])->toBe($pickupCode)
-        ->and($responseData[0]['sell_details'])->toHaveCount(2);
+        ->and($responseData[0]['sell_details'])->toHaveCount(2)
+        ->and($responseData[0]['max_pickup_datetime'])->toBe($maxPickupDatetime->toISOString()) // Verificar fecha exacta del action en formato ISO
+        ->and($responseData[0]['state'])->toBeString();
 
     // Verificar detalles específicos
     $details = $responseData[0]['sell_details'];

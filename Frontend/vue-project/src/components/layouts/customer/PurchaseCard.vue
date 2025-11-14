@@ -1,8 +1,22 @@
 <template>
   <div class="purchase-card">
     <div class="card-header">
-      <span class="purchase-date">{{ formatDate(purchase.created_at) }}</span>
-      <span class="purchase-seller">{{ purchase.sold_by }}</span>
+      <div class="header-info">
+        <span class="purchase-date">{{ formatDate(purchase.created_at) }}</span>
+        <span class="purchase-seller">{{ purchase.sold_by }}</span>
+      </div>
+      <div class="status-badge" :class="getStatusClass(purchase.state)">
+        {{ getStatusLabel(purchase.state) }}
+      </div>
+    </div>
+
+    <div class="card-info-bar">
+      <div class="info-item">
+        <span class="info-label">Retirar antes de:</span>
+        <span class="info-value" :class="{ 'expired': isExpired(purchase.max_pickup_datetime) }">
+          {{ formatPickupDeadline(purchase.max_pickup_datetime) }}
+        </span>
+      </div>
     </div>
 
     <div class="card-content">
@@ -72,6 +86,57 @@ export default {
         minute: '2-digit'
       });
     },
+    formatPickupDeadline(dateStr) {
+      if (!dateStr) return 'No especificado';
+      const date = new Date(dateStr);
+      const now = new Date();
+
+      // Si ya expiró
+      if (date < now) {
+        return `Expirado el ${date.toLocaleDateString('es-AR', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`;
+      }
+
+      // Calcular diferencia en horas
+      const diffMs = date - now;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (diffHours < 1) {
+        return `${diffMinutes} minutos`;
+      } else if (diffHours < 24) {
+        return `${diffHours}h ${diffMinutes}m`;
+      } else {
+        return date.toLocaleDateString('es-AR', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    },
+    isExpired(dateStr) {
+      if (!dateStr) return false;
+      return new Date(dateStr) < new Date();
+    },
+    getStatusLabel(state) {
+      const labels = {
+        'pending': 'Pendiente',
+        'confirmed': 'Confirmado',
+        'ready': 'Listo para retirar',
+        'picked_up': 'Retirado',
+        'cancelled': 'Cancelado',
+        'expired': 'Expirado'
+      };
+      return labels[state] || state;
+    },
+    getStatusClass(state) {
+      return `status-${state}`;
+    },
     calculateTotal() {
       return this.purchase.sell_details.reduce((total, detail) => {
         return total + (detail.offer_quantity * detail.product_quantity * detail.product_price);
@@ -105,6 +170,12 @@ export default {
   background: var(--color-primary);
 }
 
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .purchase-date {
   font-size: 0.875rem;
   font-weight: 600;
@@ -115,6 +186,78 @@ export default {
   font-size: 0.875rem;
   color: var(--color-text);
   opacity: 0.7;
+}
+
+.status-badge {
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-confirmed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-ready {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-picked_up {
+  background: #d1d5db;
+  color: #374151;
+}
+
+.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-expired {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+
+.card-info-bar {
+  padding: 0.875rem 1.25rem;
+  background: var(--color-secondary);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.info-value {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.info-value.expired {
+  color: #dc2626;
 }
 
 .card-content {
@@ -300,7 +443,20 @@ export default {
   .card-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.75rem;
+  }
+
+  .header-info {
+    width: 100%;
+  }
+
+  .status-badge {
+    align-self: flex-start;
+  }
+
+  .card-info-bar {
+    flex-direction: column;
+    gap: 0.75rem;
   }
 }
 </style>
