@@ -30,14 +30,15 @@ class CustomerReportController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'reportable_type' => ['required', 'string', Rule::in(['offer', 'establishment'])],
-                'reportable_id' => 'required|integer|min:1',
-                'reason' => ['required', 'string', Rule::in(ReportReason::values())],
-                'description' => 'required|string|min:10|max:1000',
-            ]);
+        // Validar fuera del try-catch para que Laravel maneje los errores de validación correctamente (422)
+        $validated = $request->validate([
+            'reportable_type' => ['required', 'string', Rule::in(['offer', 'establishment'])],
+            'reportable_id' => 'required|integer|min:1',
+            'reason' => ['required', 'string', Rule::in(ReportReason::values())],
+            'description' => 'required|string|min:10|max:1000',
+        ]);
 
+        try {
             // Mapear tipo simple a clase completa
             $reportableTypeMap = [
                 'offer' => Offer::class,

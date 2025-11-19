@@ -4,18 +4,41 @@
       <!-- Header del modal -->
       <div class="modal-header">
         <h2 class="modal-title">{{ offer.title }}</h2>
-        <button class="close-button" @click="closeModal">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
+        <div class="header-actions">
+          <button
+            class="report-button"
+            @click="openReportModal"
+            title="Reportar oferta"
+            type="button"
           >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
+          <button class="close-button" @click="closeModal">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <!-- Contenido del modal -->
@@ -161,13 +184,24 @@
         </button>
       </div>
     </div>
+
+    <!-- Modal de Reporte -->
+    <ReportModal
+      :is-visible="showReportModal"
+      reportable-type="offer"
+      :reportable-id="offer.id"
+      @close="closeReportModal"
+      @success="handleReportSuccess"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, defineEmits, ref } from "vue";
+import ReportModal from "./ReportModal.vue";
 
 const quantity = ref(1);
+const showReportModal = ref(false);
 
 const props = defineProps({
   offer: {
@@ -249,6 +283,19 @@ const buyOffer = () => {
   emit("buyOffer", { id: props.offer.id, quantity: quantity.value , food_establishment_id: props.offer.food_establishment_id });
 }
 
+// Funciones para el modal de reporte
+const openReportModal = () => {
+  showReportModal.value = true;
+};
+
+const closeReportModal = () => {
+  showReportModal.value = false;
+};
+
+const handleReportSuccess = () => {
+  console.log('Reporte enviado exitosamente');
+};
+
 </script>
 
 <style scoped>
@@ -295,6 +342,30 @@ const buyOffer = () => {
   font-size: 1.5em;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.report-button {
+  background: none;
+  border: none;
+  color: #f59e0b;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-button:hover {
+  background: rgba(245, 158, 11, 0.1);
+  transform: scale(1.1);
 }
 
 .close-button {

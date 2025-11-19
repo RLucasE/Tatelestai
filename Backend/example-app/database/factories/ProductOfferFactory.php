@@ -18,10 +18,27 @@ class ProductOfferFactory extends Factory
      */
     public function definition(): array
     {
-        $establishment = \App\Models\User::where('email', 'seller@gmail.com')->first()->foodEstablishment;
+        // Intentar obtener el establishment específico, si no existe usar uno aleatorio
+        $user = \App\Models\User::where('email', 'seller@gmail.com')->first();
+
+        if ($user && $user->foodEstablishment) {
+            $establishment = $user->foodEstablishment;
+        } else {
+            // En tests, usar un establishment aleatorio
+            $establishment = \App\Models\FoodEstablishment::inRandomOrder()->first();
+        }
+
+        // Si no hay establishment, crear datos básicos
+        if (!$establishment) {
+            return [
+                'product_id' => Product::factory(),
+                'offer_id' => Offer::factory(),
+            ];
+        }
+
         return [
-            'product_id' => Product::inRandomOrder()->where('food_establishment_id',$establishment->id)->first()->id,
-            'offer_id' => Offer::inRandomOrder()->where('food_establishment_id',$establishment->id)->first()->id,
+            'product_id' => Product::inRandomOrder()->where('food_establishment_id', $establishment->id)->first()->id,
+            'offer_id' => Offer::inRandomOrder()->where('food_establishment_id', $establishment->id)->first()->id,
         ];
     }
 }

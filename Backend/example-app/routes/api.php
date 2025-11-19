@@ -36,7 +36,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
         Route::get('/purchase-code/{sellNumber}', [CustomerSellController::class, 'getPurchaseCode']);
         Route::get('/customerHistorySell',[CustomerSellController::class, 'historySell']);
-        Route::post('/reports', [CustomerReportController::class, 'store']);
+        Route::post('/customer/reports', [CustomerReportController::class, 'store']);
         Route::get('/my-reports', [CustomerReportController::class, 'myReports']);
     });
 });
