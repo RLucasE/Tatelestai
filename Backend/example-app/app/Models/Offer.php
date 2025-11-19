@@ -49,6 +49,11 @@ class Offer extends Model
         return $this->hasMany(OfferCart::class);
     }
 
+    public function reports()
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+
     public function toSearchableArray(){
         return [
             'id' => (string)$this->id,

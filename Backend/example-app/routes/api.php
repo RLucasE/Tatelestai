@@ -4,6 +4,7 @@ use App\Enums\UserState;
 use App\Http\Controllers\AdmOfferController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\CustomerReportController;
 use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\DashboardExportController;
 use App\Http\Controllers\EstablishmentTypeController;
@@ -35,6 +36,8 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
         Route::get('/purchase-code/{sellNumber}', [CustomerSellController::class, 'getPurchaseCode']);
         Route::get('/customerHistorySell',[CustomerSellController::class, 'historySell']);
+        Route::post('/reports', [CustomerReportController::class, 'store']);
+        Route::get('/my-reports', [CustomerReportController::class, 'myReports']);
     });
 });
 
