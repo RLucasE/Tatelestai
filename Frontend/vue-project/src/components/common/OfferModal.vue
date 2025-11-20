@@ -45,7 +45,11 @@
       <div class="modal-content">
         <!-- Información del establecimiento -->
         <div class="establishment-info">
-          <h3 class="establishment-name">
+          <h3
+            class="establishment-name clickable"
+            @click="goToEstablishment"
+            title="Ver más ofertas de este establecimiento"
+          >
             <svg
               width="20"
               height="20"
@@ -57,6 +61,18 @@
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
             {{ offer.establishment_name }}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+              class="arrow-icon"
+            >
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
           </h3>
           <p class="establishment-address" v-if="offer.establishment_address">
             <svg
@@ -198,10 +214,12 @@
 
 <script setup>
 import { computed, defineEmits, ref } from "vue";
+import { useRouter } from "vue-router";
 import ReportModal from "./ReportModal.vue";
 
 const quantity = ref(1);
 const showReportModal = ref(false);
+const router = useRouter();
 
 const props = defineProps({
   offer: {
@@ -282,6 +300,16 @@ const handleOfferAction = () => {
 const buyOffer = () => {
   emit("buyOffer", { id: props.offer.id, quantity: quantity.value , food_establishment_id: props.offer.food_establishment_id });
 }
+
+const goToEstablishment = () => {
+  if (props.offer.food_establishment_id) {
+    closeModal();
+    router.push({
+      name: 'establishment-view',
+      params: { id: props.offer.food_establishment_id }
+    });
+  }
+};
 
 // Funciones para el modal de reporte
 const openReportModal = () => {
@@ -409,6 +437,27 @@ const handleReportSuccess = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.establishment-name.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 8px;
+  margin: -8px;
+  border-radius: 8px;
+}
+
+.establishment-name.clickable:hover {
+  color: var(--color-text);
+  background: var(--color-focus);
+}
+
+.establishment-name.clickable .arrow-icon {
+  transition: transform 0.3s ease;
+}
+
+.establishment-name.clickable:hover .arrow-icon {
+  transform: translateX(4px);
 }
 
 .establishment-address {

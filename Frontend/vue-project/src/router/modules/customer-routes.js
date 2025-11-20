@@ -56,6 +56,16 @@ export default [
           requiresCustomer: true,
         },
       },
+      {
+        path: "establishment/:id",
+        name: "establishment-view",
+        component: () =>
+          import("@/components/layouts/customer/EstablishmentView.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
+      },
     ],
     meta: {
       requiresAuth: true,
