@@ -17,6 +17,7 @@ use App\Http\Controllers\SellerSellController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserManagement;
 use App\Http\Controllers\OfferCustomerController;
+use App\Http\Controllers\AdmReportController;
 
 
 
@@ -97,6 +98,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/active-offers-count', [AdmOfferController::class, 'activeOffersCount']);
         Route::get('/adm/export-dashboard', [DashboardExportController::class, 'export']);
         Route::get('/adm/expiring-offers-count', [AdmOfferController::class, 'expiringOffersCount']);
+        Route::get('/adm/reports', [AdmReportController::class, 'index']);
+        Route::patch('/adm/reports/{id}/status', [AdmReportController::class, 'updateStatus']);
     });
 });
 

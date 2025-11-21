@@ -178,6 +178,7 @@ class OfferFactory extends Factory
         ];
 
         return [
+            'food_establishment_id' => \App\Models\FoodEstablishment::factory(),
             'title' => $this->faker->randomElement($titles),
             'description' => $this->faker->randomElement($descriptions),
             'expiration_date' => $expirationDate->format('Y-m-d'),

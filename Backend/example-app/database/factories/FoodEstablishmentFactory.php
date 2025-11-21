@@ -17,6 +17,9 @@ class FoodEstablishmentFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => \App\Models\User::factory(),
+            'establishment_type_id' => \App\Models\EstablishmentType::inRandomOrder()->first()?->id
+                ?? \App\Models\EstablishmentType::factory(),
             'name' => $this->faker->company(),
             'address' => $this->faker->address(),
         ];

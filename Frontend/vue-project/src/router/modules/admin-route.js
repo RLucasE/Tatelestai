@@ -63,6 +63,11 @@ export default [
             path: "establishment-types",
             name: "admin-establishment-types",
             component: () => import('@/views/EstablishmentTypesManagement.vue'),
+        },
+        {
+            path: "reports",
+            name: "admin-reports",
+            component: () => import('@/components/layouts/admin/AdminReports.vue'),
         }
     ],
     meta: {
