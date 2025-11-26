@@ -19,7 +19,8 @@ class getCustomerSellsAction
     public function execute(int $userId): array
     {
         $sells = Sell::with([
-            'sellDetails'
+            'sellDetails',
+            'foodEstablishment'
         ])
         ->where('bought_by', $userId)
         ->where('is_picked_up', false)
@@ -39,6 +40,12 @@ class getCustomerSellsAction
                 'updated_at' => $sell->updated_at,
                 'max_pickup_datetime' => $sell->max_pickup_datetime,
                 'state' => $sell->state?->value ?? $sell->state,
+                'establishment' => [
+                    'id' => $sell->foodEstablishment->id,
+                    'name' => $sell->foodEstablishment->name,
+                    'address' => $sell->foodEstablishment->address,
+                    'phone_number' => $sell->foodEstablishment->phone_number,
+                ],
                 'sell_details' => $sell->sellDetails->map(function ($detail) {
                     return [
                         'id' => $detail->id,

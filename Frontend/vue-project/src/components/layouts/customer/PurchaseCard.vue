@@ -3,7 +3,14 @@
     <div class="card-header">
       <div class="header-info">
         <span class="purchase-date">{{ formatDate(purchase.created_at) }}</span>
-        <span class="purchase-seller">{{ purchase.sold_by }}</span>
+        <span class="purchase-seller">{{ purchase.establishment?.name || purchase.sold_by }}</span>
+        <router-link
+          v-if="purchase.establishment?.address"
+          :to="`/customer/establishment/${purchase.establishment.id}`"
+          class="establishment-address"
+        >
+           {{ purchase.establishment.address }}
+        </router-link>
       </div>
       <div class="status-badge" :class="getStatusClass(purchase.state)">
         {{ getStatusLabel(purchase.state) }}
@@ -186,6 +193,25 @@ export default {
   font-size: 0.875rem;
   color: var(--color-text);
   opacity: 0.7;
+}
+
+.establishment-address {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.125rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.establishment-address:hover {
+  opacity: 1;
+  color: var(--color-accent);
+  text-decoration: underline;
 }
 
 .status-badge {
