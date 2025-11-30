@@ -57,7 +57,6 @@ test('admin can retrieve all reports with details', function () {
 
     $response = $this->getJson('/api/adm/reports');
 
-    $response->dump();
 
     $response->assertStatus(200)
         ->assertJsonStructure([

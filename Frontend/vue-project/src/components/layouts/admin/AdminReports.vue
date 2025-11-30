@@ -80,6 +80,18 @@ const handleStatusUpdate = async (reportId, newStatus, adminNotes) => {
   }
 };
 
+const handleActionTaken = async (reportId) => {
+  try {
+    await axiosInstance.post(`/adm/reports/${reportId}/take-action`);
+
+    // Recargar los reportes después de tomar medidas
+    await getReports(currentPage.value);
+  } catch (err) {
+    console.error('Error taking action on report:', err);
+    throw err; // Re-lanzar para que el componente hijo lo maneje
+  }
+};
+
 const changePage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
@@ -209,6 +221,7 @@ onMounted(() => {
         :key="report.id"
         :report="report"
         @status-updated="handleStatusUpdate"
+        @action-taken="handleActionTaken"
       />
     </div>
 

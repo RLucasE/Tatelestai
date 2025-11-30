@@ -8,14 +8,18 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['status-updated']);
+const emit = defineEmits(['status-updated', 'action-taken']);
 
 const showDetails = ref(false);
 const isUpdating = ref(false);
+const isTakingAction = ref(false);
 const showUpdateModal = ref(false);
+const showActionModal = ref(false);
 const selectedStatus = ref('');
 const adminNotes = ref('');
 const updateError = ref(null);
+const actionError = ref(null);
+const actionConfirmText = ref('');
 
 const reportableTypeName = computed(() => {
   const type = props.report.reportable_type;
@@ -107,6 +111,58 @@ const updateStatus = async () => {
 const toggleDetails = () => {
   showDetails.value = !showDetails.value;
 };
+
+const actionMessage = computed(() => {
+  const type = props.report.reportable_type;
+  if (type.includes('Offer')) {
+    return '¿Estás seguro de que deseas desactivar esta oferta?';
+  }
+  if (type.includes('FoodEstablishment')) {
+    return '¿Estás seguro de que deseas desactivar este establecimiento y a su vendedor? Todas sus ofertas serán desactivadas.';
+  }
+  if (type.includes('User')) {
+    return '¿Estás seguro de que deseas desactivar este usuario? Si tiene un establecimiento, todas sus ofertas serán desactivadas.';
+  }
+  return '¿Estás seguro de que deseas tomar medidas sobre este reporte?';
+});
+
+const canTakeAction = computed(() => {
+  const type = props.report.reportable_type;
+  return type.includes('Offer') || type.includes('FoodEstablishment') || type.includes('User');
+});
+
+const openActionModal = () => {
+  actionError.value = null;
+  actionConfirmText.value = '';
+  showActionModal.value = true;
+};
+
+const closeActionModal = () => {
+  showActionModal.value = false;
+  actionError.value = null;
+  actionConfirmText.value = '';
+};
+
+const takeAction = async () => {
+  if (actionConfirmText.value.toLowerCase() !== 'confirmar') {
+    actionError.value = 'Debes escribir "CONFIRMAR" para continuar';
+    return;
+  }
+
+  try {
+    isTakingAction.value = true;
+    actionError.value = null;
+
+    await emit('action-taken', props.report.id);
+
+    closeActionModal();
+  } catch (err) {
+    console.error('Error taking action:', err);
+    actionError.value = err.response?.data?.message || 'Error al tomar medidas sobre el reporte';
+  } finally {
+    isTakingAction.value = false;
+  }
+};
 </script>
 
 <template>
@@ -133,6 +189,13 @@ const toggleDetails = () => {
           @click="toggleDetails"
         >
           {{ showDetails ? 'Ocultar' : 'Ver detalles' }}
+        </button>
+        <button
+          v-if="canTakeAction"
+          class="action-btn danger"
+          @click="openActionModal"
+        >
+          Tomar medidas
         </button>
         <button
           class="action-btn primary"
@@ -280,6 +343,58 @@ const toggleDetails = () => {
         </div>
       </div>
     </Teleport>
+
+    <!-- Modal de tomar medidas -->
+    <Teleport to="body">
+      <div v-if="showActionModal" class="modal-overlay" @click.self="closeActionModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>⚠️ Tomar medidas sobre el reporte #{{ report.id }}</h3>
+            <button class="close-btn" @click="closeActionModal">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div v-if="actionError" class="error-message">
+              {{ actionError }}
+            </div>
+
+            <div class="warning-message">
+              <p class="warning-text">{{ actionMessage }}</p>
+              <p class="warning-subtext">Esta acción no se puede deshacer.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="confirm-text">Escribe "CONFIRMAR" para continuar:</label>
+              <input
+                id="confirm-text"
+                v-model="actionConfirmText"
+                type="text"
+                class="form-input"
+                placeholder="CONFIRMAR"
+                @keyup.enter="takeAction"
+              />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              class="btn btn-secondary"
+              @click="closeActionModal"
+              :disabled="isTakingAction"
+            >
+              Cancelar
+            </button>
+            <button
+              class="btn btn-danger"
+              @click="takeAction"
+              :disabled="isTakingAction"
+            >
+              {{ isTakingAction ? 'Procesando...' : 'Tomar medidas' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -390,6 +505,16 @@ const toggleDetails = () => {
 
 .action-btn.primary:hover {
   background: var(--color-accent-hover);
+}
+
+.action-btn.danger {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+.action-btn.danger:hover {
+  background: color-mix(in oklab, var(--color-danger), black 15%);
 }
 
 .report-summary {
@@ -571,6 +696,28 @@ const toggleDetails = () => {
   font-size: 0.875rem;
 }
 
+.warning-message {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+}
+
+.warning-text {
+  color: #f59e0b;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.warning-subtext {
+  color: var(--color-text);
+  opacity: 0.8;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
 .form-group {
   margin-bottom: 1.25rem;
 }
@@ -588,7 +735,8 @@ const toggleDetails = () => {
 }
 
 .form-select,
-.form-textarea {
+.form-textarea,
+.form-input {
   width: 100%;
   padding: 0.625rem 0.875rem;
   border: 1px solid var(--color-border);
@@ -600,7 +748,8 @@ const toggleDetails = () => {
 }
 
 .form-select:focus,
-.form-textarea:focus {
+.form-textarea:focus,
+.form-input:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
@@ -660,6 +809,15 @@ const toggleDetails = () => {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--color-danger), black 15%);
 }
 
 /* Responsive */

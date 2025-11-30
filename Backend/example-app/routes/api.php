@@ -100,6 +100,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/expiring-offers-count', [AdmOfferController::class, 'expiringOffersCount']);
         Route::get('/adm/reports', [AdmReportController::class, 'index']);
         Route::patch('/adm/reports/{id}/status', [AdmReportController::class, 'updateStatus']);
+        Route::post('/adm/reports/{id}/take-action', [AdmReportController::class, 'takeAction']);
     });
 });
 
