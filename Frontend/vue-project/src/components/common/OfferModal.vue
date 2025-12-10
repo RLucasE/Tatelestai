@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { computed, defineEmits, ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import ReportModal from "./ReportModal.vue";
 

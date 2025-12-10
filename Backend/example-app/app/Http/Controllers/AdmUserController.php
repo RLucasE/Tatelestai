@@ -94,7 +94,11 @@ class AdmUserController extends Controller
     public function newSellers()
     {
         $sellers = User::select('id', 'name', 'last_name', 'email', 'state')
-            ->with(['roles:name', 'foodEstablishment:id,user_id,name,establishment_type_id', 'foodEstablishment.establishmentType:id,name'])
+            ->with([
+                'roles:name',
+                'foodEstablishment:id,user_id,name,establishment_type_id,verification_status',
+                'foodEstablishment.establishmentType:id,name'
+            ])
             ->whereHas('roles', function ($query) {
                 $query->where('name', 'seller');
             })
@@ -111,9 +115,12 @@ class AdmUserController extends Controller
 
     public function showNewSeller(int $id)
     {
-
         $seller = User::select('id', 'name', 'last_name', 'email', 'state')
-            ->with(['roles:name', 'foodEstablishment:id,user_id,name,establishment_type_id,address', 'foodEstablishment.establishmentType:id,name'])
+            ->with([
+                'roles:name',
+                'foodEstablishment:id,user_id,name,establishment_type_id,address,google_place_id,google_place_data,establishment_photo,owner_selfie,phone,description,latitude,longitude,verification_status,verification_notes',
+                'foodEstablishment.establishmentType:id,name'
+            ])
             ->findOrFail($id);
 
         $seller->roles = $seller->roles->pluck('name')->toArray();
@@ -202,6 +209,119 @@ class AdmUserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al exportar el dashboard',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get establishments pending verification
+     */
+    public function pendingEstablishments(): JsonResponse
+    {
+        try {
+            $establishments = \App\Models\FoodEstablishment::with([
+                'user:id,name,last_name,email',
+                'establishmentType:id,name'
+            ])
+                ->where('verification_status', 'pending')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'message' => 'Establecimientos pendientes obtenidos exitosamente',
+                'data' => $establishments
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener establecimientos pendientes',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approve establishment verification
+     */
+    public function verifyEstablishment(int $id): JsonResponse
+    {
+        try {
+            $establishment = \App\Models\FoodEstablishment::findOrFail($id);
+
+            if ($establishment->verification_status !== 'pending') {
+                return response()->json([
+                    'message' => 'El establecimiento ya ha sido verificado o rechazado'
+                ], 422);
+            }
+
+            $establishment->verification_status = 'approved';
+            $establishment->save();
+
+            // Activate the seller user
+            $user = $establishment->user;
+            if ($user->state === UserState::WAITING_FOR_CONFIRMATION->value) {
+                $user->state = UserState::ACTIVE;
+                $user->save();
+
+                // Send notification email
+                Mail::to($user->email)->send(new SellerActivated(BasicUserDTO::fromModel($user)));
+            }
+
+            return response()->json([
+                'message' => 'Establecimiento verificado y aprobado exitosamente',
+                'establishment' => $establishment->load('user', 'establishmentType')
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al verificar el establecimiento',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reject establishment verification
+     */
+    public function rejectEstablishment(int $id): JsonResponse
+    {
+        try {
+            $request = request();
+            $request->validate([
+                'reason' => 'required|string|min:10|max:1000'
+            ]);
+
+            $establishment = \App\Models\FoodEstablishment::findOrFail($id);
+
+            if ($establishment->verification_status !== 'pending') {
+                return response()->json([
+                    'message' => 'El establecimiento ya ha sido verificado o rechazado'
+                ], 422);
+            }
+
+            $establishment->verification_status = 'rejected';
+            $establishment->verification_notes = $request->input('reason');
+            $establishment->save();
+
+            // Deny the seller user
+            $user = $establishment->user;
+            if ($user->state === UserState::WAITING_FOR_CONFIRMATION->value) {
+                $user->state = UserState::DENIED_CONFIRMATION;
+                $user->save();
+
+                // Send notification email
+                Mail::to($user->email)->send(new SellerDenied(BasicUserDTO::fromModel($user)));
+            }
+
+            return response()->json([
+                'message' => 'Establecimiento rechazado exitosamente',
+                'establishment' => $establishment->load('user', 'establishmentType')
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al rechazar el establecimiento',
                 'error' => $e->getMessage()
             ], 500);
         }

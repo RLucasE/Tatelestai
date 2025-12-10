@@ -79,6 +79,19 @@ onMounted(fetchNewSellers);
                 <span class="info-label">Tipo</span>
                 <span class="info-value">{{ seller.food_establishment.establishment_type.name }}</span>
               </div>
+              <div class="info-row" v-if="seller.food_establishment.verification_status">
+                <span class="info-label">Verificación</span>
+                <span class="verification-badge" :class="seller.food_establishment.verification_status">
+                  {{ seller.food_establishment.verification_status === 'pending' ? 'Pendiente' :
+                     seller.food_establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
+                </span>
+              </div>
+              <div class="info-row" v-if="seller.food_establishment.google_place_id">
+                <span class="info-label">Google Places</span>
+                <span class="info-value google-verified">
+                  ✓ Verificado
+                </span>
+              </div>
             </div>
 
             <div class="card-footer">
@@ -293,6 +306,38 @@ onMounted(fetchNewSellers);
   color: var(--color-heading);
   font-weight: 500;
   text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  justify-content: flex-end;
+}
+
+.verification-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.verification-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.verification-badge.approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.verification-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.google-verified {
+  color: #10b981;
+  font-weight: 600;
 }
 
 .card-footer {

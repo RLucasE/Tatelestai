@@ -9,6 +9,7 @@ use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\DashboardExportController;
 use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\FoodEstablishmentController;
+use App\Http\Controllers\GooglePlacesController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
@@ -49,6 +50,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:' . UserState::REGISTERING->value]);
+
+    // Google Places routes for establishment search
+    Route::middleware(['user.state:' . UserState::REGISTERING->value])->group(function () {
+        Route::get('/places/search', [GooglePlacesController::class, 'searchPlaces']);
+        Route::get('/places/autocomplete', [GooglePlacesController::class, 'autocomplete']);
+        Route::get('/places/{placeId}', [GooglePlacesController::class, 'getPlaceDetails']);
+    });
+
     Route::middleware('user.state:' . UserState::ACTIVE->value)->group(function () {
         Route::get('/my-establishment', [FoodEstablishmentController::class, 'getMyEstablishment']);
         Route::post('/product',  [ProductController::class, 'store']);
@@ -101,6 +110,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/reports', [AdmReportController::class, 'index']);
         Route::patch('/adm/reports/{id}/status', [AdmReportController::class, 'updateStatus']);
         Route::post('/adm/reports/{id}/take-action', [AdmReportController::class, 'takeAction']);
+        Route::get('/adm/pending-establishments', [AdmUserController::class, 'pendingEstablishments']);
+        Route::patch('/adm/establishments/{id}/verify', [AdmUserController::class, 'verifyEstablishment']);
+        Route::patch('/adm/establishments/{id}/reject', [AdmUserController::class, 'rejectEstablishment']);
     });
 });
 

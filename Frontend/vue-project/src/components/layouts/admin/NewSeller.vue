@@ -7,6 +7,9 @@ const route = useRoute();
 const router = useRouter();
 const sellerId = route.params.id;
 
+// URL del backend para recursos estáticos
+const BACKEND_URL = 'http://localhost:8000';
+
 const seller = ref(null);
 const loading = ref(true);
 const error = ref(null);
@@ -18,6 +21,15 @@ const fetchSeller = async () => {
     loading.value = true;
     const { data } = await axiosInstance.get(`/new-sellers/${sellerId}`);
     seller.value = data || null;
+
+    // Debug: ver las rutas de las fotos
+    if (data?.food_establishment) {
+      console.log('Establishment photo:', data.food_establishment.establishment_photo);
+      console.log('Owner selfie:', data.food_establishment.owner_selfie);
+      console.log('Full photo URL:', `${BACKEND_URL}/storage/${data.food_establishment.establishment_photo}`);
+      console.log('Full selfie URL:', `${BACKEND_URL}/storage/${data.food_establishment.owner_selfie}`);
+    }
+
     error.value = null;
   } catch (err) {
     console.error('Error fetching seller detail:', err);
@@ -33,7 +45,7 @@ const activateSeller = async () => {
 
   try {
     activating.value = true;
-    const { data } = await axiosInstance.patch(`/users/${sellerId}/activate-seller`);
+    await axiosInstance.patch(`/users/${sellerId}/activate-seller`);
 
     // Mostrar mensaje de éxito
     alert('Vendedor activado correctamente');
@@ -68,6 +80,17 @@ const denySeller = async () => {
 
 const goBack = () => {
   router.push({ name: 'new-sellers' });
+};
+
+const handleImageError = (event) => {
+  event.target.style.display = 'none';
+  const parent = event.target.parentElement;
+  if (parent && !parent.querySelector('.image-error-text')) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'image-error-text';
+    errorDiv.textContent = 'Imagen no disponible';
+    parent.appendChild(errorDiv);
+  }
 };
 
 onMounted(fetchSeller);
@@ -144,6 +167,116 @@ onMounted(fetchSeller);
               <span class="label">Dirección</span>
               <span class="value">{{ seller.food_establishment.address || 'No especificada' }}</span>
             </div>
+            <div class="info-item" v-if="seller.food_establishment.phone">
+              <span class="label">Teléfono</span>
+              <span class="value">{{ seller.food_establishment.phone }}</span>
+            </div>
+            <div class="info-item" v-if="seller.food_establishment.verification_status">
+              <span class="label">Estado de verificación</span>
+              <span class="value verification-badge" :class="seller.food_establishment.verification_status">
+                {{ seller.food_establishment.verification_status === 'pending' ? 'Pendiente' :
+                   seller.food_establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
+              </span>
+            </div>
+            <div class="info-item span-full" v-if="seller.food_establishment.google_place_id">
+              <span class="label">Google Place ID</span>
+              <span class="value small-text">{{ seller.food_establishment.google_place_id }}</span>
+            </div>
+            <div class="info-item" v-if="seller.food_establishment.latitude">
+              <span class="label">Coordenadas</span>
+              <span class="value small-text">{{ seller.food_establishment.latitude }}, {{ seller.food_establishment.longitude }}</span>
+            </div>
+          </div>
+
+          <!-- Google Places Data -->
+          <div v-if="seller.food_establishment.google_place_data" class="google-data-section">
+            <h3 class="subsection-title">Información de Google Places</h3>
+            <div class="info-grid">
+              <div class="info-item" v-if="seller.food_establishment.google_place_data.rating">
+                <span class="label">Calificación</span>
+                <span class="value">⭐ {{ seller.food_establishment.google_place_data.rating }}</span>
+              </div>
+              <div class="info-item" v-if="seller.food_establishment.google_place_data.user_ratings_total">
+                <span class="label">Reseñas totales</span>
+                <span class="value">{{ seller.food_establishment.google_place_data.user_ratings_total }}</span>
+              </div>
+              <div class="info-item" v-if="seller.food_establishment.google_place_data.business_status">
+                <span class="label">Estado del negocio</span>
+                <span class="value">{{ seller.food_establishment.google_place_data.business_status }}</span>
+              </div>
+              <div class="info-item span-full" v-if="seller.food_establishment.google_place_data.website">
+                <span class="label">Sitio web</span>
+                <a :href="seller.food_establishment.google_place_data.website" target="_blank" class="value link">
+                  {{ seller.food_establishment.google_place_data.website }}
+                </a>
+              </div>
+              <div class="info-item span-full" v-if="seller.food_establishment.google_place_data.types">
+                <span class="label">Categorías</span>
+                <div class="tags-container">
+                  <span v-for="(type, index) in seller.food_establishment.google_place_data.types.slice(0, 5)" :key="index" class="tag">
+                    {{ type.replace(/_/g, ' ') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fotos de Verificación -->
+          <div class="photos-section">
+            <h3 class="subsection-title">Fotos de Verificación</h3>
+            <div class="photos-grid">
+              <div class="photo-card" v-if="seller.food_establishment.establishment_photo">
+                <div class="photo-header">
+                  <span class="photo-label">📷 Foto del Establecimiento</span>
+                </div>
+                <img
+                  :src="`${BACKEND_URL}/storage/${seller.food_establishment.establishment_photo}`"
+                  alt="Foto del establecimiento"
+                  class="photo-img"
+                  @error="handleImageError"
+                />
+              </div>
+              <div class="photo-card" v-if="seller.food_establishment.owner_selfie">
+                <div class="photo-header">
+                  <span class="photo-label">🤳 Selfie del Propietario</span>
+                </div>
+                <img
+                  :src="`${BACKEND_URL}/storage/${seller.food_establishment.owner_selfie}`"
+                  alt="Selfie del propietario"
+                  class="photo-img"
+                  @error="handleImageError"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Mapa (si hay coordenadas) -->
+          <div v-if="seller.food_establishment.latitude && seller.food_establishment.longitude" class="map-section">
+            <h3 class="subsection-title">Ubicación</h3>
+            <div class="map-container">
+              <iframe
+                :src="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}&z=15&output=embed`"
+                width="100%"
+                height="300"
+                style="border:0; border-radius: 8px;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+              </iframe>
+            </div>
+            <a
+              :href="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}`"
+              target="_blank"
+              class="map-link"
+            >
+              Ver en Google Maps →
+            </a>
+          </div>
+
+          <!-- Notas de Verificación (si existen) -->
+          <div v-if="seller.food_establishment.verification_notes" class="notes-section">
+            <h3 class="subsection-title">Notas de Verificación</h3>
+            <p class="notes-text">{{ seller.food_establishment.verification_notes }}</p>
           </div>
         </section>
 
@@ -319,15 +452,14 @@ onMounted(fetchSeller);
   padding: 1.5rem;
 }
 
-.section-title {
-  font-size: 1rem;
+.subsection-title {
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-heading);
-  margin: 0 0 1.25rem;
+  margin: 0 0 1rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-size: 0.8125rem;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .info-grid {
@@ -460,6 +592,163 @@ onMounted(fetchSeller);
   font-size: 0.9375rem;
 }
 
+.verification-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.verification-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.verification-badge.approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.verification-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.small-text {
+  font-size: 0.8125rem;
+  font-family: monospace;
+}
+
+.link {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.google-data-section,
+.photos-section,
+.map-section,
+.notes-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.subsection-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  background: var(--color-background-soft);
+  color: var(--color-heading);
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  text-transform: capitalize;
+}
+
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.photo-card {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.photo-header {
+  padding: 0.75rem 1rem;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.photo-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.photo-img {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-error-text {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  opacity: 0.6;
+}
+
+.map-container {
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.map-link:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.notes-section {
+  background: var(--color-background-soft);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1.5rem;
+}
+
+.notes-text {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
   .new-seller-page {
     padding: 1.5rem 1rem;
@@ -481,6 +770,14 @@ onMounted(fetchSeller);
 
   .info-item.span-full {
     grid-column: 1;
+  }
+
+  .photos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-img {
+    height: 250px;
   }
 }
 </style>
