@@ -67,11 +67,9 @@ class UserManagement extends Controller
     {
         $user = Auth::user();
 
-        if ($user->foodEstablishment()->exists()) {
-            return response()->json([
-                'message' => 'You already have a registered establishment.',
-            ], 400);
-        }
+        // Check if establishment already exists
+        $existingEstablishment = $user->foodEstablishment;
+        $isUpdating = $existingEstablishment !== null;
 
         $establishmentType = EstablishmentType::find($request->input('establishment_type_id'));
 
@@ -103,8 +101,8 @@ class UserManagement extends Controller
         $latitude = $place['geometry']['location']['lat'] ?? null;
         $longitude = $place['geometry']['location']['lng'] ?? null;
 
-        // Create establishment
-        $establishment = $user->foodEstablishment()->create([
+        // Prepare establishment data
+        $establishmentData = [
             'name' => $place['name'],
             'address' => $place['formatted_address'],
             'google_place_id' => $request->input('google_place_id'),
@@ -116,14 +114,25 @@ class UserManagement extends Controller
             'longitude' => $longitude,
             'establishment_type_id' => $request->input('establishment_type_id'),
             'verification_status' => 'pending',
-        ]);
+        ];
+
+        if ($isUpdating) {
+            // Update existing establishment
+            $existingEstablishment->update($establishmentData);
+            $establishment = $existingEstablishment->fresh();
+            $message = 'Establecimiento actualizado exitosamente. Pendiente de verificación.';
+        } else {
+            // Create new establishment
+            $establishment = $user->foodEstablishment()->create($establishmentData);
+            $message = 'Establecimiento registrado exitosamente. Pendiente de verificación.';
+        }
 
         $user->state = UserState::WAITING_FOR_CONFIRMATION;
         $user->save();
 
         return response()->json([
-            'message' => 'Establecimiento registrado exitosamente. Pendiente de verificación.',
+            'message' => $message,
             'establishment' => $establishment->load('establishmentType'),
-        ], 201);
+        ], $isUpdating ? 200 : 201);
     }
 }

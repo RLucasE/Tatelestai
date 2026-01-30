@@ -7,8 +7,8 @@ const route = useRoute();
 const router = useRouter();
 const sellerId = route.params.id;
 
-// URL del backend para recursos estáticos
-const BACKEND_URL = 'http://localhost:8000';
+// URL del backend para recursos estáticos (obtiene la base URL de axios sin el /api)
+const BACKEND_URL = axiosInstance.defaults.baseURL.replace('/api', '');
 
 const seller = ref(null);
 const loading = ref(true);
@@ -21,15 +21,6 @@ const fetchSeller = async () => {
     loading.value = true;
     const { data } = await axiosInstance.get(`/new-sellers/${sellerId}`);
     seller.value = data || null;
-
-    // Debug: ver las rutas de las fotos
-    if (data?.food_establishment) {
-      console.log('Establishment photo:', data.food_establishment.establishment_photo);
-      console.log('Owner selfie:', data.food_establishment.owner_selfie);
-      console.log('Full photo URL:', `${BACKEND_URL}/storage/${data.food_establishment.establishment_photo}`);
-      console.log('Full selfie URL:', `${BACKEND_URL}/storage/${data.food_establishment.owner_selfie}`);
-    }
-
     error.value = null;
   } catch (err) {
     console.error('Error fetching seller detail:', err);
@@ -175,7 +166,7 @@ onMounted(fetchSeller);
               <span class="label">Estado de verificación</span>
               <span class="value verification-badge" :class="seller.food_establishment.verification_status">
                 {{ seller.food_establishment.verification_status === 'pending' ? 'Pendiente' :
-                   seller.food_establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
+                  seller.food_establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
               </span>
             </div>
             <div class="info-item span-full" v-if="seller.food_establishment.google_place_id">
@@ -184,7 +175,8 @@ onMounted(fetchSeller);
             </div>
             <div class="info-item" v-if="seller.food_establishment.latitude">
               <span class="label">Coordenadas</span>
-              <span class="value small-text">{{ seller.food_establishment.latitude }}, {{ seller.food_establishment.longitude }}</span>
+              <span class="value small-text">{{ seller.food_establishment.latitude }}, {{
+                seller.food_establishment.longitude }}</span>
             </div>
           </div>
 
@@ -213,7 +205,8 @@ onMounted(fetchSeller);
               <div class="info-item span-full" v-if="seller.food_establishment.google_place_data.types">
                 <span class="label">Categorías</span>
                 <div class="tags-container">
-                  <span v-for="(type, index) in seller.food_establishment.google_place_data.types.slice(0, 5)" :key="index" class="tag">
+                  <span v-for="(type, index) in seller.food_establishment.google_place_data.types.slice(0, 5)"
+                    :key="index" class="tag">
                     {{ type.replace(/_/g, ' ') }}
                   </span>
                 </div>
@@ -229,23 +222,15 @@ onMounted(fetchSeller);
                 <div class="photo-header">
                   <span class="photo-label">📷 Foto del Establecimiento</span>
                 </div>
-                <img
-                  :src="`${BACKEND_URL}/storage/${seller.food_establishment.establishment_photo}`"
-                  alt="Foto del establecimiento"
-                  class="photo-img"
-                  @error="handleImageError"
-                />
+                <img :src="`${BACKEND_URL}/storage/${seller.food_establishment.establishment_photo}`"
+                  alt="Foto del establecimiento" class="photo-img" @error="handleImageError" />
               </div>
               <div class="photo-card" v-if="seller.food_establishment.owner_selfie">
                 <div class="photo-header">
                   <span class="photo-label">🤳 Selfie del Propietario</span>
                 </div>
-                <img
-                  :src="`${BACKEND_URL}/storage/${seller.food_establishment.owner_selfie}`"
-                  alt="Selfie del propietario"
-                  class="photo-img"
-                  @error="handleImageError"
-                />
+                <img :src="`${BACKEND_URL}/storage/${seller.food_establishment.owner_selfie}`"
+                  alt="Selfie del propietario" class="photo-img" @error="handleImageError" />
               </div>
             </div>
           </div>
@@ -256,19 +241,12 @@ onMounted(fetchSeller);
             <div class="map-container">
               <iframe
                 :src="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}&z=15&output=embed`"
-                width="100%"
-                height="300"
-                style="border:0; border-radius: 8px;"
-                allowfullscreen=""
-                loading="lazy"
+                width="100%" height="300" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade">
               </iframe>
             </div>
-            <a
-              :href="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}`"
-              target="_blank"
-              class="map-link"
-            >
+            <a :href="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}`"
+              target="_blank" class="map-link">
               Ver en Google Maps →
             </a>
           </div>
@@ -284,22 +262,14 @@ onMounted(fetchSeller);
         <section class="section actions-section" v-if="seller.state === 'waiting_for_confirmation'">
           <h2 class="section-title">Acciones</h2>
           <div class="actions-grid">
-            <button
-              class="action-btn approve-btn"
-              @click="activateSeller"
-              :disabled="activating || rejecting"
-            >
+            <button class="action-btn approve-btn" @click="activateSeller" :disabled="activating || rejecting">
               <span v-if="activating" class="btn-loader"></span>
               <span v-else>
                 <span class="btn-icon">✓</span>
                 <span>Aprobar Vendedor</span>
               </span>
             </button>
-            <button
-              class="action-btn reject-btn"
-              @click="denySeller"
-              :disabled="rejecting || activating"
-            >
+            <button class="action-btn reject-btn" @click="denySeller" :disabled="rejecting || activating">
               <span v-if="rejecting" class="btn-loader"></span>
               <span v-else>
                 <span class="btn-icon">✕</span>
@@ -384,7 +354,9 @@ onMounted(fetchSeller);
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p,

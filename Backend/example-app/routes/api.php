@@ -2,6 +2,7 @@
 
 use App\Enums\UserState;
 use App\Http\Controllers\AdmOfferController;
+use App\Http\Controllers\AdmReportController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\CustomerReportController;
@@ -10,23 +11,19 @@ use App\Http\Controllers\DashboardExportController;
 use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\GooglePlacesController;
+use App\Http\Controllers\OfferCustomerController;
 use App\Http\Controllers\OfferSellerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicDataController;
 use App\Http\Controllers\SellController;
 use App\Http\Controllers\SellerSellController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserManagement;
-use App\Http\Controllers\OfferCustomerController;
-use App\Http\Controllers\AdmReportController;
-
-
-
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'role:default'])->post('/select-role', [UserManagement::class, 'chooseRole']);
 
 Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
-    Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
+    Route::middleware(['user.state:'.UserState::ACTIVE->value])->group(function () {
         Route::get('/offers', [OfferCustomerController::class, 'index']);
         Route::get('/customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
@@ -37,33 +34,32 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
         Route::get('/purchase-code/{sellNumber}', [CustomerSellController::class, 'getPurchaseCode']);
-        Route::get('/customerHistorySell',[CustomerSellController::class, 'historySell']);
+        Route::get('/customerHistorySell', [CustomerSellController::class, 'historySell']);
         Route::post('/customer/reports', [CustomerReportController::class, 'store']);
         Route::get('/my-reports', [CustomerReportController::class, 'myReports']);
     });
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/establishment-types', [PublicDataController::class, 'establishmentTypes'])->middleware(['user.state:' . UserState::REGISTERING->value . ',' . UserState::ACTIVE->value]);
+    Route::get('/establishment-types', [PublicDataController::class, 'establishmentTypes'])->middleware(['user.state:'.UserState::REGISTERING->value.','.UserState::ACTIVE->value]);
     Route::get('/user', [PublicDataController::class, 'getUser']);
 });
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
-    Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:' . UserState::REGISTERING->value]);
+    Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:'.UserState::REGISTERING->value]);
 
-    // Google Places routes for establishment search
-    Route::middleware(['user.state:' . UserState::REGISTERING->value])->group(function () {
+    Route::middleware(['user.state:'.UserState::REGISTERING->value])->group(function () {
         Route::get('/places/search', [GooglePlacesController::class, 'searchPlaces']);
         Route::get('/places/autocomplete', [GooglePlacesController::class, 'autocomplete']);
         Route::get('/places/{placeId}', [GooglePlacesController::class, 'getPlaceDetails']);
     });
 
-    Route::middleware('user.state:' . UserState::ACTIVE->value)->group(function () {
+    Route::middleware('user.state:'.UserState::ACTIVE->value)->group(function () {
         Route::get('/my-establishment', [FoodEstablishmentController::class, 'getMyEstablishment']);
-        Route::post('/product',  [ProductController::class, 'store']);
-        Route::get('/products',  [ProductController::class, 'show']);
-        Route::patch('/products/{id}',  [ProductController::class, 'update']);
-        Route::delete('/products/{id}',  [ProductController::class, 'destroy']);
+        Route::post('/product', [ProductController::class, 'store']);
+        Route::get('/products', [ProductController::class, 'show']);
+        Route::patch('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         Route::post('/offer', [OfferSellerController::class, 'store']);
         Route::get('my-offers', [OfferSellerController::class, 'show']);
         Route::get('/offer/{offerID}', [OfferSellerController::class, 'offer']);
@@ -77,7 +73,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    Route::middleware(['user.state:' . UserState::ACTIVE->value])->group(function () {
+    Route::middleware(['user.state:'.UserState::ACTIVE->value])->group(function () {
         Route::get('/users', [AdmUserController::class, 'index']);
         Route::get('/users/{id}', [AdmUserController::class, 'show']);
         Route::patch('/users/{id}/activate-seller', [AdmUserController::class, 'activateSeller']);
@@ -116,8 +112,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     });
 });
 
-
-
 Route::get('/test', function () {
-    return "test";
+    return 'test';
 });
