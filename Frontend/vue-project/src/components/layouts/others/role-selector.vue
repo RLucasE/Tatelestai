@@ -126,6 +126,11 @@ const hadleElection = async () => {
         </button>
       </div>
 
+      <div style="background: var(--color-primary); color: var(--color-text); border-left: 4px solid var(--color-primary); padding: 0.5rem; margin: 1rem 0; border-radius: var(--border-radius); font-size: 0.875rem;" role="alert">
+        <p style="font-weight: bold; margin-bottom: 0.25rem;">Nota importante</p>
+        <p>Debes tener el negocio registrado en google maps para poder ser un vendedor</p>
+      </div>
+
       <div class="mt-6 flex items-center gap-4">
         <p v-if="errorMessage" class="text-red-400 text-sm">{{ errorMessage }}</p>
         <button

@@ -2,31 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\IsSellerActivableAction;
-use App\Actions\IsDeactivableSellerAction;
 use App\Actions\ChangeUserStateAction;
 use App\Actions\DeactivateEstablishmentOffersAction;
+use App\Actions\IsDeactivableSellerAction;
+use App\Actions\IsSellerActivableAction;
 use App\DTOs\BasicUserDTO;
-use App\Exports\DashboardExport;
-use App\Models\User;
 use App\Enums\UserState;
+use App\Exports\DashboardExport;
+use App\Mail\SellerActivated;
+use App\Mail\SellerDeactivated;
+use App\Mail\SellerDenied;
+use App\Models\User;
 use App\Repositories\UserRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SellerActivated;
-use App\Mail\SellerDeactivated;
-use App\Mail\SellerDenied;
 
 class AdmUserController extends Controller
 {
-    public function __construct(private UserRepository $userRepository)
-    {
-    }
+    public function __construct(private UserRepository $userRepository) {}
 
     public function index()
     {
         $users = $this->userRepository->getAllWithRoles();
+
         return response()->json($users);
     }
 
@@ -44,7 +43,7 @@ class AdmUserController extends Controller
     public function activateSeller(string $id): JsonResponse
     {
         $basicUserDTO = $this->userRepository->findById($id);
-        $isSellerActivableAction = new IsSellerActivableAction();
+        $isSellerActivableAction = new IsSellerActivableAction;
         try {
             if ($isSellerActivableAction->execute($basicUserDTO->id)) {
                 $updated = $this->userRepository->changeUserState($basicUserDTO, UserState::ACTIVE);
@@ -58,6 +57,7 @@ class AdmUserController extends Controller
                 'error' => $exception->getMessage(),
             ], 500);
         }
+
         return response()->json([
             'message' => 'Seller activado correctamente.',
             'user' => $basicUserDTO,
@@ -66,9 +66,9 @@ class AdmUserController extends Controller
 
     public function deactivateSeller(string $id)
     {
-        $isDeactivableSellerAction = new IsDeactivableSellerAction();
-        $changeUserStateAction = new ChangeUserStateAction();
-        $deactivateOffersAction = new DeactivateEstablishmentOffersAction();
+        $isDeactivableSellerAction = new IsDeactivableSellerAction;
+        $changeUserStateAction = new ChangeUserStateAction;
+        $deactivateOffersAction = new DeactivateEstablishmentOffersAction;
 
         try {
             $user = $this->userRepository->findById($id);
@@ -77,17 +77,17 @@ class AdmUserController extends Controller
                 $deactivateOffersAction->executeByUserId($user->id);
                 Mail::to($user->email)->send(new SellerDeactivated($user));
             }
-        }catch (Exception $exception){
+        } catch (Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
-                'trace' => $exception->getTrace()
+                'trace' => $exception->getTrace(),
             ], 500);
         }
 
         return response()->json([
             'message' => 'Seller desactivado correctamente.',
             'offers_deactivated' => true,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -97,7 +97,7 @@ class AdmUserController extends Controller
             ->with([
                 'roles:name',
                 'foodEstablishment:id,user_id,name,establishment_type_id,verification_status',
-                'foodEstablishment.establishmentType:id,name'
+                'foodEstablishment.establishmentType:id,name',
             ])
             ->whereHas('roles', function ($query) {
                 $query->where('name', 'seller');
@@ -107,6 +107,7 @@ class AdmUserController extends Controller
 
         $sellers = $sellers->map(function ($seller) {
             $seller->roles = $seller->roles->pluck('name')->toArray();
+
             return $seller;
         });
 
@@ -119,7 +120,7 @@ class AdmUserController extends Controller
             ->with([
                 'roles:name',
                 'foodEstablishment:id,user_id,name,establishment_type_id,address,google_place_id,google_place_data,establishment_photo,owner_selfie,phone,description,latitude,longitude,verification_status,verification_notes',
-                'foodEstablishment.establishmentType:id,name'
+                'foodEstablishment.establishmentType:id,name',
             ])
             ->findOrFail($id);
 
@@ -132,19 +133,19 @@ class AdmUserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if (!$user->hasRole('seller')) {
+        if (! $user->hasRole('seller')) {
             return response()->json([
-                'message' => 'El usuario no tiene rol seller.'
+                'message' => 'El usuario no tiene rol seller.',
             ], 422);
         }
 
         if ($user->state !== UserState::WAITING_FOR_CONFIRMATION->value) {
             return response()->json([
-                'message' => 'El usuario no está esperando la confirmación de su establecimiento.'
+                'message' => 'El usuario no está esperando la confirmación de su establecimiento.',
             ], 422);
         }
 
-        $user->state = UserState::DENIED_CONFIRMATION;
+        $user->state = UserState::REGISTERING;
         $user->save();
         $basicUserDTO = BasicUserDTO::fromModel($user);
         Mail::to($user->email)->send(new SellerDenied($basicUserDTO));
@@ -164,7 +165,7 @@ class AdmUserController extends Controller
                 ->map(function ($item) {
                     return [
                         'state' => $item->state,
-                        'count' => $item->count
+                        'count' => $item->count,
                     ];
                 });
 
@@ -173,13 +174,13 @@ class AdmUserController extends Controller
             return response()->json([
                 'message' => 'Estadísticas de usuarios obtenidas exitosamente',
                 'total' => $total,
-                'data' => $stats
+                'data' => $stats,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las estadísticas de usuarios',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -193,7 +194,7 @@ class AdmUserController extends Controller
                 ->map(function ($item) {
                     return [
                         'state' => $item->state,
-                        'count' => $item->count
+                        'count' => $item->count,
                     ];
                 });
 
@@ -201,7 +202,7 @@ class AdmUserController extends Controller
 
             $userStats = [
                 'total' => $total,
-                'data' => $stats
+                'data' => $stats,
             ];
 
             return (new DashboardExport($userStats))->download('dashboard-stats.xlsx');
@@ -209,7 +210,7 @@ class AdmUserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al exportar el dashboard',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -222,7 +223,7 @@ class AdmUserController extends Controller
         try {
             $establishments = \App\Models\FoodEstablishment::with([
                 'user:id,name,last_name,email',
-                'establishmentType:id,name'
+                'establishmentType:id,name',
             ])
                 ->where('verification_status', 'pending')
                 ->orderBy('created_at', 'desc')
@@ -230,13 +231,13 @@ class AdmUserController extends Controller
 
             return response()->json([
                 'message' => 'Establecimientos pendientes obtenidos exitosamente',
-                'data' => $establishments
+                'data' => $establishments,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener establecimientos pendientes',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -251,7 +252,7 @@ class AdmUserController extends Controller
 
             if ($establishment->verification_status !== 'pending') {
                 return response()->json([
-                    'message' => 'El establecimiento ya ha sido verificado o rechazado'
+                    'message' => 'El establecimiento ya ha sido verificado o rechazado',
                 ], 422);
             }
 
@@ -270,13 +271,13 @@ class AdmUserController extends Controller
 
             return response()->json([
                 'message' => 'Establecimiento verificado y aprobado exitosamente',
-                'establishment' => $establishment->load('user', 'establishmentType')
+                'establishment' => $establishment->load('user', 'establishmentType'),
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al verificar el establecimiento',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -289,14 +290,14 @@ class AdmUserController extends Controller
         try {
             $request = request();
             $request->validate([
-                'reason' => 'required|string|min:10|max:1000'
+                'reason' => 'required|string|min:10|max:1000',
             ]);
 
             $establishment = \App\Models\FoodEstablishment::findOrFail($id);
 
             if ($establishment->verification_status !== 'pending') {
                 return response()->json([
-                    'message' => 'El establecimiento ya ha sido verificado o rechazado'
+                    'message' => 'El establecimiento ya ha sido verificado o rechazado',
                 ], 422);
             }
 
@@ -307,7 +308,7 @@ class AdmUserController extends Controller
             // Deny the seller user
             $user = $establishment->user;
             if ($user->state === UserState::WAITING_FOR_CONFIRMATION->value) {
-                $user->state = UserState::DENIED_CONFIRMATION;
+                $user->state = UserState::REGISTERING;
                 $user->save();
 
                 // Send notification email
@@ -316,13 +317,13 @@ class AdmUserController extends Controller
 
             return response()->json([
                 'message' => 'Establecimiento rechazado exitosamente',
-                'establishment' => $establishment->load('user', 'establishmentType')
+                'establishment' => $establishment->load('user', 'establishmentType'),
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al rechazar el establecimiento',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

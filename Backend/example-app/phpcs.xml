@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="Project Rules">
+    <description>Forzar PSR-12</description>
+
+    <rule ref="PSR-12"/>
+
+    <file>.</file>
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="p"/>
+
+    <exclude-pattern>vendor/</exclude-pattern>
+    <exclude-pattern>node_modules/</exclude-pattern>
+</ruleset>

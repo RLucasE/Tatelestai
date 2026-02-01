@@ -3,23 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserState;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEstablishmentWithVerificationRequest;
 use App\Models\EstablishmentType;
 use App\Models\User;
-use App\Services\GmailService;
 use App\Services\GooglePlacesService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Http\Controllers\CustomerCartController;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class UserManagement extends Controller
 {
-
-
-    public function chooseRole(Request $request):JsonResponse
+    public function chooseRole(Request $request): JsonResponse
     {
 
         $request->validate([
@@ -31,20 +25,20 @@ class UserManagement extends Controller
         $changed = false;
 
         if ($role === 'seller') {
-            $user->syncRoles(["seller"]);
+            $user->syncRoles(['seller']);
             $user->state = UserState::REGISTERING;
             $user->save();
             $changed = true;
         }
         if ($role === 'customer') {
-            $user->syncRoles(["customer"]);
+            $user->syncRoles(['customer']);
             $user->state = UserState::ACTIVE;
             $user->save();
             app(CustomerCartController::class)->asingFirstCart($user);
             $changed = true;
         }
 
-        if (!$changed) {
+        if (! $changed) {
             return response()->json([
                 'message' => 'No changes made to the user role.',
                 'current_roles' => $user->roles()->pluck('name'),
@@ -63,8 +57,7 @@ class UserManagement extends Controller
     public function registerEstablishment(
         StoreEstablishmentWithVerificationRequest $request,
         GooglePlacesService $googlePlacesService
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $user = Auth::user();
 
         // Check if establishment already exists
@@ -82,10 +75,10 @@ class UserManagement extends Controller
         // Get place details from Google Places
         $placeData = $googlePlacesService->getPlaceDetails($request->input('google_place_id'));
 
-        if ($placeData['status'] !== 'OK' || !isset($placeData['result'])) {
+        if ($placeData['status'] !== 'OK' || ! isset($placeData['result'])) {
             return response()->json([
                 'message' => 'No se pudo obtener información del lugar de Google Places.',
-                'error' => $placeData['status'] ?? 'UNKNOWN_ERROR'
+                'error' => $placeData['status'] ?? 'UNKNOWN_ERROR',
             ], 400);
         }
 
