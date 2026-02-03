@@ -128,4 +128,23 @@ class UserManagement extends Controller
             'establishment' => $establishment->load('establishmentType'),
         ], $isUpdating ? 200 : 201);
     }
+
+    /**
+     * Cancel seller registration and change role back to default
+     */
+    public function cancelSellerRegistration(): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Sync roles back to default
+        $user->syncRoles(['default']);
+        $user->state = UserState::SELECTING;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Registro de vendedor cancelado. Rol cambiado a default exitosamente.',
+            'new_roles' => $user->roles()->pluck('name'),
+            'state' => $user->state,
+        ]);
+    }
 }

@@ -26,6 +26,7 @@ const searchLoading = ref(false);
 const error = ref("");
 const successVisible = ref(false);
 const successMessage = ref("Establecimiento registrado correctamente. Espera la verificación del administrador.");
+const cancelLoading = ref(false);
 
 const establishmentPhotoPreview = ref(null);
 const ownerSelfiePreview = ref(null);
@@ -171,6 +172,27 @@ const registerEstablishment = async () => {
 
 const handleAcceptSuccess = () => {
   successVisible.value = false;
+};
+
+const cancelSellerRegistration = async () => {
+  if (!confirm("¿Estás seguro de que deseas cancelar tu registro como vendedor? Volverás al rol por defecto.")) {
+    return;
+  }
+  
+  cancelLoading.value = true;
+  error.value = "";
+  try {
+    await authStore.cancelSellerRegistration();
+    router.push({ name: "select-role" });
+  } catch (e) {
+    if (e.response?.data?.message) {
+      error.value = e.response.data.message;
+    } else {
+      error.value = "Error al cancelar el registro";
+    }
+  } finally {
+    cancelLoading.value = false;
+  }
 };
 
 onMounted(fetchEstablishmentTypes);
@@ -332,10 +354,23 @@ onMounted(fetchEstablishmentTypes);
               {{ error }}
             </div>
 
-            <div class="pt-2 flex justify-end">
+            <div class="pt-2 flex justify-between items-center gap-3">
+              <button
+                type="button"
+                @click="cancelSellerRegistration"
+                :disabled="cancelLoading || loading"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[var(--color-text)] bg-[var(--color-darkest)] border border-red-500/50 hover:bg-red-900/30 hover:border-red-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+              >
+                <svg v-if="cancelLoading" class="animate-spin" width="16" height="16" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="4" fill="none"/>
+                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" fill="none"/>
+                </svg>
+                <span>{{ cancelLoading ? 'Cancelando…' : 'Cancelar registro' }}</span>
+              </button>
+              
               <button
                 type="submit"
-                :disabled="loading || !isValid"
+                :disabled="loading || !isValid || cancelLoading"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[var(--color-text)] bg-[var(--color-darkest)] border border-[var(--color-focus)] hover:bg-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed transition"
               >
                 <svg v-if="loading" class="animate-spin" width="16" height="16" viewBox="0 0 24 24">

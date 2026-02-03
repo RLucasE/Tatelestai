@@ -38,6 +38,15 @@ const hadleElection = async () => {
     loading.value = false;
   }
 };
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout();
+    router.push('/login');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
+};
 </script>
 
 <template>
@@ -131,26 +140,34 @@ const hadleElection = async () => {
         <p>Debes tener el negocio registrado en google maps para poder ser un vendedor</p>
       </div>
 
-      <div class="mt-6 flex items-center gap-4">
-        <p v-if="errorMessage" class="text-red-400 text-sm">{{ errorMessage }}</p>
-        <button
-          @click="hadleElection"
-          :disabled="loading"
-          class="ml-auto inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <svg
-            v-if="loading"
-            class="animate-spin -ml-1 mr-2 h-5 w-5 text-[var(--color-text)]"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-          </svg>
-          {{ loading ? "Confirmando..." : "Confirmar" }}
-        </button>
-      </div>
+       <div class="mt-6 flex items-center gap-4">
+         <p v-if="errorMessage" class="text-red-400 text-sm">{{ errorMessage }}</p>
+         <div class="ml-auto flex gap-3">
+           <button
+             @click="handleLogout"
+             class="inline-flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)]"
+           >
+             Cancelar
+           </button>
+           <button
+             @click="hadleElection"
+             :disabled="loading"
+             class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed"
+           >
+             <svg
+               v-if="loading"
+               class="animate-spin -ml-1 mr-2 h-5 w-5 text-[var(--color-text)]"
+               xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               viewBox="0 0 24 24"
+             >
+               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+             </svg>
+             {{ loading ? "Confirmando..." : "Confirmar" }}
+           </button>
+         </div>
+       </div>
     </section>
   </main>
 </template>

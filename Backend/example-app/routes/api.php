@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:'.UserState::REGISTERING->value]);
 
     Route::middleware(['user.state:'.UserState::REGISTERING->value])->group(function () {
+        Route::post('/cancel-seller-registration', [UserManagement::class, 'cancelSellerRegistration']);
         Route::get('/places/search', [GooglePlacesController::class, 'searchPlaces']);
         Route::get('/places/autocomplete', [GooglePlacesController::class, 'autocomplete']);
         Route::get('/places/{placeId}', [GooglePlacesController::class, 'getPlaceDetails']);
