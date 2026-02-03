@@ -1,10 +1,23 @@
 <script setup>
 import { ref } from "vue";
-import { RouterLink, RouterView } from "vue-router";
+import { RouterLink, RouterView, useRouter } from "vue-router";
 import DropdownMenu from "@/components/common/DropdownMenu.vue";
 import Logo from "@/components/common/Logo.vue";
+import { useAuthStore } from '@/stores/auth.js';
 
 const isSidebarOpen = ref(false);
+const authStore = useAuthStore();
+const router = useRouter();
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout();
+    isSidebarOpen.value = false;
+    router.push('/login');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
+};
 </script>
 
 <template>
@@ -47,6 +60,16 @@ const isSidebarOpen = ref(false);
               { text: 'Categorías', to: '/adm/establishment-types' },
             ]"
             />
+          </li>
+          <li>
+            <button @click="handleLogout" class="menu-link logout-button">
+              <span class="logout-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.11 0-2 .89-2 2v14c0 1.11.89 2 2 2h8v-2H4V5z"></path>
+                </svg>
+              </span>
+              Cerrar Sesión
+            </button>
           </li>
         </ul>
       </div>
@@ -168,6 +191,39 @@ const isSidebarOpen = ref(false);
 }
 .menu-link:hover {
   background: color-mix(in oklab, var(--color-darkest), white 6%);
+}
+
+.logout-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+  text-align: left;
+  margin-top: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.logout-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.logout-button:hover .logout-icon {
+  fill: #ef4444;
 }
 
 .content {

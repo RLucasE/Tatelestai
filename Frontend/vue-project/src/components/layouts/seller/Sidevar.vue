@@ -71,12 +71,24 @@
           </span>
           <span>Establecimiento</span>
         </RouterLink>
+
+        <button @click="handleLogout" class="nav-link logout-button">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.11 0-2 .89-2 2v14c0 1.11.89 2 2 2h8v-2H4V5z"></path>
+            </svg>
+          </span>
+          <span>Cerrar Sesión</span>
+        </button>
       </nav>
     </aside>
   </div>
  </template>
 
 <script>
+import { useAuthStore } from '@/stores/auth.js';
+import { useRouter } from 'vue-router';
+
 export default {
   name: "SidebarMenu",
   props: {
@@ -84,6 +96,15 @@ export default {
       type: Boolean,
       default: false,
     },
+  },
+  setup() {
+    const authStore = useAuthStore();
+    const router = useRouter();
+    
+    return {
+      authStore,
+      router,
+    };
   },
   computed: {
     isOpen: {
@@ -116,6 +137,15 @@ export default {
     handleKeydown(event) {
       if (event.key === "Escape" && this.isOpen) {
         this.closeSidebar();
+      }
+    },
+    async handleLogout() {
+      try {
+        await this.authStore.logout();
+        this.closeSidebar();
+        this.router.push('/login');
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
       }
     },
   },
@@ -218,6 +248,29 @@ export default {
 .nav-link.router-link-exact-active .icon,
 .nav-link.router-link-active .icon {
   color: var(--color-text);
+}
+
+.logout-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  width: calc(100% - 1rem);
+  text-align: left;
+  margin-top: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.logout-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.logout-button:hover .icon {
+  fill: #ef4444;
 }
 
 </style>
