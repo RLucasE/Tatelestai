@@ -134,7 +134,6 @@ class AdmUserControllerTest extends TestCase
         // Act
         $response = $this->patchJson("/api/users/{$seller->id}/deactivate-seller");
 
-
         // Assert
         $response->assertStatus(200)
             ->assertJson([
@@ -190,7 +189,7 @@ class AdmUserControllerTest extends TestCase
         $response->assertStatus(500)
             ->assertJsonStructure([
                 'error',
-                'trace'
+                'trace',
             ]);
 
         $user->refresh();
@@ -313,11 +312,10 @@ class AdmUserControllerTest extends TestCase
                 'data' => [
                     '*' => [
                         'state',
-                        'count'
-                    ]
-                ]
+                        'count',
+                    ],
+                ],
             ]);
-
 
         $data = $response->json('data');
         $total = $response->json('total');
@@ -338,5 +336,213 @@ class AdmUserControllerTest extends TestCase
 
         $this->assertEquals(18, $total);
         $this->assertEquals($activeCount + $inactiveCount + $waitingCount + $deniedCount + $selectingCount + $registeringCount, $total);
+    }
+
+    #[Test]
+    public function it_can_get_pending_establishment_details_with_all_relations()
+    {
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::WAITING_FOR_CONFIRMATION->value,
+        ]);
+
+        $establishmentType = \App\Models\EstablishmentType::factory()->create([
+            'name' => 'Restaurante',
+        ]);
+
+        $establishment = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'establishment_type_id' => $establishmentType->id,
+            'name' => 'Test Restaurant',
+            'address' => '123 Main St',
+            'phone' => '555-1234',
+            'verification_status' => 'pending',
+            'latitude' => 40.7128,
+            'longitude' => -74.0060,
+            'google_place_id' => 'ChIJtest123',
+            'google_place_data' => json_encode(['rating' => 4.5]),
+        ]);
+
+        $file1 = \App\Models\EstablishmentVerificationFile::create([
+            'food_establishment_id' => $establishment->id,
+            'file_path' => 'verification/test1.pdf',
+            'file_type' => 'document',
+        ]);
+
+        $file2 = \App\Models\EstablishmentVerificationFile::create([
+            'food_establishment_id' => $establishment->id,
+            'file_path' => 'verification/test2.jpg',
+            'file_type' => 'owner_selfie',
+        ]);
+
+        $response = $this->getJson("/api/adm/pending-establishments/{$establishment->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    'id',
+                    'name',
+                    'address',
+                    'phone',
+                    'verification_status',
+                    'latitude',
+                    'longitude',
+                    'google_place_id',
+                    'google_place_data',
+                    'user' => [
+                        'id',
+                        'name',
+                        'last_name',
+                        'email',
+                        'state',
+                        'roles',
+                    ],
+                    'establishment_type' => [
+                        'id',
+                        'name',
+                    ],
+                    'verification_files' => [
+                        '*' => [
+                            'id',
+                            'food_establishment_id',
+                            'file_type',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertJson([
+                'message' => 'Establecimiento obtenido exitosamente',
+                'data' => [
+                    'id' => $establishment->id,
+                    'name' => 'Test Restaurant',
+                    'address' => '123 Main St',
+                    'phone' => '555-1234',
+                    'verification_status' => 'pending',
+                    'user' => [
+                        'id' => $seller->id,
+                        'name' => $seller->name,
+                        'last_name' => $seller->last_name,
+                        'email' => $seller->email,
+                        'state' => UserState::WAITING_FOR_CONFIRMATION->value,
+                        'roles' => ['seller'],
+                    ],
+                    'establishment_type' => [
+                        'id' => $establishmentType->id,
+                        'name' => 'Restaurante',
+                    ],
+                ],
+            ]);
+
+        // Verify verification files are included
+        $responseData = $response->json('data');
+        $this->assertCount(2, $responseData['verification_files']);
+        $this->assertEquals('document', $responseData['verification_files'][0]['file_type']);
+        $this->assertEquals('owner_selfie', $responseData['verification_files'][1]['file_type']);
+    }
+
+    #[Test]
+    public function it_returns_404_when_establishment_not_found()
+    {
+        // Act
+        $response = $this->getJson('/api/adm/pending-establishments/99999');
+
+        // Assert
+        $response->assertStatus(404)
+            ->assertJsonStructure([
+                'message',
+                'error',
+            ]);
+    }
+
+    #[Test]
+    public function it_can_get_establishment_without_verification_files()
+    {
+        // Arrange
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::WAITING_FOR_CONFIRMATION->value,
+        ]);
+
+        $establishmentType = \App\Models\EstablishmentType::factory()->create();
+
+        $establishment = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'establishment_type_id' => $establishmentType->id,
+            'verification_status' => 'pending',
+        ]);
+
+        // Act (no verification files created)
+        $response = $this->getJson("/api/adm/pending-establishments/{$establishment->id}");
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Establecimiento obtenido exitosamente',
+                'data' => [
+                    'id' => $establishment->id,
+                    'verification_files' => [],
+                ],
+            ]);
+    }
+
+    #[Test]
+    public function it_formats_user_roles_as_array_in_pending_establishment()
+    {
+        // Arrange
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::WAITING_FOR_CONFIRMATION->value,
+        ]);
+
+        $establishment = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'verification_status' => 'pending',
+        ]);
+
+        // Act
+        $response = $this->getJson("/api/adm/pending-establishments/{$establishment->id}");
+
+        // Assert
+        $response->assertStatus(200);
+
+        $userData = $response->json('data.user');
+        $this->assertIsArray($userData['roles']);
+        $this->assertContains('seller', $userData['roles']);
+    }
+
+    #[Test]
+    public function it_can_get_establishment_with_google_place_data()
+    {
+        // Arrange
+        $seller = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::WAITING_FOR_CONFIRMATION->value,
+        ]);
+
+        $googlePlaceData = [
+            'rating' => 4.5,
+            'user_ratings_total' => 120,
+            'business_status' => 'OPERATIONAL',
+            'website' => 'https://example.com',
+            'types' => ['restaurant', 'food', 'point_of_interest'],
+        ];
+
+        $establishment = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $seller->id,
+            'verification_status' => 'pending',
+            'google_place_id' => 'ChIJtestplace123',
+            'google_place_data' => json_encode($googlePlaceData),
+        ]);
+
+        // Act
+        $response = $this->getJson("/api/adm/pending-establishments/{$establishment->id}");
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'google_place_id' => 'ChIJtestplace123',
+                ],
+            ]);
+
+        $responseData = $response->json('data');
+        $this->assertNotNull($responseData['google_place_data']);
     }
 }

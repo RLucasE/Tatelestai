@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-
-use App\Actions\Cart\ClearCustomerCartAction;
-use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Actions\Cart\AddToCartAction;
 use App\Actions\Cart\AssignFirstCartAction;
+use App\Actions\Cart\ClearCustomerCartAction;
 use App\Actions\Cart\GetCustomerCartAction;
+use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Models\OfferCart;
 use App\Models\User;
 use Exception;
@@ -16,9 +15,7 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomerCartController extends CartController
 {
-    public function __construct(private readonly GetCustomerCartAction $customerCartAction)
-    {
-    }
+    public function __construct(private readonly GetCustomerCartAction $customerCartAction) {}
 
     public function asingFirstCart(User|int $userOrId)
     {
@@ -31,13 +28,12 @@ class CustomerCartController extends CartController
     public function customerCart()
     {
         try {
-            !$groupedOffers = $this->customerCartAction->handle(Auth::user());
+            ! $groupedOffers = $this->customerCartAction->handle(Auth::user());
         } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 404);
         }
 
-
-        if (!$groupedOffers) {
+        if (! $groupedOffers) {
             return response()->json(['message' => 'No active cart found.'], status: 404);
         }
 
@@ -69,9 +65,10 @@ class CustomerCartController extends CartController
         } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 400);
         }
-        if (!$offerCart) {
+        if (! $offerCart) {
             return response()->json(['message' => 'Offer has expired.'], status: 400);
         }
+
         return response()->json($offerCart, status: 200);
     }
 
@@ -79,7 +76,7 @@ class CustomerCartController extends CartController
     {
         try {
             $lastActiveCart = $this->getLastActiveCart(Auth::id());
-            if (!$lastActiveCart) {
+            if (! $lastActiveCart) {
                 return response()->json(['message' => 'No active cart found.'], status: 404);
             }
             $offerCart = OfferCart::where('user_cart_id', $lastActiveCart->id)
@@ -89,6 +86,7 @@ class CustomerCartController extends CartController
         } catch (Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], status: 404);
         }
+
         return response()->json(['deleted' => $offerCart]);
     }
 
@@ -100,6 +98,7 @@ class CustomerCartController extends CartController
         $offerCart = OfferCart::where('offer_id', $offerId)
             ->where('user_cart_id', $this->getLastActiveCart(Auth::id())->id)
             ->update(['quantity' => $request->quantity]);
+
         return response()->json(['updated' => $offerCart]);
     }
 
@@ -115,6 +114,4 @@ class CustomerCartController extends CartController
 
         return response()->json(['deleted' => $deleted]);
     }
-
 }
-

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserState;
+use App\Enums\VerificationFileType;
 use App\Http\Requests\StoreEstablishmentWithVerificationRequest;
 use App\Models\EstablishmentType;
+use App\Models\EstablishmentVerificationFile;
 use App\Models\User;
 use App\Services\GooglePlacesService;
 use Illuminate\Http\JsonResponse;
@@ -84,24 +86,16 @@ class UserManagement extends Controller
 
         $place = $placeData['result'];
 
-        // Store establishment photo
-        $establishmentPhotoPath = $request->file('establishment_photo')->store('establishments', 'public');
-
-        // Store owner selfie
-        $ownerSelfiePath = $request->file('owner_selfie')->store('selfies', 'public');
-
         // Extract coordinates
         $latitude = $place['geometry']['location']['lat'] ?? null;
         $longitude = $place['geometry']['location']['lng'] ?? null;
 
-        // Prepare establishment data
+        // Prepare establishment data (without photo paths)
         $establishmentData = [
             'name' => $place['name'],
             'address' => $place['formatted_address'],
             'google_place_id' => $request->input('google_place_id'),
             'google_place_data' => $place,
-            'establishment_photo' => $establishmentPhotoPath,
-            'owner_selfie' => $ownerSelfiePath,
             'phone' => $place['formatted_phone_number'] ?? null,
             'latitude' => $latitude,
             'longitude' => $longitude,
@@ -113,11 +107,44 @@ class UserManagement extends Controller
             // Update existing establishment
             $existingEstablishment->update($establishmentData);
             $establishment = $existingEstablishment->fresh();
+
+            // Delete existing verification files
+            $existingEstablishment->verificationFiles()->delete();
+
             $message = 'Establecimiento actualizado exitosamente. Pendiente de verificación.';
         } else {
             // Create new establishment
             $establishment = $user->foodEstablishment()->create($establishmentData);
             $message = 'Establecimiento registrado exitosamente. Pendiente de verificación.';
+        }
+
+        // Store verification files
+        $verificationFiles = [];
+        foreach ($request->verification_files as $fileData) {
+            $file = $fileData['file'];
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('establishment_verification/' . $establishment->id, $fileName, 'private');
+
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension === 'jpg' || $extension === 'jpeg') {
+                $fileType = VerificationFileType::JPG->value;
+            } elseif ($extension === 'png') {
+                $fileType = VerificationFileType::PNG->value;
+            } elseif ($extension === 'pdf') {
+                $fileType = VerificationFileType::PDF->value;
+            } else {
+                return response()->json([
+                    'message' => 'Tipo de archivo no permitido. Solo se permiten JPG, PNG y PDF.',
+                ], 400);
+            }
+
+            $verificationFile = EstablishmentVerificationFile::create([
+                'food_establishment_id' => $establishment->id,
+                'file_path' => $path,
+                'file_type' => $fileType,
+            ]);
+
+            $verificationFiles[] = $verificationFile;
         }
 
         $user->state = UserState::WAITING_FOR_CONFIRMATION;
@@ -126,6 +153,7 @@ class UserManagement extends Controller
         return response()->json([
             'message' => $message,
             'establishment' => $establishment->load('establishmentType'),
+            'verification_files' => $verificationFiles,
         ], $isUpdating ? 200 : 201);
     }
 

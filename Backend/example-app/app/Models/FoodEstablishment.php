@@ -47,4 +47,9 @@ class FoodEstablishment extends Model
     {
         return $this->morphMany(Report::class, 'reportable');
     }
+
+    public function verificationFiles()
+    {
+        return $this->hasMany(EstablishmentVerificationFile::class, 'food_establishment_id');
+    }
 }

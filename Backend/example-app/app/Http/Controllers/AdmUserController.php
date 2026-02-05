@@ -12,6 +12,7 @@ use App\Exports\DashboardExport;
 use App\Mail\SellerActivated;
 use App\Mail\SellerDeactivated;
 use App\Mail\SellerDenied;
+use App\Models\EstablishmentVerificationFile;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Exception;
@@ -114,13 +115,14 @@ class AdmUserController extends Controller
         return response()->json($sellers);
     }
 
-    public function showNewSeller(int $id)
+    public function showPendingSellerDetails(int $id)
     {
         $seller = User::select('id', 'name', 'last_name', 'email', 'state')
             ->with([
                 'roles:name',
-                'foodEstablishment:id,user_id,name,establishment_type_id,address,google_place_id,google_place_data,establishment_photo,owner_selfie,phone,description,latitude,longitude,verification_status,verification_notes',
+                'foodEstablishment:id,user_id,name,establishment_type_id,address,google_place_id,google_place_data,phone,description,latitude,longitude,verification_status,verification_notes',
                 'foodEstablishment.establishmentType:id,name',
+                'foodEstablishment.verificationFiles:id,food_establishment_id,file_type',
             ])
             ->findOrFail($id);
 
@@ -243,6 +245,39 @@ class AdmUserController extends Controller
     }
 
     /**
+     * Get a single pending establishment by ID
+     */
+    public function showPendingEstablishment(int $id): JsonResponse
+    {
+        try {
+            $establishment = \App\Models\FoodEstablishment::with([
+                'user:id,name,last_name,email,state',
+                'user.roles:name',
+                'establishmentType:id,name',
+                'verificationFiles:id,food_establishment_id,file_type',
+            ])
+                ->findOrFail($id);
+
+            // Convert to array and format user roles
+            $establishmentArray = $establishment->toArray();
+            if (isset($establishmentArray['user']['roles'])) {
+                $establishmentArray['user']['roles'] = array_column($establishmentArray['user']['roles'], 'name');
+            }
+
+            return response()->json([
+                'message' => 'Establecimiento obtenido exitosamente',
+                'data' => $establishmentArray,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener el establecimiento',
+                'error' => $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
      * Approve establishment verification
      */
     public function verifyEstablishment(int $id): JsonResponse
@@ -283,6 +318,48 @@ class AdmUserController extends Controller
     }
 
     /**
+     * Serve verification files securely to authenticated admins
+     */
+    public function serveVerificationFile(int $fileId)
+    {
+        $file = EstablishmentVerificationFile::findOrFail($fileId);
+
+        // Get the full path to the file in private storage
+        $fullPath = storage_path('app/private/' . $file->file_path);
+
+        // Check if file exists
+        if (!file_exists($fullPath)) {
+            return response()->json([
+                'message' => 'Archivo no encontrado',
+            ], 404);
+        }
+
+        // Get file info
+        $fileInfo = pathinfo($fullPath);
+        $extension = strtolower($fileInfo['extension'] ?? '');
+
+        // Determine content type
+        $contentType = match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+            default => 'application/octet-stream'
+        };
+
+        // For images, serve inline for viewing
+        // For PDFs, serve as attachment for download
+        $disposition = $extension === 'pdf' ? 'attachment' : 'inline';
+        $filename = $file->file_type . '.' . $extension;
+
+        return response()->file($fullPath, [
+            'Content-Type' => $contentType,
+            'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
      * Reject establishment verification
      */
     public function rejectEstablishment(int $id): JsonResponse
@@ -290,7 +367,7 @@ class AdmUserController extends Controller
         try {
             $request = request();
             $request->validate([
-                'reason' => 'required|string|min:10|max:1000',
+                'reason' => 'required|string|min=10|max=1000',
             ]);
 
             $establishment = \App\Models\FoodEstablishment::findOrFail($id);

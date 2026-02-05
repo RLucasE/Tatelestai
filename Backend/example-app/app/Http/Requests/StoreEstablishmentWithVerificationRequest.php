@@ -24,8 +24,8 @@ class StoreEstablishmentWithVerificationRequest extends FormRequest
         return [
             'google_place_id' => 'required|string',
             'establishment_type_id' => 'required|integer|exists:establishment_types,id',
-            'establishment_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
-            'owner_selfie' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+            'verification_files' => 'required|array|min:1|max:6',
+            'verification_files.*.file' => 'required|file|mimes:jpeg,png,pdf|max:5120', // 5MB max por archivo
             'additional_info' => 'nullable|string|max:1000',
         ];
     }
@@ -41,12 +41,13 @@ class StoreEstablishmentWithVerificationRequest extends FormRequest
             'google_place_id.required' => 'Debes seleccionar un lugar de Google Places',
             'establishment_type_id.required' => 'El tipo de establecimiento es requerido',
             'establishment_type_id.exists' => 'El tipo de establecimiento seleccionado no existe',
-            'establishment_photo.required' => 'La foto del establecimiento es requerida',
-            'establishment_photo.image' => 'El archivo debe ser una imagen',
-            'establishment_photo.max' => 'La foto del establecimiento no debe superar los 5MB',
-            'owner_selfie.required' => 'La selfie del propietario es requerida',
-            'owner_selfie.image' => 'El archivo debe ser una imagen',
-            'owner_selfie.max' => 'La selfie no debe superar los 5MB',
+            'verification_files.required' => 'Debes subir al menos un archivo de verificación',
+            'verification_files.array' => 'Los archivos de verificación deben ser un arreglo',
+            'verification_files.min' => 'Debes subir al menos un archivo de verificación',
+            'verification_files.max' => 'No puedes subir más de 6 archivos de verificación',
+             'verification_files.*.file' => 'Cada archivo de verificación es requerido',
+             'verification_files.*.file.mimes' => 'Cada archivo debe ser JPG, PNG o PDF',
+             'verification_files.*.file.max' => 'Cada archivo no debe superar los 5MB',
         ];
     }
 }

@@ -81,8 +81,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::patch('/users/{id}/deactivate-seller', [AdmUserController::class, 'deactivateSeller']);
         Route::patch('/users/{id}/denie-seller', [AdmUserController::class, 'denySeller']);
         Route::get('/user/{id}/offers', [AdmOfferController::class, 'indexByUser']);
-        Route::get('/new-sellers', [AdmUserController::class, 'newSellers']);
-        Route::get('/new-sellers/{id}', [AdmUserController::class, 'showNewSeller']);
         Route::get('/adm-offers', [AdmOfferController::class, 'index']);
         Route::patch('/adm-offers/{id}/status', [AdmOfferController::class, 'update']);
         Route::get('/adm-pending-offers', [AdmOfferController::class, 'pendingOffers']);
@@ -108,9 +106,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::patch('/adm/reports/{id}/status', [AdmReportController::class, 'updateStatus']);
         Route::post('/adm/reports/{id}/take-action', [AdmReportController::class, 'takeAction']);
         Route::get('/adm/pending-establishments', [AdmUserController::class, 'pendingEstablishments']);
+        Route::get('/adm/pending-establishments/{id}', [AdmUserController::class, 'showPendingEstablishment']);
         Route::patch('/adm/establishments/{id}/verify', [AdmUserController::class, 'verifyEstablishment']);
         Route::patch('/adm/establishments/{id}/reject', [AdmUserController::class, 'rejectEstablishment']);
-    });
+        Route::get('/admin/verification-files/{fileId}', [AdmUserController::class, 'serveVerificationFile']);
+     });
 });
 
 Route::get('/test', function () {

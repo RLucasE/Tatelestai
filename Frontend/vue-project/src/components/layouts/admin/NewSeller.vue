@@ -5,63 +5,96 @@ import axiosInstance from '@/lib/axios.js';
 
 const route = useRoute();
 const router = useRouter();
-const sellerId = route.params.id;
+const establishmentId = route.params.id;
 
 // URL del backend para recursos estáticos (obtiene la base URL de axios sin el /api)
 const BACKEND_URL = axiosInstance.defaults.baseURL.replace('/api', '');
 
-const seller = ref(null);
+const establishment = ref(null);
 const loading = ref(true);
 const error = ref(null);
-const activating = ref(false);
+const verifying = ref(false);
 const rejecting = ref(false);
+const rejectReason = ref('');
+const showRejectModal = ref(false);
 
-const fetchSeller = async () => {
+// Helpers para file_type del enum VerificationFileType: 'jpg', 'png', 'pdf'
+const isImageFile = (fileType) => ['jpg', 'jpeg', 'png'].includes(fileType);
+const isPdfFile = (fileType) => fileType === 'pdf';
+
+const getFileTypeLabel = (fileType) => {
+  if (isImageFile(fileType)) return 'Imagen';
+  if (isPdfFile(fileType)) return 'PDF';
+  return 'Documento';
+};
+
+const getFileIcon = (fileType) => {
+  if (isPdfFile(fileType)) return '📄';
+  if (isImageFile(fileType)) return '🖼️';
+  return '📎';
+};
+
+const fetchEstablishment = async () => {
   try {
     loading.value = true;
-    const { data } = await axiosInstance.get(`/new-sellers/${sellerId}`);
-    seller.value = data || null;
+    const response = await axiosInstance.get(`/adm/pending-establishments/${establishmentId}`);
+    establishment.value = response.data.data || null;
     error.value = null;
   } catch (err) {
-    console.error('Error fetching seller detail:', err);
-    error.value = 'No se pudo cargar el vendedor';
-    seller.value = null;
+    console.error('Error fetching establishment detail:', err);
+    error.value = 'No se pudo cargar el establecimiento';
+    establishment.value = null;
   } finally {
     loading.value = false;
   }
 };
 
-const activateSeller = async () => {
-  if (!seller.value || activating.value) return;
+const verifyEstablishment = async () => {
+  if (!establishment.value || verifying.value) return;
+  if (!confirm('¿Seguro que deseas aprobar este establecimiento?')) return;
 
   try {
-    activating.value = true;
-    await axiosInstance.patch(`/users/${sellerId}/activate-seller`);
-
-    // Mostrar mensaje de éxito
-    alert('Vendedor activado correctamente');
-
-    // Redirigir a la lista de nuevos vendedores
+    verifying.value = true;
+    await axiosInstance.patch(`/adm/establishments/${establishment.value.id}/verify`);
+    alert('Establecimiento verificado y aprobado correctamente');
     router.push({ name: 'new-sellers' });
   } catch (err) {
-    console.error('Error activating seller:', err);
-    const message = err.response?.data?.message || 'Error al activar el vendedor';
+    console.error('Error verifying establishment:', err);
+    const message = err.response?.data?.message || 'Error al verificar el establecimiento';
     alert(message);
   } finally {
-    activating.value = false;
+    verifying.value = false;
   }
 };
 
-const denySeller = async () => {
-  if (!seller.value || rejecting.value) return;
-  if (!confirm('¿Seguro que deseas rechazar este establecimiento?')) return;
+const openRejectModal = () => {
+  showRejectModal.value = true;
+  rejectReason.value = '';
+};
+
+const closeRejectModal = () => {
+  showRejectModal.value = false;
+  rejectReason.value = '';
+};
+
+const rejectEstablishment = async () => {
+  if (!establishment.value || rejecting.value) return;
+  if (!rejectReason.value || rejectReason.value.trim().length < 10) {
+    alert('Por favor ingresa una razón de al menos 10 caracteres');
+    return;
+  }
+
   try {
     rejecting.value = true;
-    await axiosInstance.patch(`/users/${sellerId}/denie-seller`);
+    await axiosInstance.patch(`/adm/establishments/${establishment.value.id}/reject`, {
+      reason: rejectReason.value.trim()
+    });
+
     alert('Establecimiento rechazado correctamente');
+    closeRejectModal();
     router.push({ name: 'new-sellers' });
   } catch (err) {
-    console.error('Error denying seller:', err);
+    console.error('Error rejecting establishment:', err);
     const message = err.response?.data?.message || 'Error al rechazar el establecimiento';
     alert(message);
   } finally {
@@ -73,18 +106,26 @@ const goBack = () => {
   router.push({ name: 'new-sellers' });
 };
 
+const getFileUrl = (fileId) => {
+  return `${BACKEND_URL}/api/admin/verification-files/${fileId}`;
+};
+
+const openFile = (file) => {
+  window.open(getFileUrl(file.id), '_blank');
+};
+
 const handleImageError = (event) => {
   event.target.style.display = 'none';
   const parent = event.target.parentElement;
   if (parent && !parent.querySelector('.image-error-text')) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'image-error-text';
-    errorDiv.textContent = 'Imagen no disponible';
+    errorDiv.textContent = 'Archivo no disponible';
     parent.appendChild(errorDiv);
   }
 };
 
-onMounted(fetchSeller);
+onMounted(fetchEstablishment);
 </script>
 
 <template>
@@ -92,7 +133,7 @@ onMounted(fetchSeller);
     <div class="new-seller-container">
       <div class="top-bar">
         <button class="back-btn" @click="goBack">
-          <span class="back-icon">←</span>
+          <span class="back-icon">&larr;</span>
           <span>Volver</span>
         </button>
       </div>
@@ -104,14 +145,14 @@ onMounted(fetchSeller);
 
       <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
-        <button class="retry-btn" @click="fetchSeller">Reintentar</button>
+        <button class="retry-btn" @click="fetchEstablishment">Reintentar</button>
       </div>
 
-      <div v-else-if="seller" class="content">
+      <div v-else-if="establishment" class="content">
         <div class="header">
           <h1 class="title">Revisión de Solicitud</h1>
-          <div class="status-chip" :class="seller.state">
-            {{ seller.state === 'waiting_for_confirmation' ? 'Pendiente' : seller.state }}
+          <div class="status-chip" :class="establishment.user?.state">
+            {{ establishment.user?.state === 'waiting_for_confirmation' ? 'Pendiente' : establishment.user?.state }}
           </div>
         </div>
 
@@ -121,21 +162,21 @@ onMounted(fetchSeller);
           <div class="info-grid">
             <div class="info-item">
               <span class="label">ID</span>
-              <span class="value">#{{ seller.id }}</span>
+              <span class="value">#{{ establishment.user?.id }}</span>
             </div>
             <div class="info-item">
               <span class="label">Nombre completo</span>
-              <span class="value">{{ seller.name }} {{ seller.last_name }}</span>
+              <span class="value">{{ establishment.user?.name }} {{ establishment.user?.last_name }}</span>
             </div>
             <div class="info-item span-full">
               <span class="label">Email</span>
-              <span class="value">{{ seller.email }}</span>
+              <span class="value">{{ establishment.user?.email }}</span>
             </div>
-            <div class="info-item" v-if="seller.roles && seller.roles.length > 0">
+            <div class="info-item" v-if="establishment.user?.roles && establishment.user.roles.length > 0">
               <span class="label">Rol</span>
               <div class="role-badges">
-                <span v-for="role in seller.roles" :key="role" class="role-badge">
-                  {{ role.name }}
+                <span v-for="role in establishment.user.roles" :key="role" class="role-badge">
+                  {{ role }}
                 </span>
               </div>
             </div>
@@ -143,69 +184,68 @@ onMounted(fetchSeller);
         </section>
 
         <!-- Información del Establecimiento -->
-        <section class="section" v-if="seller.food_establishment">
+        <section class="section">
           <h2 class="section-title">Establecimiento</h2>
           <div class="info-grid">
             <div class="info-item span-full">
               <span class="label">Nombre</span>
-              <span class="value">{{ seller.food_establishment.name }}</span>
+              <span class="value">{{ establishment.name }}</span>
             </div>
-            <div class="info-item" v-if="seller.food_establishment.establishment_type">
+            <div class="info-item" v-if="establishment.establishment_type">
               <span class="label">Tipo</span>
-              <span class="value">{{ seller.food_establishment.establishment_type.name }}</span>
+              <span class="value">{{ establishment.establishment_type.name }}</span>
             </div>
             <div class="info-item span-full">
               <span class="label">Dirección</span>
-              <span class="value">{{ seller.food_establishment.address || 'No especificada' }}</span>
+              <span class="value">{{ establishment.address || 'No especificada' }}</span>
             </div>
-            <div class="info-item" v-if="seller.food_establishment.phone">
+            <div class="info-item" v-if="establishment.phone">
               <span class="label">Teléfono</span>
-              <span class="value">{{ seller.food_establishment.phone }}</span>
+              <span class="value">{{ establishment.phone }}</span>
             </div>
-            <div class="info-item" v-if="seller.food_establishment.verification_status">
+            <div class="info-item" v-if="establishment.verification_status">
               <span class="label">Estado de verificación</span>
-              <span class="value verification-badge" :class="seller.food_establishment.verification_status">
-                {{ seller.food_establishment.verification_status === 'pending' ? 'Pendiente' :
-                  seller.food_establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
+              <span class="value verification-badge" :class="establishment.verification_status">
+                {{ establishment.verification_status === 'pending' ? 'Pendiente' :
+                  establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
               </span>
             </div>
-            <div class="info-item span-full" v-if="seller.food_establishment.google_place_id">
+            <div class="info-item span-full" v-if="establishment.google_place_id">
               <span class="label">Google Place ID</span>
-              <span class="value small-text">{{ seller.food_establishment.google_place_id }}</span>
+              <span class="value small-text">{{ establishment.google_place_id }}</span>
             </div>
-            <div class="info-item" v-if="seller.food_establishment.latitude">
+            <div class="info-item" v-if="establishment.latitude">
               <span class="label">Coordenadas</span>
-              <span class="value small-text">{{ seller.food_establishment.latitude }}, {{
-                seller.food_establishment.longitude }}</span>
+              <span class="value small-text">{{ establishment.latitude }}, {{ establishment.longitude }}</span>
             </div>
           </div>
 
           <!-- Google Places Data -->
-          <div v-if="seller.food_establishment.google_place_data" class="google-data-section">
+          <div v-if="establishment.google_place_data" class="google-data-section">
             <h3 class="subsection-title">Información de Google Places</h3>
             <div class="info-grid">
-              <div class="info-item" v-if="seller.food_establishment.google_place_data.rating">
+              <div class="info-item" v-if="establishment.google_place_data.rating">
                 <span class="label">Calificación</span>
-                <span class="value">⭐ {{ seller.food_establishment.google_place_data.rating }}</span>
+                <span class="value">{{ establishment.google_place_data.rating }}</span>
               </div>
-              <div class="info-item" v-if="seller.food_establishment.google_place_data.user_ratings_total">
+              <div class="info-item" v-if="establishment.google_place_data.user_ratings_total">
                 <span class="label">Reseñas totales</span>
-                <span class="value">{{ seller.food_establishment.google_place_data.user_ratings_total }}</span>
+                <span class="value">{{ establishment.google_place_data.user_ratings_total }}</span>
               </div>
-              <div class="info-item" v-if="seller.food_establishment.google_place_data.business_status">
+              <div class="info-item" v-if="establishment.google_place_data.business_status">
                 <span class="label">Estado del negocio</span>
-                <span class="value">{{ seller.food_establishment.google_place_data.business_status }}</span>
+                <span class="value">{{ establishment.google_place_data.business_status }}</span>
               </div>
-              <div class="info-item span-full" v-if="seller.food_establishment.google_place_data.website">
+              <div class="info-item span-full" v-if="establishment.google_place_data.website">
                 <span class="label">Sitio web</span>
-                <a :href="seller.food_establishment.google_place_data.website" target="_blank" class="value link">
-                  {{ seller.food_establishment.google_place_data.website }}
+                <a :href="establishment.google_place_data.website" target="_blank" class="value link">
+                  {{ establishment.google_place_data.website }}
                 </a>
               </div>
-              <div class="info-item span-full" v-if="seller.food_establishment.google_place_data.types">
+              <div class="info-item span-full" v-if="establishment.google_place_data.types">
                 <span class="label">Categorías</span>
                 <div class="tags-container">
-                  <span v-for="(type, index) in seller.food_establishment.google_place_data.types.slice(0, 5)"
+                  <span v-for="(type, index) in establishment.google_place_data.types.slice(0, 5)"
                     :key="index" class="tag">
                     {{ type.replace(/_/g, ' ') }}
                   </span>
@@ -214,67 +254,77 @@ onMounted(fetchSeller);
             </div>
           </div>
 
-          <!-- Fotos de Verificación -->
-          <div class="photos-section">
-            <h3 class="subsection-title">Fotos de Verificación</h3>
-            <div class="photos-grid">
-              <div class="photo-card" v-if="seller.food_establishment.establishment_photo">
-                <div class="photo-header">
-                  <span class="photo-label">📷 Foto del Establecimiento</span>
+          <!-- Archivos de Verificación -->
+          <div class="files-section" v-if="establishment.verification_files && establishment.verification_files.length > 0">
+            <h3 class="subsection-title">Archivos de Verificación</h3>
+            <div class="files-grid">
+              <div
+                v-for="file in establishment.verification_files"
+                :key="file.id"
+                class="file-card"
+                @click="openFile(file)"
+              >
+                <div class="file-header">
+                  <span class="file-icon">{{ getFileIcon(file.file_type) }}</span>
+                  <span class="file-type-label">{{ getFileTypeLabel(file.file_type) }}</span>
                 </div>
-                <img :src="`${BACKEND_URL}/storage/${seller.food_establishment.establishment_photo}`"
-                  alt="Foto del establecimiento" class="photo-img" @error="handleImageError" />
-              </div>
-              <div class="photo-card" v-if="seller.food_establishment.owner_selfie">
-                <div class="photo-header">
-                  <span class="photo-label">🤳 Selfie del Propietario</span>
+                <div class="file-preview">
+                  <img
+                    v-if="isImageFile(file.file_type)"
+                    :src="getFileUrl(file.id)"
+                    alt="Archivo de verificación"
+                    class="preview-img"
+                    @error="handleImageError"
+                  />
+                  <div v-else class="pdf-preview">
+                    <div class="pdf-icon">📄</div>
+                    <p class="pdf-text">Documento PDF</p>
+                  </div>
                 </div>
-                <img :src="`${BACKEND_URL}/storage/${seller.food_establishment.owner_selfie}`"
-                  alt="Selfie del propietario" class="photo-img" @error="handleImageError" />
+                <div class="file-footer">
+                  <span class="file-action">{{ isPdfFile(file.file_type) ? 'Abrir PDF' : 'Ver archivo' }} &rarr;</span>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Mapa (si hay coordenadas) -->
-          <div v-if="seller.food_establishment.latitude && seller.food_establishment.longitude" class="map-section">
+          <div v-if="establishment.latitude && establishment.longitude" class="map-section">
             <h3 class="subsection-title">Ubicación</h3>
             <div class="map-container">
               <iframe
-                :src="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}&z=15&output=embed`"
+                :src="`https://www.google.com/maps?q=${establishment.latitude},${establishment.longitude}&z=15&output=embed`"
                 width="100%" height="300" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade">
               </iframe>
             </div>
-            <a :href="`https://www.google.com/maps?q=${seller.food_establishment.latitude},${seller.food_establishment.longitude}`"
+            <a :href="`https://www.google.com/maps?q=${establishment.latitude},${establishment.longitude}`"
               target="_blank" class="map-link">
-              Ver en Google Maps →
+              Ver en Google Maps &rarr;
             </a>
           </div>
 
           <!-- Notas de Verificación (si existen) -->
-          <div v-if="seller.food_establishment.verification_notes" class="notes-section">
+          <div v-if="establishment.verification_notes" class="notes-section">
             <h3 class="subsection-title">Notas de Verificación</h3>
-            <p class="notes-text">{{ seller.food_establishment.verification_notes }}</p>
+            <p class="notes-text">{{ establishment.verification_notes }}</p>
           </div>
         </section>
 
         <!-- Acciones -->
-        <section class="section actions-section" v-if="seller.state === 'waiting_for_confirmation'">
+        <section class="section actions-section" v-if="establishment.user?.state === 'waiting_for_confirmation' && establishment.verification_status === 'pending'">
           <h2 class="section-title">Acciones</h2>
           <div class="actions-grid">
-            <button class="action-btn approve-btn" @click="activateSeller" :disabled="activating || rejecting">
-              <span v-if="activating" class="btn-loader"></span>
+            <button class="action-btn approve-btn" @click="verifyEstablishment" :disabled="verifying || rejecting">
+              <span v-if="verifying" class="btn-loader"></span>
               <span v-else>
                 <span class="btn-icon">✓</span>
-                <span>Aprobar Vendedor</span>
+                <span>Aprobar Establecimiento</span>
               </span>
             </button>
-            <button class="action-btn reject-btn" @click="denySeller" :disabled="rejecting || activating">
-              <span v-if="rejecting" class="btn-loader"></span>
-              <span v-else>
-                <span class="btn-icon">✕</span>
-                <span>Rechazar Solicitud</span>
-              </span>
+            <button class="action-btn reject-btn" @click="openRejectModal" :disabled="rejecting || verifying">
+              <span class="btn-icon">✕</span>
+              <span>Rechazar Solicitud</span>
             </button>
           </div>
           <p class="action-hint">
@@ -284,6 +334,38 @@ onMounted(fetchSeller);
 
         <div v-else class="info-message">
           Esta solicitud ya ha sido procesada.
+        </div>
+      </div>
+
+      <!-- Modal de Rechazo -->
+      <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">Rechazar Establecimiento</h3>
+            <button class="modal-close" @click="closeRejectModal">✕</button>
+          </div>
+          <div class="modal-body">
+            <label class="input-label">Razón del rechazo (mínimo 10 caracteres)</label>
+            <textarea
+              v-model="rejectReason"
+              class="reject-textarea"
+              placeholder="Explica la razón del rechazo..."
+              rows="5"
+              :disabled="rejecting"
+            ></textarea>
+            <p class="char-count" :class="{ 'valid': rejectReason.length >= 10 }">
+              {{ rejectReason.length }} / 10 caracteres mínimo
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button class="modal-btn cancel-btn" @click="closeRejectModal" :disabled="rejecting">
+              Cancelar
+            </button>
+            <button class="modal-btn confirm-btn" @click="rejectEstablishment" :disabled="rejecting || rejectReason.length < 10">
+              <span v-if="rejecting" class="btn-loader"></span>
+              <span v-else>Rechazar</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -604,22 +686,12 @@ onMounted(fetchSeller);
 }
 
 .google-data-section,
-.photos-section,
+.files-section,
 .map-section,
 .notes-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
-}
-
-.subsection-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-heading);
-  margin: 0 0 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.8;
 }
 
 .tags-container {
@@ -639,36 +711,99 @@ onMounted(fetchSeller);
   text-transform: capitalize;
 }
 
-.photos-grid {
+.files-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
-.photo-card {
+.file-card {
   background: var(--color-background-soft);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
-.photo-header {
+.file-card:hover {
+  border-color: var(--color-heading);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.file-header {
   padding: 0.75rem 1rem;
   background: var(--color-background);
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.photo-label {
+.file-icon {
+  font-size: 1.25rem;
+}
+
+.file-type-label {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-heading);
 }
 
-.photo-img {
+.preview-img {
   width: 100%;
   height: 300px;
   object-fit: cover;
   display: block;
+}
+
+.file-preview {
+  position: relative;
+  width: 100%;
+  height: 300px;
+}
+
+.pdf-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background-soft);
+  gap: 0.5rem;
+}
+
+.pdf-icon {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.pdf-text {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  opacity: 0.7;
+  margin: 0;
+}
+
+.file-footer {
+  padding: 0.75rem 1rem;
+  background: var(--color-background);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.file-action {
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.file-card:hover .file-action {
+  transform: translateX(4px);
 }
 
 .image-error-text {
@@ -681,6 +816,161 @@ onMounted(fetchSeller);
   color: var(--color-text);
   font-size: 0.875rem;
   opacity: 0.6;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin: 0;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: var(--color-background-soft);
+  color: var(--color-heading);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-heading);
+  margin-bottom: 0.5rem;
+}
+
+.reject-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-heading);
+  background: var(--color-background-soft);
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.reject-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.reject-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.char-count {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  opacity: 0.6;
+  margin: 0.5rem 0 0;
+  text-align: right;
+}
+
+.char-count.valid {
+  color: var(--color-accent);
+  opacity: 1;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: var(--color-heading);
+  border: 1px solid var(--color-border);
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: var(--color-background-soft);
+  border-color: var(--color-heading);
+}
+
+.confirm-btn {
+  background: #dc2626;
+  color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .map-container {
@@ -744,12 +1034,29 @@ onMounted(fetchSeller);
     grid-column: 1;
   }
 
-  .photos-grid {
+  .files-grid {
     grid-template-columns: 1fr;
   }
 
-  .photo-img {
+  .preview-img {
     height: 250px;
+  }
+
+  .file-preview {
+    height: 250px;
+  }
+
+  .modal-content {
+    margin: 1rem;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-btn {
+    width: 100%;
   }
 }
 </style>
+

@@ -4,30 +4,31 @@ import { useRouter } from 'vue-router';
 import axiosInstance from '@/lib/axios.js';
 
 const router = useRouter();
-const newSellers = ref([]);
+const pendingEstablishments = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-const fetchNewSellers = async () => {
+const fetchPendingEstablishments = async () => {
   try {
     loading.value = true;
-    const { data } = await axiosInstance.get('/new-sellers');
-    newSellers.value = Array.isArray(data) ? data : [];
+    const response = await axiosInstance.get('/adm/pending-establishments');
+    // La API devuelve { message, data }
+    pendingEstablishments.value = Array.isArray(response.data.data) ? response.data.data : [];
     error.value = null;
   } catch (err) {
-    console.error('Error fetching new sellers:', err);
+    console.error('Error fetching pending establishments:', err);
     error.value = 'No se pudieron cargar las solicitudes de vendedores';
-    newSellers.value = [];
+    pendingEstablishments.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const viewSellerDetail = (sellerId) => {
-  router.push({ name: 'new-seller', params: { id: sellerId } });
+const viewEstablishmentDetail = (establishmentId) => {
+  router.push({ name: 'new-seller', params: { id: establishmentId } });
 };
 
-onMounted(fetchNewSellers);
+onMounted(fetchPendingEstablishments);
 </script>
 
 <template>
@@ -35,7 +36,7 @@ onMounted(fetchNewSellers);
     <div class="new-sellers-container">
       <div class="header">
         <h1 class="title">Solicitudes Pendientes</h1>
-        <p class="subtitle">{{ newSellers.length }} vendedor{{ newSellers.length !== 1 ? 'es' : '' }} esperando aprobación</p>
+        <p class="subtitle">{{ pendingEstablishments.length }} establecimiento{{ pendingEstablishments.length !== 1 ? 's' : '' }} esperando aprobación</p>
       </div>
 
       <div v-if="loading" class="loading">
@@ -45,11 +46,11 @@ onMounted(fetchNewSellers);
 
       <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
-        <button class="retry-btn" @click="fetchNewSellers">Reintentar</button>
+        <button class="retry-btn" @click="fetchPendingEstablishments">Reintentar</button>
       </div>
 
       <div v-else class="content">
-        <div v-if="newSellers.length === 0" class="empty-state">
+        <div v-if="pendingEstablishments.length === 0" class="empty-state">
           <div class="empty-icon">✓</div>
           <p class="empty-title">Todo al día</p>
           <p class="empty-text">No hay solicitudes pendientes en este momento</p>
@@ -57,40 +58,42 @@ onMounted(fetchNewSellers);
 
         <div v-else class="sellers-list">
           <div
-            v-for="seller in newSellers"
-            :key="seller.id"
+            v-for="establishment in pendingEstablishments"
+            :key="establishment.id"
             class="seller-card"
-            @click="viewSellerDetail(seller.id)"
+            @click="viewEstablishmentDetail(establishment.id)"
           >
             <div class="card-header">
               <div class="user-info">
-                <h3 class="name">{{ seller.name }} {{ seller.last_name }}</h3>
-                <p class="email">{{ seller.email }}</p>
+                <h3 class="name">{{ establishment.user?.name }} {{ establishment.user?.last_name }}</h3>
+                <p class="email">{{ establishment.user?.email }}</p>
               </div>
               <div class="status-badge">Pendiente</div>
             </div>
 
-            <div class="card-body" v-if="seller.food_establishment">
+            <div class="card-body">
               <div class="info-row">
                 <span class="info-label">Establecimiento</span>
-                <span class="info-value">{{ seller.food_establishment.name }}</span>
+                <span class="info-value">{{ establishment.name }}</span>
               </div>
-              <div class="info-row" v-if="seller.food_establishment.establishment_type">
+              <div class="info-row" v-if="establishment.address">
+                <span class="info-label">Dirección</span>
+                <span class="info-value">{{ establishment.address }}</span>
+              </div>
+              <div class="info-row" v-if="establishment.establishment_type">
                 <span class="info-label">Tipo</span>
-                <span class="info-value">{{ seller.food_establishment.establishment_type.name }}</span>
+                <span class="info-value">{{ establishment.establishment_type.name }}</span>
               </div>
-              <div class="info-row" v-if="seller.food_establishment.verification_status">
+              <div class="info-row">
                 <span class="info-label">Verificación</span>
-                <span class="verification-badge" :class="seller.food_establishment.verification_status">
-                  {{ seller.food_establishment.verification_status === 'pending' ? 'Pendiente' :
-                     seller.food_establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
+                <span class="verification-badge" :class="establishment.verification_status">
+                  {{ establishment.verification_status === 'pending' ? 'Pendiente' :
+                     establishment.verification_status === 'approved' ? 'Aprobado' : 'Rechazado' }}
                 </span>
               </div>
-              <div class="info-row" v-if="seller.food_establishment.google_place_id">
+              <div class="info-row" v-if="establishment.google_place_id">
                 <span class="info-label">Google Places</span>
-                <span class="info-value google-verified">
-                  ✓ Verificado
-                </span>
+                <span class="info-value">Verificado</span>
               </div>
             </div>
 
