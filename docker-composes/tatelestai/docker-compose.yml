@@ -1,0 +1,162 @@
+# =============================================================
+# Tatelestai – Docker Compose
+# Modo: development (por defecto)
+# Para producción: docker compose --profile production up -d
+# =============================================================
+
+services:
+
+  # ───────────────────────────────────────────
+  # Nginx – Proxy inverso para Laravel
+  # ───────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: tatelestai-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ../../Backend/example-app:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - tatelestai-network
+    depends_on:
+      php-fpm:
+        condition: service_started
+
+  # ───────────────────────────────────────────
+  # PHP-FPM – Backend Laravel
+  # ───────────────────────────────────────────
+  php-fpm:
+    build:
+      context: .
+      dockerfile: ./docker/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        XDEBUG_ENABLED: ${XDEBUG_ENABLED:-true}
+        XDEBUG_MODE: ${XDEBUG_MODE:-develop,coverage,debug,profile}
+        XDEBUG_HOST: ${XDEBUG_HOST:-host.docker.internal}
+        XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-DOCKER}
+        XDEBUG_LOG: ${XDEBUG_LOG:-/dev/stdout}
+        XDEBUG_LOG_LEVEL: ${XDEBUG_LOG_LEVEL:-0}
+    container_name: tatelestai-php-fpm
+    restart: unless-stopped
+    env_file:
+      # Variables de entorno de la aplicación Laravel
+      - ../../Backend/example-app/.env
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      # Código fuente montado para hot-reload en desarrollo
+      - ../../Backend/example-app:/var/www
+    networks:
+      - tatelestai-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      typesense:
+        condition: service_started
+
+  # ───────────────────────────────────────────
+  # Vue.js – Frontend (Vite dev server / Nginx prod)
+  # ───────────────────────────────────────────
+  vue:
+    build:
+      # Contexto principal: directorio del compose (para acceder a docker/node/nginx-spa.conf)
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+      # Cambiar a "production" para el build final (sin volúmenes montados)
+      target: ${FRONTEND_TARGET:-development}
+      additional_contexts:
+        # Contexto nombrado "frontend" usado en el Dockerfile con COPY --from=frontend
+        frontend: ../../Frontend/vue-project
+    container_name: tatelestai-vue
+    restart: unless-stopped
+    ports:
+      - "${VITE_PORT:-3000}:3000"
+    volumes:
+      # Monta el código fuente para HMR (solo útil en target=development)
+      # En producción: eliminar estos volúmenes o usar FRONTEND_TARGET=production
+      - ../../Frontend/vue-project:/app
+      # Evita sobreescribir node_modules del contenedor
+      - /app/node_modules
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+    networks:
+      - tatelestai-network
+
+  # ───────────────────────────────────────────
+  # PostgreSQL – Base de datos
+  # ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: tatelestai-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tatelestai_db}
+      POSTGRES_USER: ${POSTGRES_USER:-tatelestai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      # Carpeta física local — los datos son visibles en el proyecto
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tatelestai} -d ${POSTGRES_DB:-tatelestai_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tatelestai-network
+
+  # ───────────────────────────────────────────
+  # Typesense – Motor de búsqueda
+  # ───────────────────────────────────────────
+  typesense:
+    image: typesense/typesense:30.1
+    container_name: tatelestai-typesense
+    restart: unless-stopped
+    ports:
+      - "${TYPESENSE_PORT:-8108}:8108"
+    volumes:
+      # Carpeta física local — los datos son visibles en el proyecto
+      - ./data/typesense:/data
+    command: "--data-dir /data --api-key=${TYPESENSE_API_KEY:-xyz} --enable-cors"
+    networks:
+      - tatelestai-network
+
+  # ───────────────────────────────────────────
+  # Herramientas de desarrollo (perfil: tools)
+  # Uso: docker compose --profile tools run composer install
+  # ───────────────────────────────────────────
+  composer:
+    image: composer:latest
+    container_name: tatelestai-composer
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ../../Backend/example-app:/var/www
+    working_dir: /var/www
+    networks:
+      - tatelestai-network
+    entrypoint: [ "composer" ]
+    profiles:
+      - tools
+
+  npm:
+    image: node:22-alpine
+    container_name: tatelestai-npm
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ../../Frontend/vue-project:/app
+    working_dir: /app
+    networks:
+      - tatelestai-network
+    entrypoint: [ "npm" ]
+    profiles:
+      - tools
+
+networks:
+  tatelestai-network:
+    driver: bridge

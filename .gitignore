@@ -25,6 +25,7 @@ Backend/example-app/storage/framework/cache/*
 Backend/example-app/storage/framework/sessions/*
 Backend/example-app/storage/framework/views/*
 Backend/example-app/bootstrap/cache/*
+docker-composes/tatelestai/data/
 
 # Ignorar variables de entorno y archivos temporales
 Backend/example-app/.env
