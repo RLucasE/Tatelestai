@@ -10,6 +10,8 @@ use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\VerifyPurchaseDataFreshnessAction;
 use App\DTOs\PreparePurchaseDTO;
 use App\Events\PurchaseCompleted;
+use App\Http\Resources\SellResource;
+use App\Models\Sell;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,7 +68,7 @@ class CustomerSellController extends Controller
                 );
 
             });
-            $sell = \App\Models\Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
+            $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
                 ->find($sellResult['sell_id']);
 
             if ($sell) {
@@ -187,38 +189,15 @@ class CustomerSellController extends Controller
         try {
             $customerId = Auth::id();
 
-            $sells = \App\Models\Sell::with(['foodEstablishment', 'sellDetails.offer'])
+            $sells = Sell::with(['foodEstablishment', 'sellDetails.offer'])
                 ->where('bought_by', $customerId)
                 ->where('is_picked_up', true)
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $history = $sells->map(function ($sell) {
-                return [
-                    'sell_id' => $sell->id,
-                    'is_picked_up' => $sell->is_picked_up,
-                    'created_at' => $sell->created_at,
-                    'establishment' => [
-                        'id' => $sell->foodEstablishment->id,
-                        'name' => $sell->foodEstablishment->name,
-                        'address' => $sell->foodEstablishment->address,
-                    ],
-                    'offers' => $sell->sellDetails->map(function ($detail) {
-                        return [
-                            'offer_id' => $detail->offer_id,
-                            'offer_quantity' => $detail->offer_quantity,
-                            'product_name' => $detail->product_name,
-                            'product_description' => $detail->product_description,
-                            'product_quantity' => $detail->product_quantity,
-                            'product_price' => $detail->product_price,
-                        ];
-                    })->toArray(),
-                ];
-            });
-
             return response()->json([
                 'message' => 'Historial de compras obtenido exitosamente',
-                'data' => $history
+                'data' => SellResource::collection($sells)
             ], 200);
 
         } catch (Exception $exception) {
