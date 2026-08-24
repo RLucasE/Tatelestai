@@ -43,9 +43,9 @@ services:
         XDEBUG_LOG_LEVEL: ${XDEBUG_LOG_LEVEL:-0}
     container_name: tatelestai-php-fpm
     restart: unless-stopped
-    env_file:
+    #env_file:
       # Variables de entorno de la aplicación Laravel
-      - ../../Backend/example-app/.env
+      #- ../../Backend/example-app/.env
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       # Código fuente montado para hot-reload en desarrollo
