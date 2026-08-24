@@ -8,12 +8,14 @@ use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Events\PurchaseCompleted;
 use App\Models\User;
 use Carbon\Carbon;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -115,6 +117,8 @@ class CustomerSellControllerTest extends TestCase
     #[Test]
     public function it_can_buy_offers_successfully(): void
     {
+        Event::fake([PurchaseCompleted::class]);
+
         $this->actingAs($this->customer);
 
         // Primero preparar la compra
@@ -158,6 +162,12 @@ class CustomerSellControllerTest extends TestCase
         $this->assertDatabaseHas('sell_details', [
             'offer_id' => $this->offer->id,
         ]);
+
+        // Verificar que se disparó el evento de dominio PurchaseCompleted
+        Event::assertDispatched(PurchaseCompleted::class, function ($event) {
+            return $event->sell->bought_by === $this->customer->id
+                && $event->sell->sold_by === $this->establishment->id;
+        });
     }
 
     #[Test]

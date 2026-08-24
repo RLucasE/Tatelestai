@@ -7,6 +7,7 @@ beforeEach(function () {
 });
 
 test('new users can register via api', function () {
+    $this->withoutExceptionHandling();
     $payload = [
         'name' => 'Test',
         'last_name' => 'User',
@@ -16,12 +17,13 @@ test('new users can register via api', function () {
     ];
 
     $response = $this->postJson('/api/register', $payload);
-
     $response->assertStatus(201)
         ->assertJson([
             'satus' => 'success',
             'message' => 'User registered successfully',
         ]);
+
+    
 
     $this->assertDatabaseHas('users', [
         'email' => 'test@example.com',
