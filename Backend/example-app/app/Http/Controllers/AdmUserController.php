@@ -9,15 +9,14 @@ use App\Actions\IsSellerActivableAction;
 use App\DTOs\BasicUserDTO;
 use App\Enums\UserState;
 use App\Exports\DashboardExport;
-use App\Mail\SellerActivated;
-use App\Mail\SellerDeactivated;
-use App\Mail\SellerDenied;
+use App\Events\SellerActivated;
+use App\Events\SellerDeactivated;
+use App\Events\SellerDenied;
 use App\Models\EstablishmentVerificationFile;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Mail;
 
 class AdmUserController extends Controller
 {
@@ -49,8 +48,7 @@ class AdmUserController extends Controller
             if ($isSellerActivableAction->execute($basicUserDTO->id)) {
                 $updated = $this->userRepository->changeUserState($basicUserDTO, UserState::ACTIVE);
                 if ($updated) {
-                    // Enviar email de notificación al seller
-                    Mail::to($basicUserDTO->email)->send(new SellerActivated($basicUserDTO));
+                    SellerActivated::dispatch($basicUserDTO);
                 }
             }
         } catch (Exception $exception) {
@@ -76,7 +74,7 @@ class AdmUserController extends Controller
             if ($isDeactivableSellerAction->execute($user->id)) {
                 $changeUserStateAction->execute($user, UserState::INACTIVE);
                 $deactivateOffersAction->executeByUserId($user->id);
-                Mail::to($user->email)->send(new SellerDeactivated($user));
+                SellerDeactivated::dispatch($user);
             }
         } catch (Exception $exception) {
             return response()->json([
@@ -150,7 +148,7 @@ class AdmUserController extends Controller
         $user->state = UserState::REGISTERING;
         $user->save();
         $basicUserDTO = BasicUserDTO::fromModel($user);
-        Mail::to($user->email)->send(new SellerDenied($basicUserDTO));
+        SellerDenied::dispatch($basicUserDTO);
 
         return response()->json([
             'message' => 'Seller denegado correctamente.',
@@ -301,7 +299,7 @@ class AdmUserController extends Controller
                 $user->save();
 
                 // Send notification email
-                Mail::to($user->email)->send(new SellerActivated(BasicUserDTO::fromModel($user)));
+                SellerActivated::dispatch(BasicUserDTO::fromModel($user));
             }
 
             return response()->json([
@@ -367,7 +365,7 @@ class AdmUserController extends Controller
         try {
             $request = request();
             $request->validate([
-                'reason' => 'required|string|min=10|max=1000',
+                'reason' => 'required|string|min:10|max:1000',
             ]);
 
             $establishment = \App\Models\FoodEstablishment::findOrFail($id);
@@ -389,7 +387,7 @@ class AdmUserController extends Controller
                 $user->save();
 
                 // Send notification email
-                Mail::to($user->email)->send(new SellerDenied(BasicUserDTO::fromModel($user)));
+                SellerDenied::dispatch(BasicUserDTO::fromModel($user));
             }
 
             return response()->json([
