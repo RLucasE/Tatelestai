@@ -44,18 +44,48 @@ services:
     container_name: tatelestai-php-fpm
     restart: unless-stopped
     #env_file:
-      # Variables de entorno de la aplicación Laravel
-      #- ../../Backend/example-app/.env
+    # Variables de entorno de la aplicación Laravel
+    #- ../../Backend/example-app/.env
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       # Código fuente montado para hot-reload en desarrollo
       - ../../Backend/example-app:/var/www
+      - ./docker/php-fpm/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     networks:
       - tatelestai-network
     depends_on:
       postgres:
         condition: service_healthy
       typesense:
+        condition: service_started
+
+  # ───────────────────────────────────────────
+  # Queue Worker – Procesador de colas Laravel
+  # ───────────────────────────────────────────
+  queue:
+    build:
+      context: .
+      dockerfile: ./docker/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        XDEBUG_ENABLED: "false"
+    container_name: tatelestai-queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ../../Backend/example-app:/var/www
+      - ./docker/php-fpm/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    networks:
+      - tatelestai-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      typesense:
+        condition: service_started
+      php-fpm:
         condition: service_started
 
   # ───────────────────────────────────────────
