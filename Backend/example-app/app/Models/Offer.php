@@ -54,19 +54,25 @@ class Offer extends Model
         return $this->morphMany(Report::class, 'reportable');
     }
 
-    public function toSearchableArray(){
+    public function toSearchableArray(): array
+    {
         return [
-            'id' => (string)$this->id,
+            'id' => (string) $this->id,
             'title' => $this->title,
             'description' => $this->description,
-            'food_establishment' => $this->foodEstablishment->name,
+            'food_establishment' => $this->foodEstablishment?->name ?? '',
             'products' => implode(' ', $this->products->pluck('name')->toArray()),
             'product_descriptions' => implode(' ', $this->products->pluck('description')->toArray()),
-            'created_at' => $this->created_at->timestamp,
+            'created_at' => $this->created_at?->timestamp ?? now()->timestamp,
             'state' => $this->state,
             'expiration_datetime' => is_string($this->expiration_datetime)
                 ? strtotime($this->expiration_datetime)
                 : ($this->expiration_datetime ? $this->expiration_datetime->timestamp : null)
         ];
+    }
+
+    protected function makeAllSearchableUsing($query)
+    {
+        return $query->with(['products', 'foodEstablishment']);
     }
 }

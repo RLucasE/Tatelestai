@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Offers\Customer\GetCustomerOffersAction;
+use App\Actions\Offers\SearchOffersAction;
 use App\DTOs\OfferDTO;
 use App\DTOs\ProductOfferDTO;
 use App\Enums\OfferState;
+use App\Models\Offer;
+use App\Search\DTOs\SearchQueryDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Models\Offer;
 
 class OfferCustomerController extends Controller
 {
     public function __construct(
-        private GetCustomerOffersAction $getCustomerOffers
+        private readonly SearchOffersAction $searchOffersAction,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -21,32 +22,16 @@ class OfferCustomerController extends Controller
         $page = $request->get('page', 1);
         $perPage = 20; // Número de ofertas por página
 
-        // Si hay una query de búsqueda, usar Scout
+        // Si hay una query de búsqueda, usar el servicio de búsqueda
         if ($request->has('search') && !empty(trim($request->get('search')))) {
             $searchQuery = trim($request->get('search'));
-            $offers = Offer::search($searchQuery)
-                ->where('state', OfferState::ACTIVE->value)
-                ->get()
-                ->filter(function ($offer){
-                    return $offer->expiration_datetime >= now();
-                } )
-                ->forPage($page, $perPage)
-                ->load([
-                    'products' => function ($query) {
-                        $query->select(
-                            'products.id',
-                            'products.name',
-                            'products.description',
-                            'product_offers.price',
-                            'product_offers.quantity as product_quantity',
-                            'product_offers.offer_id',
-                            'product_offers.expiration_date'
-                        );
-                    },
-                    'foodEstablishment' => function ($query) {
-                        $query->select('id', 'name', 'address');
-                    }
-                ])
+            $searchQueryDTO = new SearchQueryDTO(
+                query: $searchQuery,
+                page: (int) $page,
+                perPage: $perPage,
+            );
+
+            $offers = $this->searchOffersAction->execute($searchQueryDTO)
                 ->map(function ($offer) {
                     return $this->transformOfferToDTO($offer);
                 });
@@ -55,7 +40,7 @@ class OfferCustomerController extends Controller
                 'data' => $offers->values()->toArray(),
                 'current_page' => (int) $page,
                 'per_page' => $perPage,
-                'has_more' => $offers->count() === $perPage
+                'has_more' => $offers->count() === $perPage,
             ]);
         }
 

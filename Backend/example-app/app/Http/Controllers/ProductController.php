@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Search\SearchServiceInterface;
+use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Product;
-use App\Models\FoodEstablishment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private readonly SearchServiceInterface $searchService,
+    ) {}
+
     public function store(Request $request)
     {
         $request->validate([
@@ -103,7 +108,7 @@ class ProductController extends Controller
             })->get();
 
             foreach ($offers as $offer) {
-                $offer->searchable();
+                $this->searchService->indexOffer($offer->id);
             }
 
             $product->save();
