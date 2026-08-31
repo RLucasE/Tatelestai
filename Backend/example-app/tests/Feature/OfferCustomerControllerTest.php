@@ -499,4 +499,113 @@ class OfferCustomerControllerTest extends TestCase
         $verifyingOfferFound = collect($responseData['data'])->contains('id', $verifyingOffer->id);
         $this->assertFalse($verifyingOfferFound, 'La oferta en estado VERIFYING no debería aparecer en los resultados de búsqueda');
     }
+
+    #[Test]
+    public function it_does_not_return_expired_offers_in_search_results(): void
+    {
+        $validOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(2),
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Delicious Pizza Active',
+            'description' => 'Active pizza'
+        ]);
+
+        $expiredOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->subDays(2),
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Delicious Pizza Expired',
+            'description' => 'Expired pizza'
+        ]);
+
+        $product = Product::factory()->create([
+            'food_establishment_id' => $this->establishment->id,
+        ]);
+
+        ProductOffer::create([
+            'offer_id' => $validOffer->id,
+            'product_id' => $product->id,
+            'price' => 10,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(10)
+        ]);
+
+        ProductOffer::create([
+            'offer_id' => $expiredOffer->id,
+            'product_id' => $product->id,
+            'price' => 10,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(10)
+        ]);
+
+        $validOffer->searchable();
+        $expiredOffer->searchable();
+
+        $response = $this->getJson('/api/offers?search=Pizza');
+
+        $response->assertStatus(200);
+        $responseData = $response->json();
+
+        $this->assertCount(1, $responseData['data']);
+        $this->assertEquals($validOffer->id, $responseData['data'][0]['id']);
+
+        $expiredFound = collect($responseData['data'])->contains('id', $expiredOffer->id);
+        $this->assertFalse($expiredFound, 'La oferta expirada no debería aparecer en los resultados de búsqueda');
+    }
+
+    #[Test]
+    public function it_handles_pagination_correctly_with_search(): void
+    {
+        $product = Product::factory()->create([
+            'food_establishment_id' => $this->establishment->id,
+        ]);
+
+        for ($i = 1; $i <= 25; $i++) {
+            $offer = Offer::factory()->create([
+                'state' => OfferState::ACTIVE->value,
+                'expiration_datetime' => now()->addDays(1),
+                'food_establishment_id' => $this->establishment->id,
+                'title' => "Tacos Batch $i",
+                'description' => "Description for taco $i"
+            ]);
+
+            ProductOffer::create([
+                'offer_id' => $offer->id,
+                'product_id' => $product->id,
+                'price' => 10,
+                'quantity' => 1,
+                'expiration_date' => now()->addDays(10)
+            ]);
+
+            $offer->searchable();
+        }
+
+        // Página 1 de la búsqueda
+        $responsePage1 = $this->getJson('/api/offers?search=Tacos&page=1');
+        $responsePage1->assertStatus(200)
+            ->assertJsonStructure([
+                'data',
+                'current_page',
+                'per_page',
+                'has_more'
+            ]);
+
+        $dataPage1 = $responsePage1->json();
+        $this->assertCount(20, $dataPage1['data']);
+        $this->assertEquals(1, $dataPage1['current_page']);
+        $this->assertEquals(20, $dataPage1['per_page']);
+        $this->assertTrue($dataPage1['has_more']);
+
+        // Página 2 de la búsqueda
+        $responsePage2 = $this->getJson('/api/offers?search=Tacos&page=2');
+        $responsePage2->assertStatus(200);
+
+        $dataPage2 = $responsePage2->json();
+        $this->assertCount(5, $dataPage2['data']);
+        $this->assertEquals(2, $dataPage2['current_page']);
+        $this->assertEquals(20, $dataPage2['per_page']);
+        $this->assertFalse($dataPage2['has_more']);
+    }
 }
+

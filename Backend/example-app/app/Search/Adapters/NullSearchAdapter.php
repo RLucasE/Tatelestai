@@ -18,8 +18,24 @@ class NullSearchAdapter implements SearchServiceInterface
         // No-op
     }
 
+    public function indexOffers(array $offerIds): void
+    {
+        // No-op
+    }
+
     public function removeOfferFromIndex(int $offerId): void
     {
         // No-op
     }
+
+    public function flushIndex(): void
+    {
+        // No-op
+    }
+
+    public function reindexAll(): void
+    {
+        // No-op
+    }
 }
+

@@ -11,5 +11,12 @@ interface SearchServiceInterface
 
     public function indexOffer(int $offerId): void;
 
+    public function indexOffers(array $offerIds): void;
+
     public function removeOfferFromIndex(int $offerId): void;
+
+    public function flushIndex(): void;
+
+    public function reindexAll(): void;
 }
+
