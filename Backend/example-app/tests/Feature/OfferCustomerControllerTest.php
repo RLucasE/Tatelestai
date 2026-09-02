@@ -607,5 +607,105 @@ class OfferCustomerControllerTest extends TestCase
         $this->assertEquals(20, $dataPage2['per_page']);
         $this->assertFalse($dataPage2['has_more']);
     }
+
+    #[Test]
+    public function it_can_search_offers_with_geolocation_and_radius(): void
+    {
+        $establishmentType = EstablishmentType::first();
+
+        // Establecimiento cercano (Obelisco CABA)
+        $sellerNear = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $nearEstablishment = FoodEstablishment::factory()->create([
+            'user_id' => $sellerNear->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.6037,
+            'longitude' => -58.3816,
+        ]);
+
+        // Establecimiento lejano (La Plata, ~55 km)
+        $sellerFar = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $farEstablishment = FoodEstablishment::factory()->create([
+            'user_id' => $sellerFar->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.9214,
+            'longitude' => -57.9545,
+        ]);
+
+        $nearOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(2),
+            'food_establishment_id' => $nearEstablishment->id,
+            'title' => 'Pizza Napolitana Cercana',
+            'description' => 'Pizza en CABA',
+        ]);
+
+        $productNear = Product::factory()->create([
+            'food_establishment_id' => $nearEstablishment->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $nearOffer->id,
+            'product_id' => $productNear->id,
+            'price' => 15,
+            'quantity' => 2,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $farOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(2),
+            'food_establishment_id' => $farEstablishment->id,
+            'title' => 'Pizza Fugazzeta Lejana',
+            'description' => 'Pizza en La Plata',
+        ]);
+
+        $productFar = Product::factory()->create([
+            'food_establishment_id' => $farEstablishment->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $farOffer->id,
+            'product_id' => $productFar->id,
+            'price' => 18,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $nearOffer->searchable();
+        $farOffer->searchable();
+
+        $response = $this->getJson('/api/offers?search=Pizza&lat=-34.6037&lng=-58.3816&radius=5');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'establishment_latitude',
+                        'establishment_longitude',
+                    ],
+                ],
+                'current_page',
+                'per_page',
+                'has_more',
+            ]);
+
+        $responseData = $response->json();
+
+        $this->assertTrue(
+            collect($responseData['data'])->contains('id', $nearOffer->id),
+            'La oferta cercana debe estar presente en los resultados'
+        );
+        $this->assertFalse(
+            collect($responseData['data'])->contains('id', $farOffer->id),
+            'La oferta lejana no debe estar presente en los resultados'
+        );
+
+        $foundOffer = collect($responseData['data'])->firstWhere('id', $nearOffer->id);
+        $this->assertEquals(-34.6037, (float) $foundOffer['establishment_latitude']);
+        $this->assertEquals(-58.3816, (float) $foundOffer['establishment_longitude']);
+    }
 }
 

@@ -33,20 +33,31 @@ class TypesenseSearchAdapter implements SearchServiceInterface
      */
     public function performSearch(SearchQueryDTO $query): Collection
     {
-        return Offer::search($query->query)
-            ->where('state', $query->state)
-            ->where('expiration_datetime', ['>=', now()->timestamp])
-            ->get()
-            ->filter(function ($offer) use ($query) {
-                return $offer->expiration_datetime >= now() && $offer->state === $query->state;
-            })
-            ->forPage($query->page, $query->perPage)
-            ->load([
-                'fullProducts',
-                'foodEstablishment' => function ($q) {
-                    $q->select('id', 'name', 'address');
-                },
-            ]);
+        $now = now()->timestamp;
+        $filterConditions = [
+            "state:={$query->state}",
+            "expiration_datetime:>={$now}",
+        ];
+
+        $options = [];
+
+        if ($query->hasGeoFilter()) {
+            $filterConditions[] = "_geoloc:({$query->latitude}, {$query->longitude}, {$query->radiusKm} km)";
+            $options['sort_by'] = "_geoloc({$query->latitude}, {$query->longitude}):asc";
+        }
+
+        $options['filter_by'] = implode(' && ', $filterConditions);
+
+        $paginator = Offer::search($query->query)
+            ->options($options)
+            ->paginate($query->perPage, 'page', $query->page);
+
+        $paginator->load([
+            'fullProducts',
+            'foodEstablishment' => fn($q) => $q->select('id', 'name', 'address', 'latitude', 'longitude'),
+        ]);
+
+        return $paginator->getCollection();
     }
 
     public function indexOffer(int $offerId): void

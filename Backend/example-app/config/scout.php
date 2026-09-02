@@ -221,7 +221,12 @@ return [
                         [
                             'name' => 'expiration_datetime',
                             'type' => 'int64',
-                        ]
+                        ],
+                        [
+                            'name' => '_geoloc',
+                            'type' => 'geopoint',
+                            'optional' => true,
+                        ],
                     ],
                     'default_sorting_field' => 'created_at',
                 ],

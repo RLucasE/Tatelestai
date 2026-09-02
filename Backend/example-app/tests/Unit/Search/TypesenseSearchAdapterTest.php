@@ -221,4 +221,169 @@ class TypesenseSearchAdapterTest extends TestCase
         $this->assertInstanceOf(Collection::class, $result);
         $this->assertTrue($result->isEmpty());
     }
+
+    #[Test]
+    public function it_searches_offers_within_a_given_geolocation_and_radius(): void
+    {
+        $establishmentType = EstablishmentType::first();
+
+        // Establecimiento A (cercano, Obelisco CABA: -34.6037, -58.3816)
+        $sellerA = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishmentA = FoodEstablishment::factory()->create([
+            'user_id' => $sellerA->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.6037,
+            'longitude' => -58.3816,
+        ]);
+
+        // Establecimiento B (lejano, La Plata: -34.9214, -57.9545, ~55 km)
+        $sellerB = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishmentB = FoodEstablishment::factory()->create([
+            'user_id' => $sellerB->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.9214,
+            'longitude' => -57.9545,
+        ]);
+
+        $offerA = Offer::factory()->create([
+            'food_establishment_id' => $establishmentA->id,
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(3),
+            'title' => 'Pizza Napolitana',
+            'description' => 'Deliciosa pizza napolitana',
+        ]);
+
+        $productA = Product::factory()->create([
+            'food_establishment_id' => $establishmentA->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $offerA->id,
+            'product_id' => $productA->id,
+            'price' => 15,
+            'quantity' => 2,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $offerB = Offer::factory()->create([
+            'food_establishment_id' => $establishmentB->id,
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(3),
+            'title' => 'Pizza Fugazzeta',
+            'description' => 'Deliciosa pizza fugazzeta',
+        ]);
+
+        $productB = Product::factory()->create([
+            'food_establishment_id' => $establishmentB->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $offerB->id,
+            'product_id' => $productB->id,
+            'price' => 18,
+            'quantity' => 3,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $offerA->searchable();
+        $offerB->searchable();
+
+        $query = new SearchQueryDTO(
+            query: 'Pizza',
+            latitude: -34.6037,
+            longitude: -58.3816,
+            radiusKm: 10.0,
+        );
+
+        $results = $this->adapter->searchOffers($query);
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertTrue($results->contains('id', $offerA->id), 'El resultado debe contener la oferta cercana A (dentro del radio)');
+        $this->assertFalse($results->contains('id', $offerB->id), 'El resultado NO debe contener la oferta lejana B (fuera del radio)');
+    }
+
+    #[Test]
+    public function it_orders_offers_by_distance_when_geofilter_is_applied(): void
+    {
+        $establishmentType = EstablishmentType::first();
+
+        // Punto de referencia: Obelisco (-34.6037, -58.3816)
+        // Establecimiento cercano (~1 km: delta latitud ~0.009)
+        $sellerNear = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishmentNear = FoodEstablishment::factory()->create([
+            'user_id' => $sellerNear->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.6127,
+            'longitude' => -58.3816,
+        ]);
+
+        // Establecimiento más lejano dentro del radio (~4 km: delta latitud ~0.036)
+        $sellerFar = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishmentFar = FoodEstablishment::factory()->create([
+            'user_id' => $sellerFar->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.6397,
+            'longitude' => -58.3816,
+        ]);
+
+        $offerFar = Offer::factory()->create([
+            'food_establishment_id' => $establishmentFar->id,
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(3),
+            'title' => 'Pizza Lejana',
+        ]);
+
+        $productFar = Product::factory()->create([
+            'food_establishment_id' => $establishmentFar->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $offerFar->id,
+            'product_id' => $productFar->id,
+            'price' => 12,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $offerNear = Offer::factory()->create([
+            'food_establishment_id' => $establishmentNear->id,
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(3),
+            'title' => 'Pizza Cercana',
+        ]);
+
+        $productNear = Product::factory()->create([
+            'food_establishment_id' => $establishmentNear->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $offerNear->id,
+            'product_id' => $productNear->id,
+            'price' => 14,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        // Indexamos primero la lejana para verificar que el orden responda a la distancia y no al orden de inserción
+        $offerFar->searchable();
+        $offerNear->searchable();
+
+        $query = new SearchQueryDTO(
+            query: 'Pizza',
+            latitude: -34.6037,
+            longitude: -58.3816,
+            radiusKm: 10.0,
+        );
+
+        $results = $this->adapter->searchOffers($query);
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertCount(2, $results);
+        $this->assertEquals($offerNear->id, $results->first()->id, 'La primera oferta devuelta debe ser la más cercana');
+        $this->assertEquals($offerFar->id, $results->last()->id, 'La última oferta devuelta debe ser la más lejana');
+    }
 }

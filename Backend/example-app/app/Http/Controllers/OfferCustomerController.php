@@ -29,6 +29,9 @@ class OfferCustomerController extends Controller
                 query: $searchQuery,
                 page: (int) $page,
                 perPage: $perPage,
+                latitude: $request->filled('lat') ? (float) $request->get('lat') : null,
+                longitude: $request->filled('lng') ? (float) $request->get('lng') : null,
+                radiusKm: $request->filled('radius') ? (float) $request->get('radius') : 5.0,
             );
 
             $offers = $this->searchOffersAction->execute($searchQueryDTO)
@@ -50,7 +53,7 @@ class OfferCustomerController extends Controller
             ->with([
                 'fullProducts',
                 'foodEstablishment' => function ($query) {
-                    $query->select('id', 'name', 'address');
+                    $query->select('id', 'name', 'address', 'latitude', 'longitude');
                 }
             ])
             ->paginate($perPage, ['*'], 'page', $page);
@@ -95,7 +98,9 @@ class OfferCustomerController extends Controller
                 establishment_name: $offer->foodEstablishment->name,
                 establishment_address: $offer->foodEstablishment->address,
                 food_establishment_id: $offer->food_establishment_id,
-                products: $productDTOs
+                products: $productDTOs,
+                establishment_latitude: $offer->foodEstablishment?->latitude !== null ? (float) $offer->foodEstablishment->latitude : null,
+                establishment_longitude: $offer->foodEstablishment?->longitude !== null ? (float) $offer->foodEstablishment->longitude : null,
             );
         }catch (\Exception $exception){
             throw new \Exception($exception->getMessage());

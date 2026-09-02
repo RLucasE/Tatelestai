@@ -16,5 +16,7 @@ class OfferDTO
         public readonly int $food_establishment_id,
         /** @var ProductOfferDTO[] */
         public readonly array $products,
+        public readonly ?float $establishment_latitude = null,
+        public readonly ?float $establishment_longitude = null,
     ) {}
 }

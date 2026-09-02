@@ -56,7 +56,7 @@ class Offer extends Model
 
     public function toSearchableArray(): array
     {
-        return [
+        $array = [
             'id' => (string) $this->id,
             'title' => $this->title,
             'description' => $this->description,
@@ -69,6 +69,15 @@ class Offer extends Model
                 ? strtotime($this->expiration_datetime)
                 : ($this->expiration_datetime ? $this->expiration_datetime->timestamp : null)
         ];
+
+        if ($this->foodEstablishment?->latitude !== null && $this->foodEstablishment?->longitude !== null) {
+            $array['_geoloc'] = [
+                (float) $this->foodEstablishment->latitude,
+                (float) $this->foodEstablishment->longitude,
+            ];
+        }
+
+        return $array;
     }
 
     protected function makeAllSearchableUsing($query)
