@@ -73,6 +73,7 @@ services:
         XDEBUG_ENABLED: "false"
     container_name: tatelestai-queue
     restart: unless-stopped
+    entrypoint: ["/usr/local/bin/worker-entrypoint.sh"]
     command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
     user: "${UID:-1000}:${GID:-1000}"
     volumes:

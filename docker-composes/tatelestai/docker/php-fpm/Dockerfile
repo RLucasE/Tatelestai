@@ -109,9 +109,10 @@ RUN sed -i "s/user = www-data/user = www/g" /usr/local/etc/php-fpm.d/www.conf &&
 # Set the working directory
 WORKDIR /var/www
 
-# Copy the entrypoint script
+# Copy the entrypoint scripts
 COPY ./docker/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY ./docker/php-fpm/worker-entrypoint.sh /usr/local/bin/worker-entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/worker-entrypoint.sh
 
 # Switch back to the non-privileged user to run the application
 USER www

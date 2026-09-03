@@ -19,10 +19,14 @@ RUN npm ci
 # ──────────────────────────────────────────────
 FROM base AS development
 
+COPY ./docker/node/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 COPY --from=frontend . .
 
 EXPOSE 3000
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 # --host 0.0.0.0 es necesario para que Vite sea accesible desde fuera del contenedor
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
