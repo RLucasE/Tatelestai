@@ -1,6 +1,10 @@
-# vue-project
+# Frontend (Vue.js + Vite) — Tatelestai
 
-This template should help get you started developing with Vue 3 in Vite.
+> **Entorno de desarrollo Docker:** En Tatelestai este frontend se ejecuta automáticamente en el contenedor `tatelestai-vue` en el puerto `3000`. Al levantar el proyecto con `docker compose up -d`, las dependencias de NPM se instalan o actualizan de forma automática.
+>
+> Consulta la guía principal en [QUICKSTART.md](../../QUICKSTART.md) y [README.md](../../README.md).
+
+---
 
 ## Recommended IDE Setup
 

@@ -1,3 +1,11 @@
+# Backend API (Laravel 12) — Tatelestai
+
+> **Entorno de desarrollo Docker:** En Tatelestai este backend corre dentro del contenedor `tatelestai-php-fpm` (PHP 8.3) comunicado con `tatelestai-nginx` en el puerto `8000`. Al iniciar con `docker compose up -d`, las dependencias de Composer, la variable `APP_KEY`, el symlink de `storage` y los permisos se configuran de manera **100% automática**.
+>
+> Para el flujo completo de desarrollo, consulta [QUICKSTART.md](../../QUICKSTART.md) y la documentación oficial en [`/docs`](../../docs/).
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

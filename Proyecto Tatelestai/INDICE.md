@@ -4,7 +4,7 @@
 
 ---
 
-## 🎯 Plan de Trabajo
+## Plan de Trabajo
 
 * **[Roadmap de Desarrollo y Aprendizaje](./ROADMAP.md)**: Plan estructurado por fases temáticas e hitos para aprender, auditar y aplicar cada concepto técnico junto con las nuevas features.
 

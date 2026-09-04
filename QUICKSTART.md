@@ -1,17 +1,17 @@
-# 🚀 Quickstart — Tatelestai
+# Quickstart — Tatelestai
 
 Esta guía documenta el paso a paso para levantar el entorno de desarrollo completo de **Tatelestai** utilizando Docker Compose.
 
 ---
 
-## 📋 Requisitos Previos
+## Requisitos Previos
 
 * [Git](https://git-scm.com/)
 * [Docker](https://docs.docker.com/get-docker/) y [Docker Compose v2](https://docs.docker.com/compose/)
 
 ---
 
-## 🛠️ Servicios incluidos
+## Servicios incluidos
 
 | Servicio | Contenedor | Puerto Host | Descripción |
 |---|---|---|---|
@@ -24,7 +24,7 @@ Esta guía documenta el paso a paso para levantar el entorno de desarrollo compl
 
 ---
 
-## 👣 Paso a Paso
+## Paso a Paso
 
 ### 1. Clonar el repositorio
 
@@ -37,9 +37,9 @@ cd Tatelestai
 
 ### 2. Configurar variables de entorno
 
-El proyecto cuenta con dos archivos `.env` principales. Para una explicación detallada de cada variable (Gmail SMTP, Google Maps, Postgres, Typesense), consulta el [Tutorial de Variables de Entorno](docs/tutorials/configuracion-variables-entorno.md).
+El proyecto cuenta con dos archivos `.env`. Para una explicación detallada de cada variable (Gmail SMTP, Google Maps, Postgres, Typesense), consulta el [Tutorial de Variables de Entorno](docs/tutorials/configuracion-variables-entorno.md).
 
-#### A. Entorno de Docker Compose
+#### A. Entorno de Docker Compose (Requerido)
 Copiar la plantilla de Docker Compose:
 ```bash
 cp docker-composes/tatelestai/.env.example docker-composes/tatelestai/.env
@@ -47,13 +47,13 @@ cp docker-composes/tatelestai/.env.example docker-composes/tatelestai/.env
 
 > **Nota para Linux:** Asegúrate de que `UID` y `GID` en `docker-composes/tatelestai/.env` coincidan con tu usuario host (`id -u` e `id -g`, usualmente `1000`) para evitar problemas de permisos en las carpetas montadas.
 
-#### B. Entorno del Backend (Laravel)
-Copiar la plantilla de Laravel:
+#### B. Entorno del Backend (Laravel) *(Opcional)*
+Si deseas personalizar variables antes de arrancar, puedes copiar la plantilla de Laravel:
 ```bash
 cp Backend/example-app/.env.example Backend/example-app/.env
 ```
 
-*(Si no copias este archivo manualmente, Docker lo creará de forma automática al iniciar a partir de `.env.example`).*
+*(Si omites este paso, el entrypoint de Docker lo creará de forma **100% automática** al arrancar a partir de `.env.example`).*
 
 Los valores por defecto ya vienen configurados para conectarse a los servicios de Docker:
 * `DB_HOST=postgres`
@@ -76,13 +76,15 @@ cd docker-composes/tatelestai
 docker compose up -d --build
 ```
 
-> ⚡ **Automatizaciones incluidas al arrancar:**
+> **Automatizaciones incluidas al arrancar:**
 > Al levantar los contenedores, Docker realiza automáticamente:
-> 1. **Dependencias de PHP / Laravel:** Ejecuta `composer install` si falta la carpeta `vendor` o si cambiaron las dependencias.
-> 2. **Clave de aplicación (`APP_KEY`):** Genera la clave con `php artisan key:generate` si aún no existe en `.env`.
-> 3. **Dependencias de Vue / Frontend:** Ejecuta `npm install` dentro del contenedor si falta `node_modules` o si cambió el `package.json`, e inicia el servidor Vite (`npm run dev`).
-> 4. **Permisos de almacenamiento:** Configura permisos en las carpetas `storage` y `bootstrap/cache`.
-> 5. **Enlace de Storage (`storage:link`):** Configura automáticamente el enlace simbólico de archivos públicos (`public/storage`) si no existe o está roto.
+> 1. **Aprovisionamiento de entorno:** Crea `Backend/example-app/.env` si no existía.
+> 2. **Dependencias de PHP / Laravel:** Ejecuta `composer install` si falta la carpeta `vendor` o si cambiaron las dependencias (`composer.json`/`composer.lock`).
+> 3. **Clave de aplicación (`APP_KEY`):** Genera la clave con `php artisan key:generate --force` si aún no existe en `.env`.
+> 4. **Dependencias de Vue / Frontend:** Ejecuta `npm install` dentro del contenedor si falta `node_modules` o si cambió el `package.json`, e inicia el servidor Vite con HMR (`npm run dev`).
+> 5. **Permisos de almacenamiento:** Crea las carpetas y configura permisos `775`/`664` en `storage` y `bootstrap/cache`.
+> 6. **Enlace de Storage (`storage:link`):** Configura automáticamente el enlace simbólico de archivos públicos (`public/storage`) si no existe o está roto.
+> 7. **Sincronización de Worker:** El contenedor `queue` espera a que `php-fpm` termine el `composer install` y a que PostgreSQL esté listo antes de procesar tareas.
 
 Verifica que todos los contenedores estén corriendo y saludables:
 ```bash
@@ -91,15 +93,15 @@ docker compose ps
 
 ---
 
-### 4. Inicializar Base de Datos (Migraciones y Seeders)
+### 4. Inicializar Base de Datos y Búsqueda (Migraciones y Seeders)
 
-Con los contenedores activos, ejecuta las migraciones y datos de prueba dentro del contenedor `php-fpm`:
+Con los contenedores activos, ejecuta las migraciones y datos de prueba desde cualquier carpeta utilizando el nombre del contenedor `tatelestai-php-fpm`:
 
 ```bash
-docker compose exec php-fpm php artisan migrate --seed
+docker exec -it tatelestai-php-fpm php artisan migrate --seed
 ```
 
-> ⚠️ **Importante:** Este comando es **obligatorio en el primer inicio**. Crea todas las tablas necesarias en PostgreSQL (incluyendo sesiones, usuarios, productos y ofertas) y las indexa en Typesense. Si intentas acceder a la aplicación antes de ejecutar las migraciones, verás un error del tipo `relation "sessions" does not exist`.
+> **Importante:** Este comando es **el único paso manual necesario en el primer inicio**. Crea todas las tablas en PostgreSQL (sesiones, usuarios, comercios, productos y ofertas) y **los seeders indexan automáticamente todas las ofertas en Typesense** (`Offer::makeAllSearchable()`). No requieres ejecutar `scout:import` manualmente.
 
 ---
 
@@ -107,42 +109,43 @@ docker compose exec php-fpm php artisan migrate --seed
 
 Una vez completados los pasos anteriores, puedes acceder a:
 
-* 🌐 **Frontend (Vue 3 / Vite)**: [http://localhost:3000](http://localhost:3000)
-* ⚙️ **Backend API (Laravel)**: [http://localhost:8000/api](http://localhost:8000/api)
-* 🔍 **Typesense Health Check**: [http://localhost:8108/health](http://localhost:8108/health)
-* 🗄️ **PostgreSQL**: `localhost:5432` (Usuario: `tatelestai`, Password: `secret`, BD: `tatelestai_db`)
+* **Frontend (Vue 3 / Vite)**: [http://localhost:3000](http://localhost:3000)
+* **Backend API (Laravel)**: [http://localhost:8000/api](http://localhost:8000/api)
+* **Typesense Health Check**: [http://localhost:8108/health](http://localhost:8108/health)
+* **PostgreSQL**: `localhost:5432` (Usuario: `tatelestai`, Password: `secret`, BD: `tatelestai_db`)
 
 ---
 
-## 🛠️ Comandos Útiles
+## Comandos Útiles
 
-* **Levantar los servicios (en el día a día):**
+> **Ventaja de usar el nombre del contenedor:** Los comandos con `docker exec -it` funcionan desde **cualquier directorio de tu terminal**, sin necesidad de ingresar a la carpeta `docker-composes/tatelestai`.
+
+* **Ejecutar comandos artisan:**
+  ```bash
+  docker exec -it tatelestai-php-fpm php artisan <comando>
+  ```
+* **Ejecutar Composer:**
+  ```bash
+  docker exec -it tatelestai-php-fpm composer <comando>
+  ```
+* **Acceder a la terminal de los contenedores:**
+  ```bash
+  docker exec -it tatelestai-php-fpm bash
+  docker exec -it tatelestai-vue sh
+  ```
+* **Refrescar la base de datos completa con datos de prueba:**
+  ```bash
+  docker exec -it tatelestai-php-fpm php artisan migrate:fresh --seed
+  ```
+* **Levantar o detener los servicios (requiere estar en el directorio de compose):**
   ```bash
   cd docker-composes/tatelestai
   docker compose up -d
-  ```
-* **Detener los servicios:**
-  ```bash
   docker compose down
   ```
 * **Ver logs en tiempo real:**
   ```bash
-  docker compose logs -f
-  # o de un servicio específico:
-  docker compose logs -f php-fpm
-  docker compose logs -f vue
-  docker compose logs -f queue
-  ```
-* **Ejecutar comandos artisan:**
-  ```bash
-  docker compose exec php-fpm php artisan <comando>
-  ```
-* **Acceder a la terminal de un contenedor:**
-  ```bash
-  docker compose exec php-fpm bash
-  docker compose exec vue sh
-  ```
-* **Refrescar la base de datos completa con datos de prueba:**
-  ```bash
-  docker compose exec php-fpm php artisan migrate:fresh --seed
+  docker logs -f tatelestai-php-fpm
+  docker logs -f tatelestai-vue
+  docker logs -f tatelestai-queue
   ```

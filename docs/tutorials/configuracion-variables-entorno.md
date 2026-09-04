@@ -1,11 +1,11 @@
-# 🔐 Tutorial: Configuración de Variables de Entorno (.env)
+# Tutorial: Configuración de Variables de Entorno (.env)
 
 > **Tipo**: Tutorial / Guía Práctica  
 > **Objetivo**: Configurar correctamente las variables de entorno de **Docker Compose** y **Laravel** para el proyecto Tatelestai, entendiendo el propósito de cada servicio y credencial (Base de datos, Typesense, Gmail SMTP y Google APIs).
 
 ---
 
-## 📌 Visión General de la Arquitectura de Variables
+## Visión General de la Arquitectura de Variables
 
 El proyecto Tatelestai utiliza **dos archivos `.env` independientes** que trabajan de forma sincronizada:
 
@@ -29,7 +29,7 @@ flowchart LR
 
 ---
 
-##  Configuración Paso a Paso
+## Configuración Paso a Paso
 
 Sigue las siguientes secciones para preparar tus archivos de entorno a partir de las plantillas `.env.example`:
 
@@ -101,7 +101,7 @@ DB_DATABASE=tatelestai_db
 DB_USERNAME=tatelestai
 DB_PASSWORD=secret
 ```
-> ⚠️ **Importante**: `DB_HOST` debe ser `postgres` (el nombre del servicio en Docker Compose). No pongas `127.0.0.1` ni `localhost` aquí, porque dentro de la red del contenedor, `localhost` sería el propio contenedor PHP-FPM y no el de Postgres.
+> **Importante**: `DB_HOST` debe ser `postgres` (el nombre del servicio en Docker Compose). No pongas `127.0.0.1` ni `localhost` aquí, porque dentro de la red del contenedor, `localhost` sería el propio contenedor PHP-FPM y no el de Postgres.
 
 #### 2.3 Sesión, Sanctum y CORS (Conexión con Vue 3)
 ```env
@@ -179,7 +179,7 @@ GOOGLE_MAPS_API_KEY=tu_api_key_aqui
 
 ---
 
-## 🔍 Checklist de Verificación de Variables
+## Checklist de Verificación de Variables
 
 Antes de iniciar la aplicación con Docker, confirma:
 

@@ -4,21 +4,21 @@ Basado en el análisis de separación entre **Lógica de Negocio**, **Infraestru
 
 ---
 
-## 📊 Diagnóstico General
+## Diagnóstico General
 
 | Aspecto                         | Estado Actual                                    | Meta Arquitectónica                                |
 | ------------------------------- | ------------------------------------------------ | -------------------------------------------------- |
 | **Separación de Lógica**        | Gran parte en Actions (buen inicio)              | 100% de reglas de negocio en Actions/Dominio       |
-| **Dirección de Dependencias**   | ⚠️ Algunas Actions dependen de Controllers       | Capa de Dominio totalmente aislada de la capa HTTP |
-| **Entrada de Datos en Actions** | ⚠️ Algunas Actions reciben `Request $request`    | Actions reciben únicamente DTOs o tipos primitivos |
-| **Autenticación en Actions**    | ⚠️ Uso de `Auth::id()` dentro de Actions         | `$userId` inyectado explícitamente como parámetro  |
+| **Dirección de Dependencias**   | Algunas Actions dependen de Controllers          | Capa de Dominio totalmente aislada de la capa HTTP |
+| **Entrada de Datos en Actions** | Algunas Actions reciben `Request $request`       | Actions reciben únicamente DTOs o tipos primitivos |
+| **Autenticación en Actions**    | Uso de `Auth::id()` dentro de Actions            | `$userId` inyectado explícitamente como parámetro  |
 | **Servicios Externos**          | Servicios acoplados a implementaciones concretas | Abstracción con Interfaces (Contracts)             |
 | **Manejo de Errores**           | Mezcla de `Exception` genéricas y custom         | Excepciones de dominio tipadas y centralizadas     |
 | **Efectos Secundarios**         | Emails síncronos dentro del flujo de la petición | Eventos de dominio + Listeners en cola (Queues)    |
 
 ---
 
-## 🎯 Lista de Tareas Priorizada
+## Lista de Tareas Priorizada
 
 ```mermaid
 flowchart TD
@@ -29,7 +29,7 @@ flowchart TD
 
 ---
 
-## 🔴 FASE 1: Correcciones Críticas de Capas (Inversión de Dependencias)
+## FASE 1: Correcciones Críticas de Capas (Inversión de Dependencias)
 
 Son errores que rompen el principio de responsabilidad única y acoplan el dominio a la infraestructura web.
 
@@ -60,7 +60,7 @@ Son errores que rompen el principio de responsabilidad única y acoplan el domin
 
 ---
 
-## 🟡 FASE 2: Desacoplamiento y Limpieza de Controllers
+## FASE 2: Desacoplamiento y Limpieza de Controllers
 
 Los Controllers deben ser "delgados" (*skinny controllers*): recibir peticiones, llamar a la Action y devolver una respuesta.
 
@@ -80,11 +80,11 @@ Los Controllers deben ser "delgados" (*skinny controllers*): recibir peticiones,
 - **Flujo objetivo:**
   ```
   HTTP Request 
-    ➔ Form Request (Validación de tipos y formatos)
-    ➔ DTO (Datos fuertemente tipados)
-    ➔ Action (Reglas de negocio y transacciones)
-    ➔ API Resource (Transformación y serialización JSON)
-    ➔ HTTP Response
+    -> Form Request (Validación de tipos y formatos)
+    -> DTO (Datos fuertemente tipados)
+    -> Action (Reglas de negocio y transacciones)
+    -> API Resource (Transformación y serialización JSON)
+    -> HTTP Response
   ```
 - **Tareas:**
   - [ ] Crear Form Requests para endpoints que todavía usan `$request->validate([...])` inline.
@@ -92,7 +92,7 @@ Los Controllers deben ser "delgados" (*skinny controllers*): recibir peticiones,
 
 ---
 
-## 🔵 FASE 3: Infraestructura, Servicios Externos y Configuración
+## FASE 3: Infraestructura, Servicios Externos y Configuración
 
 ### 3.1 Corregir uso de `env()` en `GmailService`
 - **Archivo:** `app/Services/GmailService.php`
@@ -115,14 +115,14 @@ Los Controllers deben ser "delgados" (*skinny controllers*): recibir peticiones,
 
 ---
 
-## 🟢 FASE 4: Estandarización, Excepciones y Eventos de Dominio
+## FASE 4: Estandarización, Excepciones y Eventos de Dominio
 
 ### 4.1 Corregir Nombres de Archivos (PSR-12 / PascalCase)
 - **Problema:** Existen Actions con nombre en camelCase en lugar de PascalCase.
 - **Tareas:**
-  - [ ] Renombrar `app/Actions/Sell/makeSellAction.php` ➔ `MakeSellAction.php`.
-  - [ ] Renombrar `app/Actions/Sell/getCustomerSellsAction.php` ➔ `GetCustomerSellsAction.php`.
-  - [ ] Renombrar `app/Actions/Sell/getSellerSellAction.php` ➔ `GetSellerSellAction.php`.
+  - [ ] Renombrar `app/Actions/Sell/makeSellAction.php` -> `MakeSellAction.php`.
+  - [ ] Renombrar `app/Actions/Sell/getCustomerSellsAction.php` -> `GetCustomerSellsAction.php`.
+  - [ ] Renombrar `app/Actions/Sell/getSellerSellAction.php` -> `GetSellerSellAction.php`.
   - [ ] Actualizar imports y referencias en los controllers y tests.
 
 ### 4.2 Crear Excepciones de Dominio Específicas
@@ -143,11 +143,11 @@ Los Controllers deben ser "delgados" (*skinny controllers*): recibir peticiones,
 
 ---
 
-## 📋 Resumen del Roadmap
+## Resumen del Roadmap
 
 | Fase | Dificultad | Impacto | Estado |
 |---|---|---|---|
-| **Fase 1: Correcciones Críticas de Capas** | Media | 🔴 Alto (elimina acoplamiento grave) | Pendiente |
-| **Fase 2: Desacoplamiento de Controllers** | Media | 🟡 Medio-Alto (código limpio y testeable) | Pendiente |
-| **Fase 3: Infraestructura y Servicios** | Baja | 🟡 Medio (previene bugs en producción y mejora testing) | Pendiente |
-| **Fase 4: Estandarización y Eventos** | Baja | 🟢 Medio (consistencia y rendimiento) | Pendiente |
+| **Fase 1: Correcciones Críticas de Capas** | Media | Alto (elimina acoplamiento grave) | Pendiente |
+| **Fase 2: Desacoplamiento de Controllers** | Media | Medio-Alto (código limpio y testeable) | Pendiente |
+| **Fase 3: Infraestructura y Servicios** | Baja | Medio (previene bugs en producción y mejora testing) | Pendiente |
+| **Fase 4: Estandarización y Eventos** | Baja | Medio (consistencia y rendimiento) | Pendiente |
