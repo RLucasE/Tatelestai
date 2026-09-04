@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class SellDetail extends Model
 {
     protected $guarded = ['id'];
+
     use HasFactory;
-    public function offer() {
+
+    public function offer()
+    {
         return $this->belongsTo(Offer::class);
     }
 }

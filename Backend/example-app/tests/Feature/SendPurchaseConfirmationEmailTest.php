@@ -23,8 +23,11 @@ class SendPurchaseConfirmationEmailTest extends TestCase
     use RefreshDatabase;
 
     protected User $customer;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
+
     protected Sell $sell;
 
     protected function setUp(): void
@@ -114,4 +117,3 @@ class SendPurchaseConfirmationEmailTest extends TestCase
         });
     }
 }
-

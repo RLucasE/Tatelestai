@@ -24,7 +24,9 @@ class ProductControllerTest extends TestCase
     use RefreshDatabase;
 
     protected User $seller;
+
     protected FoodEstablishment $establishment;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -47,7 +49,7 @@ class ProductControllerTest extends TestCase
         $this->product = Product::factory()->create([
             'food_establishment_id' => $this->establishment->id,
             'name' => 'Original Product',
-            'description' => 'Original Description'
+            'description' => 'Original Description',
         ]);
 
         $this->actingAs($this->seller);
@@ -67,7 +69,7 @@ class ProductControllerTest extends TestCase
             'product_id' => $this->product->id,
             'price' => 15,
             'quantity' => 2,
-            'expiration_date' => now()->addDays(5)
+            'expiration_date' => now()->addDays(5),
         ]);
 
         $searchServiceMock = Mockery::mock(SearchServiceInterface::class);
@@ -89,7 +91,7 @@ class ProductControllerTest extends TestCase
                     'id' => $this->product->id,
                     'name' => 'Updated Product Name',
                     'description' => 'Updated Product Description',
-                ]
+                ],
             ]);
 
         $this->assertDatabaseHas('products', [

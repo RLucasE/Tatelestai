@@ -10,9 +10,6 @@ class ValidateCustomerOwnershipAction
     /**
      * Valida que el customer autenticado es el dueño de la compra
      *
-     * @param string $sellNumber
-     * @param int $customerId
-     * @return Sell
      * @throws Exception
      */
     public function execute(string $sellNumber, int $customerId): Sell
@@ -22,7 +19,7 @@ class ValidateCustomerOwnershipAction
             ->first();
 
         // Verificar si existe la venta
-        if (!$sell) {
+        if (! $sell) {
             throw new Exception('Compra no encontrada', 404);
         }
 
@@ -34,4 +31,3 @@ class ValidateCustomerOwnershipAction
         return $sell;
     }
 }
-

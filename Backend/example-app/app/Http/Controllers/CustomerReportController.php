@@ -24,9 +24,6 @@ class CustomerReportController extends Controller
 
     /**
      * Crear un nuevo reporte (Offer o FoodEstablishment)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function store(Request $request): JsonResponse
     {
@@ -54,9 +51,9 @@ class CustomerReportController extends Controller
                 default => false,
             };
 
-            if (!$exists) {
+            if (! $exists) {
                 return response()->json([
-                    'error' => 'The element you are trying to report does not exist'
+                    'error' => 'The element you are trying to report does not exist',
                 ], 404);
             }
 
@@ -77,37 +74,35 @@ class CustomerReportController extends Controller
                     'reason' => $report->reason->label(),
                     'status' => $report->status->label(),
                     'created_at' => $report->created_at,
-                ]
+                ],
             ], 201);
 
         } catch (DuplicateReportException $e) {
             return response()->json([
-                'error' => 'You have already reported this element'
+                'error' => 'You have already reported this element',
             ], 409);
 
         } catch (ReportableNotFoundException $e) {
             return response()->json([
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 404);
 
         } catch (Exception $e) {
             return response()->json([
                 'error' => 'An error occurred while creating the report',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Obtener los reportes del usuario autenticado
-     *
-     * @return JsonResponse
      */
     public function myReports(): JsonResponse
     {
         try {
             $reports = $this->getReportsAction->execute([
-                'reported_by' => Auth::id()
+                'reported_by' => Auth::id(),
             ]);
 
             $formattedReports = $reports->map(function ($report) {
@@ -126,26 +121,23 @@ class CustomerReportController extends Controller
             });
 
             return response()->json([
-                'data' => $formattedReports
+                'data' => $formattedReports,
             ], 200);
 
         } catch (Exception $e) {
             return response()->json([
                 'error' => 'An error occurred while fetching reports',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Obtener el nombre de la entidad reportada
-     *
-     * @param $report
-     * @return string
      */
     private function getReportableName($report): string
     {
-        if (!$report->reportable) {
+        if (! $report->reportable) {
             return 'N/A';
         }
 
@@ -156,4 +148,3 @@ class CustomerReportController extends Controller
         };
     }
 }
-

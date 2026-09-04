@@ -11,9 +11,6 @@ class ValidateCompleteSellAction
     /**
      * Valida que la venta exista, no esté completada y pertenezca al establecimiento del usuario autenticado
      *
-     * @param string $sellNumber
-     * @param int $userId
-     * @return Sell
      * @throws Exception
      */
     public function execute(string $sellNumber, int $userId): Sell
@@ -22,13 +19,13 @@ class ValidateCompleteSellAction
             ->where('is_picked_up', false)
             ->first();
 
-        if (!$sell) {
+        if (! $sell) {
             throw new Exception('Venta no encontrada', 404);
         }
 
         $establishment = FoodEstablishment::where('user_id', $userId)->first();
 
-        if (!$establishment) {
+        if (! $establishment) {
             throw new Exception('Establecimiento no encontrado', 404);
         }
 

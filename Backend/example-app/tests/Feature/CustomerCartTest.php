@@ -250,4 +250,3 @@ test('customer cart shows expired offers with expiration datetime in the past', 
     $returnedExpiration = Carbon::parse($item['offer_expiration_datetime']);
     expect($returnedExpiration->lt(Carbon::now()))->toBeTrue();
 });
-

@@ -10,8 +10,8 @@ class ValidateOfferExpirationFromDTOAction
     /**
      * Valida si las ofertas están vencidas basándose en un array de PrepareOfferDTO
      *
-     * @param PrepareOfferDTO[] $offerDTOs
-     * @return bool
+     * @param  PrepareOfferDTO[]  $offerDTOs
+     *
      * @throws \Exception
      */
     public function execute(array $offerDTOs): bool
@@ -21,7 +21,7 @@ class ValidateOfferExpirationFromDTOAction
         }
 
         // Extraer los IDs de las ofertas
-        $offerIds = array_map(fn($dto) => $dto->id, $offerDTOs);
+        $offerIds = array_map(fn ($dto) => $dto->id, $offerDTOs);
 
         // Consultar las ofertas con sus fechas de expiración
         $offers = Offer::whereIn('id', $offerIds)
@@ -33,7 +33,7 @@ class ValidateOfferExpirationFromDTOAction
         foreach ($offerDTOs as $offerDTO) {
             $offer = $offers->get($offerDTO->id);
 
-            if (!$offer) {
+            if (! $offer) {
                 throw new \Exception("La oferta con ID {$offerDTO->id} no existe");
             }
 
@@ -41,7 +41,7 @@ class ValidateOfferExpirationFromDTOAction
                 throw new \Exception("La oferta '{$offerDTO->title}' está expirada");
             }
 
-            if(!$offer->expiration_datetime) {
+            if (! $offer->expiration_datetime) {
                 throw new \Exception("La oferta '{$offerDTO->title}' no tiene fecha de expiración");
             }
         }

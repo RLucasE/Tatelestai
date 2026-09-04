@@ -38,4 +38,3 @@ class NullSearchAdapter implements SearchServiceInterface
         // No-op
     }
 }
-

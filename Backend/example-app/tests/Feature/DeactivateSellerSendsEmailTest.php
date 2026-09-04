@@ -21,6 +21,7 @@ class DeactivateSellerSendsEmailTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $seller;
 
     protected function setUp(): void
@@ -45,7 +46,7 @@ class DeactivateSellerSendsEmailTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        $response = $this->patchJson('/api/users/' . $this->seller->id . '/deactivate-seller');
+        $response = $this->patchJson('/api/users/'.$this->seller->id.'/deactivate-seller');
 
         $response->assertStatus(200);
 
@@ -62,7 +63,7 @@ class DeactivateSellerSendsEmailTest extends TestCase
 
         $dto = BasicUserDTO::fromModel($this->seller);
         $event = new SellerDeactivated($dto);
-        $listener = new SendSellerDeactivatedEmail();
+        $listener = new SendSellerDeactivatedEmail;
 
         $listener->handle($event);
 
@@ -79,7 +80,7 @@ class DeactivateSellerSendsEmailTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        $response = $this->patchJson('/api/users/' . $this->seller->id . '/deactivate-seller');
+        $response = $this->patchJson('/api/users/'.$this->seller->id.'/deactivate-seller');
 
         $response->assertStatus(200);
 

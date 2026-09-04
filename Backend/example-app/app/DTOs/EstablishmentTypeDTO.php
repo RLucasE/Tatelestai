@@ -8,13 +8,11 @@ use Illuminate\Http\Request;
 class EstablishmentTypeDTO
 {
     public function __construct(
-        public readonly int     $id,
-        public readonly string  $name,
-        public readonly string  $slug,
+        public readonly int $id,
+        public readonly string $name,
+        public readonly string $slug,
         public readonly ?string $description,
-    )
-    {
-    }
+    ) {}
 
     public function fromRequest(Request $request): self
     {

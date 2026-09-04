@@ -3,10 +3,10 @@
 namespace App\Actions;
 
 use App\DTOs\BasicUserDTO;
-use App\Enums\UserState;
 use App\Enums\OfferState;
-use App\Models\User;
+use App\Enums\UserState;
 use App\Models\Offer;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -17,9 +17,6 @@ class DeactivateSellerAndOffersAction
     /**
      * Deactivate seller and all their active offers
      *
-     * @param BasicUserDTO $user
-     * @param UserState $userState
-     * @return bool
      * @throws \Exception
      */
     public function execute(BasicUserDTO $user, UserState $userState): bool
@@ -36,7 +33,6 @@ class DeactivateSellerAndOffersAction
                 $offers = Offer::where('food_establishment_id', $foodEstablishment->id)
                     ->where('state', OfferState::ACTIVE->value)
                     ->update(['state' => OfferState::INACTIVE->value]);
-
 
                 return true;
             });

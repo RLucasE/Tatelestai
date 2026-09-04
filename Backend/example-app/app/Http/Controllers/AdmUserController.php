@@ -8,10 +8,10 @@ use App\Actions\IsDeactivableSellerAction;
 use App\Actions\IsSellerActivableAction;
 use App\DTOs\BasicUserDTO;
 use App\Enums\UserState;
-use App\Exports\DashboardExport;
 use App\Events\SellerActivated;
 use App\Events\SellerDeactivated;
 use App\Events\SellerDenied;
+use App\Exports\DashboardExport;
 use App\Models\EstablishmentVerificationFile;
 use App\Models\User;
 use App\Repositories\UserRepository;
@@ -323,10 +323,10 @@ class AdmUserController extends Controller
         $file = EstablishmentVerificationFile::findOrFail($fileId);
 
         // Get the full path to the file in private storage
-        $fullPath = storage_path('app/private/' . $file->file_path);
+        $fullPath = storage_path('app/private/'.$file->file_path);
 
         // Check if file exists
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             return response()->json([
                 'message' => 'Archivo no encontrado',
             ], 404);
@@ -349,11 +349,11 @@ class AdmUserController extends Controller
         // For images, serve inline for viewing
         // For PDFs, serve as attachment for download
         $disposition = $extension === 'pdf' ? 'attachment' : 'inline';
-        $filename = $file->file_type . '.' . $extension;
+        $filename = $file->file_type.'.'.$extension;
 
         return response()->file($fullPath, [
             'Content-Type' => $contentType,
-            'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
+            'Content-Disposition' => $disposition.'; filename="'.$filename.'"',
         ]);
     }
 

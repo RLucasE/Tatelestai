@@ -2,8 +2,8 @@
 
 namespace App\Actions\Cart;
 
-use App\Models\User;
 use App\Http\Controllers\CartController;
+use App\Models\User;
 
 class AssignFirstCartAction
 {
@@ -17,7 +17,7 @@ class AssignFirstCartAction
     public function handle(User $user)
     {
         $cart = $this->cartController->getLastActiveCart($user);
-        if (!$cart) {
+        if (! $cart) {
             $cart = $this->cartController->newCart($user);
         }
 

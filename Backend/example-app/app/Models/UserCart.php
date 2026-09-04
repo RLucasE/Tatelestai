@@ -8,7 +8,6 @@ class UserCart extends Model
 {
     protected $guarded = ['id'];
 
-
     public function offerCarts()
     {
         return $this->hasMany(OfferCart::class);

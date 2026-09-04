@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\FoodEstablishment;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class FoodEstablishmentSeeder extends Seeder
@@ -16,12 +15,12 @@ class FoodEstablishmentSeeder extends Seeder
     {
         //
         FoodEstablishment::factory()->create([
-            'user_id' =>User::where('email','seller@gmail.com')->first()->id,
+            'user_id' => User::where('email', 'seller@gmail.com')->first()->id,
             'establishment_type_id' => 1,
         ]);
 
         FoodEstablishment::factory()->create([
-            'user_id' =>User::where('email','seller2@gmail.com')->first()->id,
+            'user_id' => User::where('email', 'seller2@gmail.com')->first()->id,
             'establishment_type_id' => 2,
         ]);
     }

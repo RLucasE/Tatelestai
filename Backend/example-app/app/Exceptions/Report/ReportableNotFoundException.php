@@ -7,10 +7,11 @@ use Exception;
 class ReportableNotFoundException extends Exception
 {
     protected $reportableType;
+
     protected $reportableId;
 
     public function __construct(
-        $message = "The element to report does not exist",
+        $message = 'The element to report does not exist',
         $code = 404,
         $reportableType = null,
         $reportableId = null
@@ -33,4 +34,3 @@ class ReportableNotFoundException extends Exception
         ];
     }
 }
-

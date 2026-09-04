@@ -19,4 +19,3 @@ interface SearchServiceInterface
 
     public function reindexAll(): void;
 }
-

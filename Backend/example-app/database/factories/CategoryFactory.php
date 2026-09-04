@@ -19,7 +19,7 @@ class CategoryFactory extends Factory
         return [
             //
             'category_name' => $this->faker->word(),
-            'parent_id' => null
+            'parent_id' => null,
         ];
     }
 }

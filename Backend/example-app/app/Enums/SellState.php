@@ -13,7 +13,7 @@ enum SellState: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::PENDING => 'Pendiente',
             self::CONFIRMED => 'Confirmado',
             self::READY => 'Listo para retirar',
@@ -28,4 +28,3 @@ enum SellState: string
         return array_column(self::cases(), 'value');
     }
 }
-

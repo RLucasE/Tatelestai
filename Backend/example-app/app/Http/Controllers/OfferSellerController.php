@@ -2,21 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Offers\GetUserOffersAction;
+use App\Actions\Offers\CreateOfferAction;
 use App\Actions\Offers\GetOfferAction;
-use App\Actions\Offers\ValidateOfferOwnershipAction;
+use App\Actions\Offers\GetUserOffersAction;
 use App\Actions\Offers\ValidateExpirationDatesAction;
+use App\Actions\Offers\ValidateOfferOwnershipAction;
+use App\Actions\Offers\ValidateProductOwnershipAction;
 use App\DTOs\CreateNewOfferDTO;
-use App\DTOs\PrepareOfferDTO;
 use App\Enums\OfferState;
-use App\Models\Offer;
+use App\Exceptions\Offer\InvalidExpirationDateException;
+use App\Exceptions\Product\ProductOwnershipException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Actions\Offers\ValidateProductOwnershipAction;
-use App\Actions\Offers\CreateOfferAction;
-use App\Exceptions\Product\ProductOwnershipException;
-use App\Exceptions\Offer\InvalidExpirationDateException;
-use Illuminate\Http\Response;
 
 class OfferSellerController extends OfferController
 {
@@ -28,6 +25,7 @@ class OfferSellerController extends OfferController
         private CreateOfferAction $createOfferAction,
         private ValidateExpirationDatesAction $validateExpirationDatesAction
     ) {}
+
     public function store(Request $request)
     {
         $request->validate($this->getOfferValidationRules());
@@ -73,16 +71,15 @@ class OfferSellerController extends OfferController
         );
     }
 
-
     public function offer($offerID)
     {
         $offer = $this->getOffer->execute($offerID);
-        if (!$offer) {
+        if (! $offer) {
             return response()->json([
-                'message' => 'Oferta no encontrada'
+                'message' => 'Oferta no encontrada',
             ], 404);
         }
-        if (!$this->validateOfferOwnership->execute($offer, Auth::user())) {
+        if (! $this->validateOfferOwnership->execute($offer, Auth::user())) {
             return response()->json([
                 'message' => 'No tienes permiso para acceder a esta oferta',
             ], 403);
@@ -102,24 +99,25 @@ class OfferSellerController extends OfferController
     {
         try {
             $offer = $this->getOffer->execute($offerID);
-            !$this->validateOfferOwnership->execute($offer, Auth::user());
-        }catch (ProductOwnershipException $e) {
+            ! $this->validateOfferOwnership->execute($offer, Auth::user());
+        } catch (ProductOwnershipException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
                 'product_ids' => $e->context()['product_ids'],
                 'establishment_id' => $e->context()['establishment_id'],
                 'error' => $e->context()['error'],
             ], $e->getCode());
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
-                $e
+                $e,
             ], 404);
         }
 
         $offer->state = OfferState::INACTIVE;
         $offer->save();
+
         return response()->json([
-            'message' => 'Oferta eliminada correctamente'
+            'message' => 'Oferta eliminada correctamente',
         ], 200);
     }
 }

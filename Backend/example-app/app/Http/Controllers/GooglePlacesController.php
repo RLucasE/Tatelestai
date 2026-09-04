@@ -35,7 +35,7 @@ class GooglePlacesController extends Controller
         if ($results['status'] === 'error') {
             return response()->json([
                 'message' => 'Error al buscar lugares',
-                'results' => []
+                'results' => [],
             ], 500);
         }
 
@@ -52,7 +52,7 @@ class GooglePlacesController extends Controller
         if ($details['status'] === 'error' || $details['status'] !== 'OK') {
             return response()->json([
                 'message' => 'No se pudo obtener información del lugar',
-                'error' => $details['status'] ?? 'UNKNOWN_ERROR'
+                'error' => $details['status'] ?? 'UNKNOWN_ERROR',
             ], 404);
         }
 
@@ -79,11 +79,10 @@ class GooglePlacesController extends Controller
         if ($results['status'] === 'error') {
             return response()->json([
                 'message' => 'Error en autocompletado',
-                'predictions' => []
+                'predictions' => [],
             ], 500);
         }
 
         return response()->json($results);
     }
 }
-

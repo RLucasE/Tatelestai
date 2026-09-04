@@ -10,7 +10,7 @@ class OfferIsFromFoodEstablishmentAction
     /**
      * @param array|Collection
      * @param int
-     * @return boolean
+     *
      * @throws \Exception
      */
     public function execute(array|Collection $offers, int $establishmentId): bool
@@ -22,6 +22,6 @@ class OfferIsFromFoodEstablishmentAction
             ->where('food_establishment_id', $establishmentId)
             ->count();
 
-        return $offersCount === $offers->count() ? true : throw new \Exception("Esos productos no pertenecen a ese establecimiento");
+        return $offersCount === $offers->count() ? true : throw new \Exception('Esos productos no pertenecen a ese establecimiento');
     }
 }

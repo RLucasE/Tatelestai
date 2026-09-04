@@ -22,13 +22,13 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
-        $this->app->instance(RegisterResponse::class, new class implements
-            RegisterResponse {
+        $this->app->instance(RegisterResponse::class, new class implements RegisterResponse
+        {
             public function toResponse($request)
             {
                 return response()->json([
                     'satus' => 'success',
-                    'message' => 'User registered successfully'
+                    'message' => 'User registered successfully',
                 ], 201);
             }
         });
@@ -45,7 +45,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())) . '|' . $request->ip());
+            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });

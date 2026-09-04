@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Sell\ValidatePickupCodeAction;
 use App\Actions\Sell\ValidateCompleteSellAction;
-use App\Actions\Sell\ValidatePickupCodeFromSellAction;
 use App\Actions\Sell\ValidateMaxPickupDatetimeAction;
+use App\Actions\Sell\ValidatePickupCodeAction;
+use App\Actions\Sell\ValidatePickupCodeFromSellAction;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use Exception;
@@ -16,12 +16,10 @@ class SellerSellController extends Controller
 {
     public function __construct(
         private readonly ValidateCompleteSellAction $validateCompleteSellAction,
-        private readonly ValidatePickupCodeAction   $validatePickupCodeAction,
+        private readonly ValidatePickupCodeAction $validatePickupCodeAction,
         private readonly ValidatePickupCodeFromSellAction $validatePickupCodeFromSellAction,
         private readonly ValidateMaxPickupDatetimeAction $validateMaxPickupDatetimeAction,
-    )
-    {
-    }
+    ) {}
 
     public function sellerSells(Request $request)
     {
@@ -57,9 +55,9 @@ class SellerSellController extends Controller
                                 'quantity' => $detail->offer->quantity,
                                 'is_active' => $detail->offer->is_active,
                                 'expiration_datetime' => $detail->offer->expiration_datetime,
-                            ] : null
+                            ] : null,
                         ];
-                    })
+                    }),
                 ];
             });
 
@@ -107,18 +105,19 @@ class SellerSellController extends Controller
                     ],
                     'offers' => $offers,
                     'created_at' => $sell->created_at,
-                ]
+                ],
             ], 200);
 
         } catch (Exception $exception) {
             $statusCode = $exception->getCode() ?: 400;
+
             return response()->json([
-                'error' => $exception->getMessage()
+                'error' => $exception->getMessage(),
             ], $statusCode);
         }
     }
 
-    public function completeSell(Request $request,string $sellNumber)
+    public function completeSell(Request $request, string $sellNumber)
     {
         $validatedRequest = $request->validate([
             'pick_up_code' => 'required|string',
@@ -134,16 +133,18 @@ class SellerSellController extends Controller
                     'picked_up_at' => now(),
                 ]
             );
+
             return response()->json([
                 'message' => 'Venta completada exitosamente',
                 'data' => [
                     'sell_id' => $validatedSell->id,
                     'is_picked_up' => $validatedSell->is_picked_up,
                     'picked_up_at' => $validatedSell->picked_up_at,
-                ]
+                ],
             ], 200);
         } catch (Exception $exception) {
             $statusCode = $exception->getCode() ?: 500;
+
             return response()->json([
                 'error' => $exception->getMessage(),
             ], $statusCode);

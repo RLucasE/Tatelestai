@@ -10,16 +10,13 @@ class ValidatePickupCodeFromSellAction
     /**
      * Valida que el código de pickup coincida con el de la venta
      *
-     * @param int $sellId
-     * @param string $pickupCode
-     * @return Sell
      * @throws Exception
      */
     public function execute(int $sellId, string $pickupCode): Sell
     {
         $sell = Sell::find($sellId);
 
-        if (!$sell) {
+        if (! $sell) {
             throw new Exception('Venta no encontrada', 404);
         }
 
@@ -30,4 +27,3 @@ class ValidatePickupCodeFromSellAction
         return $sell;
     }
 }
-

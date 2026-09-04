@@ -16,7 +16,7 @@ enum ReportReason: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::INAPPROPRIATE => 'Inappropriate Content',
             self::FRAUD => 'Fraud',
             self::FALSE_INFORMATION => 'False Information',
@@ -34,4 +34,3 @@ enum ReportReason: string
         return array_column(self::cases(), 'value');
     }
 }
-

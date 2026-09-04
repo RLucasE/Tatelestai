@@ -4,7 +4,6 @@ namespace App\Actions\Sell;
 
 use App\DTOs\PreparePurchaseDTO;
 use App\Models\Sell;
-use Illuminate\Support\Str;
 
 class GeneratePickupCodeAction
 {
@@ -16,9 +15,9 @@ class GeneratePickupCodeAction
      * - Usa caracteres seguros (sin ambigüedades: sin 0, O, I, 1, etc.)
      * - Garantiza unicidad verificando contra la base de datos
      *
-     * @param int $userId ID del usuario comprador (no usado en el código)
-     * @param int $establishmentId ID del establecimiento vendedor (no usado en el código)
-     * @param PreparePurchaseDTO $preparePurchaseDTO Datos de la compra (no usado en el código)
+     * @param  int  $userId  ID del usuario comprador (no usado en el código)
+     * @param  int  $establishmentId  ID del establecimiento vendedor (no usado en el código)
+     * @param  PreparePurchaseDTO  $preparePurchaseDTO  Datos de la compra (no usado en el código)
      * @return string Código de pickup único
      */
     public function execute(int $userId, int $establishmentId, PreparePurchaseDTO $preparePurchaseDTO): string
@@ -42,8 +41,8 @@ class GeneratePickupCodeAction
     /**
      * Genera un segmento aleatorio de caracteres seguros
      *
-     * @param int $length Longitud del segmento
-     * @param string $characters Caracteres permitidos
+     * @param  int  $length  Longitud del segmento
+     * @param  string  $characters  Caracteres permitidos
      * @return string Segmento aleatorio
      */
     private function generateRandomSegment(int $length, string $characters): string

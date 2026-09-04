@@ -11,7 +11,7 @@ enum ReportStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::PENDING => 'Pending',
             self::REVIEWING => 'Reviewing',
             self::RESOLVED => 'Resolved',
@@ -24,4 +24,3 @@ enum ReportStatus: string
         return array_column(self::cases(), 'value');
     }
 }
-

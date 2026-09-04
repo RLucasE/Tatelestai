@@ -4,11 +4,11 @@ namespace Database\Factories;
 
 use App\Actions\Sell\GeneratePickupCodeAction;
 use App\DTOs\PreparePurchaseDTO;
+use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use App\Models\User;
-use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -47,7 +47,7 @@ class SellFactory extends Factory
             $createdAt = $this->faker->dateTimeBetween('-1 month', $pickedUpAt);
         }
 
-        $generatePickupCodeAction = new GeneratePickupCodeAction();
+        $generatePickupCodeAction = new GeneratePickupCodeAction;
         $mockDTO = new PreparePurchaseDTO(
             food_establishment_id: $establishment->id,
             offers: [],
@@ -73,8 +73,7 @@ class SellFactory extends Factory
     /**
      * Create sell with details (SellDetail records)
      *
-     * @param int $count Number of sell details to create
-     * @return static
+     * @param  int  $count  Number of sell details to create
      */
     public function withDetails(int $count = 3): static
     {

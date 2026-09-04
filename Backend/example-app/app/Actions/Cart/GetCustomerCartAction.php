@@ -2,9 +2,9 @@
 
 namespace App\Actions\Cart;
 
+use App\Http\Controllers\CartController;
 use App\Models\OfferCart;
 use App\Models\User;
-use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Auth;
 
 class GetCustomerCartAction
@@ -21,11 +21,11 @@ class GetCustomerCartAction
         $user = $user ?? Auth::user();
         $cart = $this->cartController->getLastActiveCart($user);
 
-        if (!$cart) {
+        if (! $cart) {
             return null;
         }
 
-        $offers = OfferCart::with(['offer.fullProducts', 'offer','offer.foodEstablishment'])
+        $offers = OfferCart::with(['offer.fullProducts', 'offer', 'offer.foodEstablishment'])
             ->where('user_cart_id', $cart->id)
             ->orderByDesc('created_at')
             ->get()
@@ -52,7 +52,6 @@ class GetCustomerCartAction
                     })->toArray(),
                 ];
             });
-
 
         return $offers->groupBy('establishment_id')->values();
     }

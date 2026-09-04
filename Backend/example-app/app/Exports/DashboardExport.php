@@ -10,8 +10,11 @@ class DashboardExport implements WithMultipleSheets
     use Exportable;
 
     protected $userStats;
+
     protected $lastSells;
+
     protected $activeOffers;
+
     protected $expiringOffers;
 
     public function __construct($userStats, $lastSells, $activeOffers, $expiringOffers)

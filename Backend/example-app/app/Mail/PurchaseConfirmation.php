@@ -11,9 +11,7 @@ class PurchaseConfirmation extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Sell $sell)
-    {
-    }
+    public function __construct(public Sell $sell) {}
 
     public function build(): self
     {
@@ -24,4 +22,3 @@ class PurchaseConfirmation extends Mailable
             ]);
     }
 }
-

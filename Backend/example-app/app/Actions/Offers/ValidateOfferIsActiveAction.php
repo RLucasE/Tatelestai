@@ -11,8 +11,8 @@ class ValidateOfferIsActiveAction
     /**
      * Valida si las ofertas están activas basándose en un array de PrepareOfferDTO
      *
-     * @param PrepareOfferDTO[] $offerDTOs
-     * @return bool
+     * @param  PrepareOfferDTO[]  $offerDTOs
+     *
      * @throws \Exception
      */
     public function execute(array $offerDTOs): bool
@@ -22,7 +22,7 @@ class ValidateOfferIsActiveAction
         }
 
         // Extraer los IDs de las ofertas
-        $offerIds = array_map(fn($dto) => $dto->id, $offerDTOs);
+        $offerIds = array_map(fn ($dto) => $dto->id, $offerDTOs);
 
         // Consultar las ofertas con sus estados
         $offers = Offer::whereIn('id', $offerIds)
@@ -34,7 +34,7 @@ class ValidateOfferIsActiveAction
         foreach ($offerDTOs as $offerDTO) {
             $offer = $offers->get($offerDTO->id);
 
-            if (!$offer) {
+            if (! $offer) {
                 throw new \Exception("La oferta con ID {$offerDTO->id} no existe");
             }
 

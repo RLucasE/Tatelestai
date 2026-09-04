@@ -12,14 +12,12 @@ class VerifyPurchaseDataFreshnessAction
      * Verifica que los datos en el DTO coincidan con los datos actuales en la base de datos
      * para evitar discrepancias entre lo que el usuario confirmó y lo que realmente está disponible.
      *
-     * @param PreparePurchaseDTO $preparePurchaseDTO
-     * @return bool
      * @throws Exception Si hay discrepancias entre los datos
      */
     public function execute(PreparePurchaseDTO $preparePurchaseDTO): bool
     {
         // Recolectar todos los IDs de ofertas para hacer una sola consulta
-        $offerIds = array_map(fn($offer) => $offer->id, $preparePurchaseDTO->offers);
+        $offerIds = array_map(fn ($offer) => $offer->id, $preparePurchaseDTO->offers);
 
         // Obtener las ofertas actualizadas desde la base de datos
         $currentOffers = Offer::with(['products'])
@@ -32,22 +30,22 @@ class VerifyPurchaseDataFreshnessAction
             $currentOffer = $currentOffers->get($offerDTO->id);
 
             // Verificar si la oferta aún existe
-            if (!$currentOffer) {
+            if (! $currentOffer) {
                 throw new Exception("La oferta '{$offerDTO->title}' ya no está disponible.");
             }
 
             // Verificar si el título o descripción han cambiado
             if ($currentOffer->title !== $offerDTO->title) {
-                throw new Exception("El título de la oferta ha cambiado. Por favor, actualiza tu carrito.");
+                throw new Exception('El título de la oferta ha cambiado. Por favor, actualiza tu carrito.');
             }
 
             if ($currentOffer->description !== $offerDTO->description) {
-                throw new Exception("La descripción de la oferta ha cambiado. Por favor, actualiza tu carrito.");
+                throw new Exception('La descripción de la oferta ha cambiado. Por favor, actualiza tu carrito.');
             }
 
             // Verificar si la oferta sigue perteneciendo al mismo establecimiento
             if ($currentOffer->food_establishment_id != $preparePurchaseDTO->food_establishment_id) {
-                throw new Exception("La oferta ya no pertenece al mismo establecimiento. Por favor, actualiza tu carrito.");
+                throw new Exception('La oferta ya no pertenece al mismo establecimiento. Por favor, actualiza tu carrito.');
             }
 
             // Verificar productos
@@ -56,18 +54,18 @@ class VerifyPurchaseDataFreshnessAction
             // Crear un mapa de productos del DTO por nombre y descripción para comparación
             $dtoProductsMap = [];
             foreach ($offerDTO->products as $productDTO) {
-                $key = md5($productDTO->name . '|' . $productDTO->description);
+                $key = md5($productDTO->name.'|'.$productDTO->description);
                 $dtoProductsMap[$key] = $productDTO;
             }
 
             // Crear un mapa similar para los productos actuales
             $currentProductsMap = [];
             foreach ($currentOffer->products as $product) {
-                $key = md5($product->name . '|' . ($product->description ?? ''));
+                $key = md5($product->name.'|'.($product->description ?? ''));
                 $currentProductsMap[$key] = [
                     'product' => $product,
                     'price' => (float) $product->pivot->price,
-                    'quantity' => (int) $product->pivot->quantity
+                    'quantity' => (int) $product->pivot->quantity,
                 ];
             }
 

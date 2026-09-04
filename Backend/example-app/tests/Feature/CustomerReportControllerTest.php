@@ -27,8 +27,11 @@ class CustomerReportControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $customer;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
+
     protected Offer $offer;
 
     protected function setUp(): void
@@ -89,7 +92,6 @@ class CustomerReportControllerTest extends TestCase
 
         $response = $this->postJson('/api/customer/reports', $reportData);
 
-
         $response->assertStatus(201)
             ->assertJsonStructure([
                 'message',
@@ -100,7 +102,7 @@ class CustomerReportControllerTest extends TestCase
                     'reason',
                     'status',
                     'created_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Report created successfully',
@@ -109,7 +111,7 @@ class CustomerReportControllerTest extends TestCase
                     'reportable_id' => $this->offer->id,
                     'reason' => ReportReason::INAPPROPRIATE->label(),
                     'status' => ReportStatus::PENDING->label(),
-                ]
+                ],
             ]);
 
         // Verificar que el reporte existe en la base de datos
@@ -145,7 +147,7 @@ class CustomerReportControllerTest extends TestCase
                     'reason',
                     'status',
                     'created_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Report created successfully',
@@ -154,7 +156,7 @@ class CustomerReportControllerTest extends TestCase
                     'reportable_id' => $this->establishment->id,
                     'reason' => ReportReason::HYGIENE_ISSUES->label(),
                     'status' => ReportStatus::PENDING->label(),
-                ]
+                ],
             ]);
 
         // Verificar que el reporte existe en la base de datos
@@ -193,7 +195,7 @@ class CustomerReportControllerTest extends TestCase
 
         $response->assertStatus(409)
             ->assertJson([
-                'error' => 'You have already reported this element'
+                'error' => 'You have already reported this element',
             ]);
     }
 
@@ -211,7 +213,7 @@ class CustomerReportControllerTest extends TestCase
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'The element you are trying to report does not exist'
+                'error' => 'The element you are trying to report does not exist',
             ]);
     }
 
@@ -229,7 +231,7 @@ class CustomerReportControllerTest extends TestCase
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'The element you are trying to report does not exist'
+                'error' => 'The element you are trying to report does not exist',
             ]);
     }
 
@@ -244,7 +246,6 @@ class CustomerReportControllerTest extends TestCase
         ];
 
         $response = $this->postJson('/api/customer/reports', $reportData);
-
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['reportable_type']);
@@ -308,7 +309,7 @@ class CustomerReportControllerTest extends TestCase
                 'reportable_type',
                 'reportable_id',
                 'reason',
-                'description'
+                'description',
             ]);
     }
 
@@ -435,7 +436,7 @@ class CustomerReportControllerTest extends TestCase
                     'message' => 'Report created successfully',
                     'data' => [
                         'reason' => $reason->label(),
-                    ]
+                    ],
                 ]);
         }
 
@@ -443,4 +444,3 @@ class CustomerReportControllerTest extends TestCase
         $this->assertDatabaseCount('reports', count($reasons));
     }
 }
-

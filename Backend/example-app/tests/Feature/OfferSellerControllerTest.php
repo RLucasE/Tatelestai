@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\EstablishmentType;
-use App\Models\User;
-use App\Models\Product;
 use App\Models\FoodEstablishment;
+use App\Models\Product;
+use App\Models\User;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +20,9 @@ class OfferSellerControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $seller;
+
     protected FoodEstablishment $establishment;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -62,16 +64,15 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 2,
                     'price' => 250,
                     'expirationDate' => now()->addDays(5)->format('Y-m-d'),
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $validData);
 
-
         $response->assertStatus(201)
             ->assertJson([
-                'message' => 'Oferta creada exitosamente'
+                'message' => 'Oferta creada exitosamente',
             ])
             ->assertJsonStructure([
                 'message',
@@ -81,8 +82,8 @@ class OfferSellerControllerTest extends TestCase
                     'description',
                     'quantity',
                     'expiration_datetime',
-                    'food_establishment_id'
-                ]
+                    'food_establishment_id',
+                ],
             ]);
 
         $this->assertDatabaseHas('offers', [
@@ -99,7 +100,6 @@ class OfferSellerControllerTest extends TestCase
         ]);
     }
 
-
     #[Test]
     public function it_can_not_store_offer_with_product_date_before_offer_date(): void
     {
@@ -115,15 +115,15 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 3,
                     'price' => 133,
                     'expirationDate' => now()->addDays(2)->format('Y-m-d'),
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $invalidData);
 
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'La fecha de expiración del producto no puede ser posterior a la fecha de expiración de la oferta'
+                'message' => 'La fecha de expiración del producto no puede ser posterior a la fecha de expiración de la oferta',
             ])
             ->assertJsonStructure([
                 'message',
@@ -131,8 +131,8 @@ class OfferSellerControllerTest extends TestCase
                     'offer_expiration_date',
                     'product_expiration_date',
                     'product_id',
-                    'error'
-                ]
+                    'error',
+                ],
             ]);
     }
 
@@ -152,15 +152,15 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 2,
                     'price' => 100,
                     'expirationDate' => now()->addDays(7)->format('Y-m-d'), // Producto vence en 7 días (después que la oferta)
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $validData);
 
         $response->assertStatus(201)
             ->assertJson([
-                'message' => 'Oferta creada exitosamente'
+                'message' => 'Oferta creada exitosamente',
             ]);
 
         // Verificar que se creó la oferta en la base de datos
@@ -186,23 +186,22 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 1,
                     'price' => 300,
                     'expirationDate' => now()->addDays(1)->format('Y-m-d'),
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $pastDateData);
 
-
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'La fecha de expiración de la oferta debe ser mayor a la fecha actual'
+                'message' => 'La fecha de expiración de la oferta debe ser mayor a la fecha actual',
             ])
             ->assertJsonStructure([
                 'message',
                 'context' => [
                     'offer_expiration_date',
-                    'error'
-                ]
+                    'error',
+                ],
             ]);
 
         // Caso 2: Fecha de producto menor a la fecha de oferta (producto vence antes)
@@ -218,15 +217,15 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 1,
                     'price' => 300,
                     'expirationDate' => now()->addDays(2)->format('Y-m-d'),
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $productDateBeforeOfferData);
 
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'La fecha de expiración del producto no puede ser posterior a la fecha de expiración de la oferta'
+                'message' => 'La fecha de expiración del producto no puede ser posterior a la fecha de expiración de la oferta',
             ])
             ->assertJsonStructure([
                 'message',
@@ -234,8 +233,8 @@ class OfferSellerControllerTest extends TestCase
                     'offer_expiration_date',
                     'product_expiration_date',
                     'product_id',
-                    'error'
-                ]
+                    'error',
+                ],
             ]);
     }
 
@@ -254,13 +253,11 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 1,
                     'price' => 300,
                     'expirationDate' => now()->addDays(1)->format('Y-m-d'),
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $noOfferDateData);
-
-
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['expiration_date']);
@@ -277,12 +274,11 @@ class OfferSellerControllerTest extends TestCase
                     'id' => $this->product->id,
                     'quantity' => 1,
                     'price' => 300,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $noProductDateData);
-
 
         $response->assertStatus(422);
     }
@@ -305,7 +301,7 @@ class OfferSellerControllerTest extends TestCase
                 'title',
                 'expiration_date',
                 'quantity',
-                'products'
+                'products',
             ]);
     }
 
@@ -338,13 +334,12 @@ class OfferSellerControllerTest extends TestCase
                     'quantity' => 1,
                     'price' => 300,
                     'expirationDate' => now()->addDays(1)->format('Y-m-d'),
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/offer', $invalidData);
 
         $response->assertStatus(422);
     }
-
 }

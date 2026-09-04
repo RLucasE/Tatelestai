@@ -7,7 +7,9 @@ use App\Exports\DashboardExport;
 class DashboardExportController extends Controller
 {
     protected $sellController;
+
     protected $admOfferController;
+
     protected $admUserController;
 
     public function __construct(
@@ -33,7 +35,7 @@ class DashboardExportController extends Controller
             $userStatsData = json_decode($userStatsResponse->getContent(), true);
             $userStats = [
                 'total' => $userStatsData['total'],
-                'data' => $userStatsData['data']
+                'data' => $userStatsData['data'],
             ];
 
             $activeOffersResponse = $this->admOfferController->activeOffersCount();
@@ -48,7 +50,7 @@ class DashboardExportController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al exportar el dashboard',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

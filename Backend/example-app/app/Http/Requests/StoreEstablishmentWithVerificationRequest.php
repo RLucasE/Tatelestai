@@ -45,10 +45,9 @@ class StoreEstablishmentWithVerificationRequest extends FormRequest
             'verification_files.array' => 'Los archivos de verificación deben ser un arreglo',
             'verification_files.min' => 'Debes subir al menos un archivo de verificación',
             'verification_files.max' => 'No puedes subir más de 6 archivos de verificación',
-             'verification_files.*.file' => 'Cada archivo de verificación es requerido',
-             'verification_files.*.file.mimes' => 'Cada archivo debe ser JPG, PNG o PDF',
-             'verification_files.*.file.max' => 'Cada archivo no debe superar los 5MB',
+            'verification_files.*.file' => 'Cada archivo de verificación es requerido',
+            'verification_files.*.file.mimes' => 'Cada archivo debe ser JPG, PNG o PDF',
+            'verification_files.*.file.max' => 'Cada archivo no debe superar los 5MB',
         ];
     }
 }
-

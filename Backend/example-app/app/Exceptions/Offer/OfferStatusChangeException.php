@@ -7,10 +7,12 @@ use Exception;
 class OfferStatusChangeException extends Exception
 {
     protected $offerId;
+
     protected $currentStatus;
+
     protected $requestedStatus;
 
-    public function __construct($message = "No se pudo cambiar el estado de la oferta", $code = 422, $offerId = null, $currentStatus = null, $requestedStatus = null)
+    public function __construct($message = 'No se pudo cambiar el estado de la oferta', $code = 422, $offerId = null, $currentStatus = null, $requestedStatus = null)
     {
         parent::__construct($message, $code);
 
@@ -30,7 +32,7 @@ class OfferStatusChangeException extends Exception
             'offer_id' => $this->offerId,
             'current_status' => $this->currentStatus,
             'requested_status' => $this->requestedStatus,
-            'error' => "OfferStatusChangeException"
+            'error' => 'OfferStatusChangeException',
         ];
     }
 

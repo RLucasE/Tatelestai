@@ -24,6 +24,7 @@ class GetCustomerCartActionTest extends TestCase
     use RefreshDatabase;
 
     protected GetCustomerCartAction $action;
+
     protected EstablishmentType $establishmentType;
 
     protected function setUp(): void
@@ -78,7 +79,7 @@ class GetCustomerCartActionTest extends TestCase
         $offer->products()->attach($product->id, [
             'quantity' => 2,
             'price' => 1500,
-            'expiration_date' => now()->addDays(3)->toDateString()
+            'expiration_date' => now()->addDays(3)->toDateString(),
         ]);
 
         $cart = UserCart::create([

@@ -17,10 +17,6 @@ class PrepareOfferDTO
 
     /**
      * Crea una instancia del DTO usando solo id y quantity
-     *
-     * @param int $id
-     * @param int $quantity
-     * @return self
      */
     public static function createFromIdAndQuantity(int $id, int $quantity): self
     {
@@ -31,7 +27,7 @@ class PrepareOfferDTO
                 'description' => $product['description'],
                 'quantity' => $product['pivot']['quantity'],
                 'price' => $product['pivot']['price'],
-                'expiration_date' => $product['pivot']['expiration_date']
+                'expiration_date' => $product['pivot']['expiration_date'],
             ];
         }, $offer->fullProducts->toArray());
         $productsDTO = array_map(function ($productData) {
@@ -43,6 +39,7 @@ class PrepareOfferDTO
                 expiration_date: $productData['expiration_date'],
             );
         }, $productsData);
+
         return new self(
             id: $id,
             title: $offer->title,

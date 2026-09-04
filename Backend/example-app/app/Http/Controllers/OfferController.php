@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Offer;
-use App\Actions\Offers\GetUserEstablishmentAction;
 use App\Actions\Offers\ResolveOfferAction;
-
+use App\Models\Offer;
 
 class OfferController extends Controller
 {
     public function __construct() {}
+
     protected function getOfferValidationRules(): array
     {
         return [
@@ -21,7 +20,7 @@ class OfferController extends Controller
             'products.*.id' => 'required|integer|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.price' => 'required|numeric|min:1',
-            'products.*.expirationDate' => 'required|date|after:today'
+            'products.*.expirationDate' => 'required|date|after:today',
         ];
     }
 
@@ -30,7 +29,6 @@ class OfferController extends Controller
         return app(ResolveOfferAction::class)($offer);
     }
 
-
     protected function productsToProductsIDs(array $products): array
     {
         return array_map(function ($product) {
@@ -38,11 +36,10 @@ class OfferController extends Controller
         }, $products);
     }
 
-
     protected function invalidProductsResponse()
     {
         return response()->json([
-            'message' => 'Uno o más productos no pertenecen a tu establecimiento'
+            'message' => 'Uno o más productos no pertenecen a tu establecimiento',
         ], 403);
     }
 }

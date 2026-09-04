@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Sell;
 use App\Models\User;
-use App\Models\FoodEstablishment;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class SellController extends Controller
 {
@@ -36,7 +34,7 @@ class SellController extends Controller
                             'offer_quantity' => $detail->offer_quantity ?? 0,
                             'product_quantity' => $detail->product_quantity ?? 0,
                         ];
-                    })
+                    }),
                 ];
             });
 
@@ -51,14 +49,15 @@ class SellController extends Controller
     public function adminSellDetail(string $id)
     {
         $user = User::findOrFail($id);
-        if (!$user->hasRole('seller')) {
+        if (! $user->hasRole('seller')) {
             return response()->json(['error' => 'User is not a seller'], 400);
         }
         $sells = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
             ->where('sold_by', $user->foodEstablishment->id)
             ->get();
+
         return response()->json([
-            'sells' => $sells
+            'sells' => $sells,
         ], 200);
     }
 
@@ -66,7 +65,7 @@ class SellController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if (!$user->hasRole('customer')) {
+        if (! $user->hasRole('customer')) {
             return response()->json(['error' => 'User is not a customer'], 400);
         }
 
@@ -75,7 +74,7 @@ class SellController extends Controller
             ->get();
 
         return response()->json([
-            'purchases' => $purchases
+            'purchases' => $purchases,
         ], 200);
     }
 
@@ -95,19 +94,20 @@ class SellController extends Controller
 
             $sellsInInterval = $sells->filter(function ($sell) use ($intervalStart, $intervalEnd) {
                 $sellTime = Carbon::parse($sell->created_at);
+
                 return $sellTime->between($intervalStart, $intervalEnd, false);
             })->count();
 
             $intervals[] = [
                 'from' => $intervalStart->format('H:i'),
                 'to' => $intervalEnd->format('H:i'),
-                'count' => $sellsInInterval
+                'count' => $sellsInInterval,
             ];
         }
 
         return response()->json([
             'message' => 'Ventas de las últimas 24 horas obtenidas exitosamente',
-            'data' => $intervals
+            'data' => $intervals,
         ], 200);
     }
 }

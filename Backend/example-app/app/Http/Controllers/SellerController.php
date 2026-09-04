@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\FoodEstablishment;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,7 +27,7 @@ class SellerController extends Controller
      */
     protected function hasEstablishment()
     {
-        return !is_null($this->userEstablishment);
+        return ! is_null($this->userEstablishment);
     }
 
     /**
@@ -37,7 +36,7 @@ class SellerController extends Controller
     protected function noEstablishmentResponse()
     {
         return response()->json([
-            'error' => 'No tienes un establecimiento asociado'
+            'error' => 'No tienes un establecimiento asociado',
         ], 403);
     }
 
@@ -46,7 +45,7 @@ class SellerController extends Controller
      */
     protected function validateProductOwnership(array $productIDs)
     {
-        if (!$this->hasEstablishment()) {
+        if (! $this->hasEstablishment()) {
             return false;
         }
 
@@ -61,7 +60,7 @@ class SellerController extends Controller
     protected function invalidProductsResponse()
     {
         return response()->json([
-            'error' => 'Algunos productos no pertenecen a tu establecimiento'
+            'error' => 'Algunos productos no pertenecen a tu establecimiento',
         ], 403);
     }
 
@@ -70,7 +69,7 @@ class SellerController extends Controller
      */
     protected function validateSingleProductOwnership($productId)
     {
-        if (!$this->hasEstablishment()) {
+        if (! $this->hasEstablishment()) {
             return false;
         }
 
@@ -85,7 +84,7 @@ class SellerController extends Controller
      */
     protected function getUserProducts()
     {
-        if (!$this->hasEstablishment()) {
+        if (! $this->hasEstablishment()) {
             return collect();
         }
 
@@ -97,7 +96,7 @@ class SellerController extends Controller
      */
     protected function getUserOffers()
     {
-        if (!$this->hasEstablishment()) {
+        if (! $this->hasEstablishment()) {
             return collect();
         }
 

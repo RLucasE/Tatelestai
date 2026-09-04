@@ -2,12 +2,8 @@
 
 namespace App\Actions\Sell;
 
-/**
- *
- */
 trait SellValidationRules
 {
-
     /**
      * @return string[]
      */

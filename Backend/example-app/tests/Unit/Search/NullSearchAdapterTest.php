@@ -28,7 +28,7 @@ class NullSearchAdapterTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->searchAdapter = new NullSearchAdapter();
+        $this->searchAdapter = new NullSearchAdapter;
     }
 
     #[Test]
@@ -73,7 +73,7 @@ class NullSearchAdapterTest extends TestCase
         $offer = Offer::factory()->create([
             'food_establishment_id' => $establishment->id,
             'state' => OfferState::ACTIVE->value,
-            'title' => 'Original Offer Title'
+            'title' => 'Original Offer Title',
         ]);
 
         // Verificar que la invocación de ningún método altere los datos ni lance excepciones
@@ -86,7 +86,7 @@ class NullSearchAdapterTest extends TestCase
         // El registro de la BD permanece intacto
         $this->assertDatabaseHas('offers', [
             'id' => $offer->id,
-            'title' => 'Original Offer Title'
+            'title' => 'Original Offer Title',
         ]);
     }
 }

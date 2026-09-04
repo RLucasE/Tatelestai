@@ -15,7 +15,7 @@ class GetCustomerOffersAction
             'offers.title',
             'offers.description',
             'offers.expiration_datetime',
-            'offers.food_establishment_id'
+            'offers.food_establishment_id',
         ])
             ->with(['products' => function ($query) {
                 $query->select(
@@ -27,8 +27,8 @@ class GetCustomerOffersAction
                     'product_offers.offer_id'
                 );
             }])
-            ->where("offers.state", OfferState::ACTIVE)
-            ->where("offers.expiration_datetime", ">=", now())
+            ->where('offers.state', OfferState::ACTIVE)
+            ->where('offers.expiration_datetime', '>=', now())
             ->limit(20)
             ->get()
             ->toArray();

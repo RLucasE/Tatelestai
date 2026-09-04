@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\ProductOffer;
 use Laravel\Scout\Searchable;
 
 class Offer extends Model
 {
     /** @use HasFactory<\Database\Factories\OfferFactory> */
-    use HasFactory, SoftDeletes,Searchable;
+    use HasFactory, Searchable,SoftDeletes;
+
     protected $guarded = ['id'];
 
     public function user()
@@ -35,15 +35,17 @@ class Offer extends Model
             ->withPivot(['price', 'quantity']);
     }
 
-    public function fullProducts(){
+    public function fullProducts()
+    {
         return $this->belongsToMany(Product::class, 'product_offers')
-            ->withPivot(['price', 'quantity','expiration_date']);
+            ->withPivot(['price', 'quantity', 'expiration_date']);
     }
 
     public function productOffer()
     {
         return $this->hasMany(ProductOffer::class);
     }
+
     public function offerCarts()
     {
         return $this->hasMany(OfferCart::class);
@@ -67,7 +69,7 @@ class Offer extends Model
             'state' => $this->state,
             'expiration_datetime' => is_string($this->expiration_datetime)
                 ? strtotime($this->expiration_datetime)
-                : ($this->expiration_datetime ? $this->expiration_datetime->timestamp : null)
+                : ($this->expiration_datetime ? $this->expiration_datetime->timestamp : null),
         ];
 
         if ($this->foodEstablishment?->latitude !== null && $this->foodEstablishment?->longitude !== null) {

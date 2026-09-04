@@ -17,12 +17,13 @@ class CreateReportAction
     /**
      * Crea un nuevo reporte
      *
-     * @param string $reportableType Tipo de entidad (Offer, FoodEstablishment, User)
-     * @param int $reportableId ID de la entidad a reportar
-     * @param int $userId ID del usuario que reporta
-     * @param ReportReason $reason Razón del reporte
-     * @param string $description Descripción del reporte
+     * @param  string  $reportableType  Tipo de entidad (Offer, FoodEstablishment, User)
+     * @param  int  $reportableId  ID de la entidad a reportar
+     * @param  int  $userId  ID del usuario que reporta
+     * @param  ReportReason  $reason  Razón del reporte
+     * @param  string  $description  Descripción del reporte
      * @return Report Reporte creado
+     *
      * @throws ReportableNotFoundException Si la entidad no existe
      * @throws DuplicateReportException Si el usuario ya reportó esta entidad
      */
@@ -54,8 +55,6 @@ class CreateReportAction
     /**
      * Valida que la entidad a reportar exista
      *
-     * @param string $reportableType
-     * @param int $reportableId
      * @throws ReportableNotFoundException
      */
     private function validateReportableExists(string $reportableType, int $reportableId): void
@@ -67,9 +66,9 @@ class CreateReportAction
             default => false,
         };
 
-        if (!$exists) {
+        if (! $exists) {
             throw new ReportableNotFoundException(
-                "The element to report does not exist",
+                'The element to report does not exist',
                 404,
                 $reportableType,
                 $reportableId
@@ -80,9 +79,6 @@ class CreateReportAction
     /**
      * Valida que el usuario no haya reportado previamente esta entidad
      *
-     * @param string $reportableType
-     * @param int $reportableId
-     * @param int $userId
      * @throws DuplicateReportException
      */
     private function validateNoDuplicateReport(string $reportableType, int $reportableId, int $userId): void
@@ -98,7 +94,7 @@ class CreateReportAction
 
         if ($existingReport) {
             throw new DuplicateReportException(
-                "You have already reported this element",
+                'You have already reported this element',
                 409,
                 $reportableType,
                 $reportableId,
@@ -107,4 +103,3 @@ class CreateReportAction
         }
     }
 }
-

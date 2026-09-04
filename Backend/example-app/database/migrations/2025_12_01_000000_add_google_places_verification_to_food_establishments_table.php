@@ -41,9 +41,8 @@ return new class extends Migration
                 'latitude',
                 'longitude',
                 'verification_status',
-                'verification_notes'
+                'verification_notes',
             ]);
         });
     }
 };
-

@@ -13,8 +13,5 @@ class PurchaseCompleted
     /**
      * Create a new event instance.
      */
-    public function __construct(public Sell $sell)
-    {
-    }
+    public function __construct(public Sell $sell) {}
 }
-

@@ -11,9 +11,7 @@ class SellerDeactivated extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public BasicUserDTO $user)
-    {
-    }
+    public function __construct(public BasicUserDTO $user) {}
 
     public function build(): self
     {
@@ -24,4 +22,3 @@ class SellerDeactivated extends Mailable
             ]);
     }
 }
-

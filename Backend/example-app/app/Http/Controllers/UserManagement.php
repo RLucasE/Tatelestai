@@ -122,8 +122,8 @@ class UserManagement extends Controller
         $verificationFiles = [];
         foreach ($request->verification_files as $fileData) {
             $file = $fileData['file'];
-            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('establishment_verification/' . $establishment->id, $fileName, 'private');
+            $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('establishment_verification/'.$establishment->id, $fileName, 'private');
 
             $extension = strtolower($file->getClientOriginalExtension());
             if ($extension === 'jpg' || $extension === 'jpeg') {

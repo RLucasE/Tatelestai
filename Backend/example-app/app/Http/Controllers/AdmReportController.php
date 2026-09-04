@@ -13,8 +13,8 @@ use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class AdmReportController extends Controller
 {
@@ -27,7 +27,7 @@ class AdmReportController extends Controller
         $query = Report::with([
             'reportable',
             'reporter:id,name,email',
-            'reviewer:id,name,email'
+            'reviewer:id,name,email',
         ]);
 
         if ($request->filled('status')) {
@@ -51,7 +51,7 @@ class AdmReportController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in(ReportStatus::values())],
-            'admin_notes' => ['nullable', 'string', 'max:1000']
+            'admin_notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $report = Report::findOrFail($id);
@@ -65,7 +65,7 @@ class AdmReportController extends Controller
 
         return response()->json([
             'message' => 'Report status updated successfully',
-            'report' => $report->load(['reportable', 'reporter:id,name,email', 'reviewer:id,name,email'])
+            'report' => $report->load(['reportable', 'reporter:id,name,email', 'reviewer:id,name,email']),
         ]);
     }
 
@@ -92,28 +92,28 @@ class AdmReportController extends Controller
                 $user->save();
 
                 // Desactivar todas las ofertas del establecimiento
-                $deactivateOffersAction = new DeactivateEstablishmentOffersAction();
+                $deactivateOffersAction = new DeactivateEstablishmentOffersAction;
                 $offersDeactivated = $deactivateOffersAction->execute($establishment->id);
 
                 $result = [
                     'action' => 'seller_deactivated',
                     'user_id' => $user->id,
                     'establishment_id' => $establishment->id,
-                    'offers_deactivated' => $offersDeactivated
+                    'offers_deactivated' => $offersDeactivated,
                 ];
             }
             // Si es una Offer, desactivarla
             elseif ($reportableType === 'App\\Models\\Offer') {
                 $offer = Offer::findOrFail($report->reportable_id);
 
-                $changeOfferStatusAction = new ChangeOfferStatusAction();
+                $changeOfferStatusAction = new ChangeOfferStatusAction;
                 $updatedOffer = $changeOfferStatusAction->execute($offer->id, OfferState::INACTIVE->value);
 
                 $result = [
                     'action' => 'offer_deactivated',
                     'offer_id' => $updatedOffer->id,
                     'previous_state' => $offer->state,
-                    'new_state' => $updatedOffer->state
+                    'new_state' => $updatedOffer->state,
                 ];
             }
             // Si es un User (reportado directamente)
@@ -127,14 +127,14 @@ class AdmReportController extends Controller
                 // Si tiene establecimiento, desactivar sus ofertas
                 $offersDeactivated = 0;
                 if ($user->foodEstablishment) {
-                    $deactivateOffersAction = new DeactivateEstablishmentOffersAction();
+                    $deactivateOffersAction = new DeactivateEstablishmentOffersAction;
                     $offersDeactivated = $deactivateOffersAction->executeByUserId($user->id);
                 }
 
                 $result = [
                     'action' => 'user_deactivated',
                     'user_id' => $user->id,
-                    'offers_deactivated' => $offersDeactivated
+                    'offers_deactivated' => $offersDeactivated,
                 ];
             }
 
@@ -142,7 +142,7 @@ class AdmReportController extends Controller
             $report->status = ReportStatus::RESOLVED;
             $report->reviewed_by = $request->user()->id;
             $report->reviewed_at = now();
-            $report->admin_notes = ($report->admin_notes ?? '') . "\n\nAcción tomada: " . ($result['action'] ?? 'unknown');
+            $report->admin_notes = ($report->admin_notes ?? '')."\n\nAcción tomada: ".($result['action'] ?? 'unknown');
             $report->save();
 
             DB::commit();
@@ -150,7 +150,7 @@ class AdmReportController extends Controller
             return response()->json([
                 'message' => 'Action taken successfully',
                 'result' => $result,
-                'report' => $report->load(['reportable', 'reporter:id,name,email', 'reviewer:id,name,email'])
+                'report' => $report->load(['reportable', 'reporter:id,name,email', 'reviewer:id,name,email']),
             ]);
 
         } catch (\Exception $e) {
@@ -158,9 +158,8 @@ class AdmReportController extends Controller
 
             return response()->json([
                 'message' => 'Error taking action on report',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 }
-

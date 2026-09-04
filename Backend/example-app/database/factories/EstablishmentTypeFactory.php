@@ -26,14 +26,14 @@ class EstablishmentTypeFactory extends Factory
             'Comida Rápida',
             'Pastelería',
             'Marisquería',
-            'Asadero'
+            'Asadero',
         ];
 
         $selectedType = fake()->randomElement($establishmentTypes);
 
         return [
             'name' => $selectedType,
-            'slug' => strtolower(str_replace(' ', '-', $selectedType)) . '-' . fake()->unique()->numberBetween(1000, 9999),
+            'slug' => strtolower(str_replace(' ', '-', $selectedType)).'-'.fake()->unique()->numberBetween(1000, 9999),
             'description' => fake()->sentence(),
         ];
     }

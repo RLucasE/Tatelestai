@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\CartState;
 use App\Models\UserCart;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class UserCartSeeder extends Seeder

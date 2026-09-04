@@ -85,4 +85,3 @@ class Report extends Model
         return $query->where('reportable_type', $type);
     }
 }
-

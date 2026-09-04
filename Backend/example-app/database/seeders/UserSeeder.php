@@ -5,9 +5,10 @@ namespace Database\Seeders;
 use App\Actions\Cart\GetCustomerCartAction;
 use App\Enums\UserRole;
 use App\Enums\UserState;
+use App\Http\Controllers\CustomerCartController;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use App\Http\Controllers\CustomerCartController;
+
 class UserSeeder extends Seeder
 {
     /**

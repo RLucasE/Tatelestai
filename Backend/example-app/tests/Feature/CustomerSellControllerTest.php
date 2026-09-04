@@ -4,11 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Enums\UserState;
+use App\Events\PurchaseCompleted;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Product;
-use App\Events\PurchaseCompleted;
 use App\Models\User;
 use Carbon\Carbon;
 use Database\Seeders\EstablishmentTypeSeeder;
@@ -26,9 +26,13 @@ class CustomerSellControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $customer;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
+
     protected Offer $offer;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -78,8 +82,8 @@ class CustomerSellControllerTest extends TestCase
                 [
                     'id' => $this->offer->id,
                     'quantity' => 2,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/prepare-purchase', $requestData);
@@ -93,21 +97,21 @@ class CustomerSellControllerTest extends TestCase
                     'total_offers',
                     'food_establishment_id',
                     'expires_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Purchase preparation completed successfully',
                 'data' => [
                     'total_offers' => 1,
                     'food_establishment_id' => $this->establishment->id,
-                ]
+                ],
             ]);
 
         $purchaseToken = $response->json('data.purchase_token');
         $this->assertNotNull($purchaseToken);
-        $this->assertTrue(session()->has('purchase_' . $purchaseToken));
+        $this->assertTrue(session()->has('purchase_'.$purchaseToken));
 
-        $sessionData = session()->get('purchase_' . $purchaseToken);
+        $sessionData = session()->get('purchase_'.$purchaseToken);
         $this->assertArrayHasKey('preparePurchaseDTO', $sessionData);
         $this->assertArrayHasKey('expires_at', $sessionData);
         $this->assertEquals($this->establishment->id, $sessionData['preparePurchaseDTO']->food_establishment_id);
@@ -128,8 +132,8 @@ class CustomerSellControllerTest extends TestCase
                 [
                     'id' => $this->offer->id,
                     'quantity' => 2,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $prepareResponse = $this->postJson('/api/prepare-purchase', $requestData);
@@ -137,19 +141,19 @@ class CustomerSellControllerTest extends TestCase
 
         // Ahora realizar la compra
         $buyResponse = $this->postJson('/api/buy-offers', [
-            'purchase_token' => $purchaseToken
+            'purchase_token' => $purchaseToken,
         ]);
 
         $buyResponse->assertStatus(200)
             ->assertJson([
-                'message' => 'Compra realizada con éxito'
+                'message' => 'Compra realizada con éxito',
             ])
             ->assertJsonStructure([
                 'message',
                 'data' => [
                     'food_establishment_id',
-                    'offers'
-                ]
+                    'offers',
+                ],
             ]);
 
         // Verificar que se creó la venta en la base de datos
@@ -197,7 +201,7 @@ class CustomerSellControllerTest extends TestCase
             'offers' => [
                 ['id' => $closestOffer->id, 'quantity' => 2],
                 ['id' => $farOffer->id, 'quantity' => 1],
-            ]
+            ],
         ];
 
         $response = $this->postJson('/api/prepare-purchase', $requestData);
@@ -206,7 +210,7 @@ class CustomerSellControllerTest extends TestCase
 
         // Realizar la compra
         $buyResponse = $this->postJson('/api/buy-offers', [
-            'purchase_token' => $purchaseToken
+            'purchase_token' => $purchaseToken,
         ]);
 
         $buyResponse->assertStatus(200);
@@ -226,12 +230,12 @@ class CustomerSellControllerTest extends TestCase
         $this->actingAs($this->customer);
 
         $response = $this->postJson('/api/buy-offers', [
-            'purchase_token' => 'invalid_token_123'
+            'purchase_token' => 'invalid_token_123',
         ]);
 
         $response->assertStatus(400)
             ->assertJson([
-                'error' => 'Token de compra inválido o expirado'
+                'error' => 'Token de compra inválido o expirado',
             ]);
 
         // Verificar que no se creó ninguna venta
@@ -249,7 +253,7 @@ class CustomerSellControllerTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'error' => 'Token de compra inválido o expirado'
+                'error' => 'Token de compra inválido o expirado',
             ]);
     }
 
@@ -265,26 +269,26 @@ class CustomerSellControllerTest extends TestCase
                 [
                     'id' => $this->offer->id,
                     'quantity' => 2,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $prepareResponse = $this->postJson('/api/prepare-purchase', $requestData);
         $purchaseToken = $prepareResponse->json('data.purchase_token');
 
         // Modificar manualmente la sesión para que expire
-        $sessionData = session()->get('purchase_' . $purchaseToken);
+        $sessionData = session()->get('purchase_'.$purchaseToken);
         $sessionData['expires_at'] = now()->subMinutes(10); // Expirado hace 10 minutos
-        session()->put('purchase_' . $purchaseToken, $sessionData);
+        session()->put('purchase_'.$purchaseToken, $sessionData);
 
         // Intentar comprar con token expirado
         $buyResponse = $this->postJson('/api/buy-offers', [
-            'purchase_token' => $purchaseToken
+            'purchase_token' => $purchaseToken,
         ]);
 
         $buyResponse->assertStatus(400)
             ->assertJson([
-                'error' => 'El tiempo para confirmar la compra ha expirado'
+                'error' => 'El tiempo para confirmar la compra ha expirado',
             ]);
 
         // Verificar que no se creó ninguna venta
@@ -293,7 +297,7 @@ class CustomerSellControllerTest extends TestCase
         ]);
 
         // Verificar que el token fue eliminado de la sesión
-        $this->assertFalse(session()->has('purchase_' . $purchaseToken));
+        $this->assertFalse(session()->has('purchase_'.$purchaseToken));
     }
 
     #[Test]
@@ -317,7 +321,7 @@ class CustomerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test nroduct',
-            'product_description' => 'Test Description'
+            'product_description' => 'Test Description',
         ]);
 
         // Obtener el código de retiro
@@ -331,13 +335,13 @@ class CustomerSellControllerTest extends TestCase
                     'pickup_code',
                     'establishment',
                     'created_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Código de retiro obtenido exitosamente',
                 'data' => [
                     'pickup_code' => $pickupCode,
-                ]
+                ],
             ]);
     }
 
@@ -346,11 +350,11 @@ class CustomerSellControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->getJson("/api/purchase-code/99999");
+        $response = $this->getJson('/api/purchase-code/99999');
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'Compra no encontrada'
+                'error' => 'Compra no encontrada',
             ]);
     }
 
@@ -377,7 +381,7 @@ class CustomerSellControllerTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJson([
-                'error' => 'Compra no encontrada'
+                'error' => 'Compra no encontrada',
             ]);
     }
 
@@ -431,7 +435,7 @@ class CustomerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 250,
             'product_name' => 'Product 1',
-            'product_description' => 'Description 1'
+            'product_description' => 'Description 1',
         ]);
 
         \App\Models\SellDetail::factory()->create([
@@ -441,7 +445,7 @@ class CustomerSellControllerTest extends TestCase
             'product_quantity' => 2,
             'product_price' => 250,
             'product_name' => 'Product 2',
-            'product_description' => 'Description 2'
+            'product_description' => 'Description 2',
         ]);
 
         \App\Models\SellDetail::factory()->create([
@@ -451,7 +455,7 @@ class CustomerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 300,
             'product_name' => 'Product 3',
-            'product_description' => 'Description 3'
+            'product_description' => 'Description 3',
         ]);
 
         $anotherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
@@ -487,10 +491,10 @@ class CustomerSellControllerTest extends TestCase
                                 'product_description',
                                 'product_quantity',
                                 'product_price',
-                            ]
-                        ]
-                    ]
-                ]
+                            ],
+                        ],
+                    ],
+                ],
             ])
             ->assertJson([
                 'message' => 'Historial de compras obtenido exitosamente',
@@ -515,7 +519,7 @@ class CustomerSellControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Historial de compras obtenido exitosamente',
-                'data' => []
+                'data' => [],
             ]);
     }
 }

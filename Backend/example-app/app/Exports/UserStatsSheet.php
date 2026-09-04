@@ -26,14 +26,12 @@ class UserStatsSheet implements FromArray, WithHeadings, WithStyles, WithTitle
 
         $rows[] = ['', ''];
 
-
         foreach ($this->userStats['data'] as $stat) {
             $rows[] = [
                 $stat['state'] ?? '',
-                $stat['count'] ?? 0
+                $stat['count'] ?? 0,
             ];
         }
-
 
         return $rows;
     }
@@ -49,7 +47,7 @@ class UserStatsSheet implements FromArray, WithHeadings, WithStyles, WithTitle
             1 => ['font' => ['bold' => true, 'size' => 12]],
             2 => ['font' => ['bold' => true, 'size' => 14], 'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'E8F5E9']
+                'startColor' => ['rgb' => 'E8F5E9'],
             ]],
         ];
     }
@@ -59,4 +57,3 @@ class UserStatsSheet implements FromArray, WithHeadings, WithStyles, WithTitle
         return 'Estadísticas de Usuarios';
     }
 }
-

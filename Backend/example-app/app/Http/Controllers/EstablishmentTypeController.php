@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\DTOs\EstablishmentTypeDTO;
 use App\Enums\EstablishmentTypeState;
 use App\Models\EstablishmentType;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Http\JsonResponse;
 
 class EstablishmentTypeController extends Controller
 {
@@ -21,7 +21,7 @@ class EstablishmentTypeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $establishmentTypesDTO
+            'data' => $establishmentTypesDTO,
         ]);
     }
 
@@ -38,7 +38,7 @@ class EstablishmentTypeController extends Controller
         $originalSlug = $slug;
         $counter = 1;
         while (EstablishmentType::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
@@ -53,7 +53,7 @@ class EstablishmentTypeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tipo de establecimiento creado exitosamente',
-            'data' => $dto
+            'data' => $dto,
         ], 201);
     }
 
@@ -61,10 +61,10 @@ class EstablishmentTypeController extends Controller
     {
         $establishmentType = EstablishmentType::find($id);
 
-        if (!$establishmentType) {
+        if (! $establishmentType) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tipo de establecimiento no encontrado'
+                'message' => 'Tipo de establecimiento no encontrado',
             ], 404);
         }
 
@@ -72,7 +72,7 @@ class EstablishmentTypeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $dto
+            'data' => $dto,
         ]);
     }
 
@@ -80,15 +80,15 @@ class EstablishmentTypeController extends Controller
     {
         $establishmentType = EstablishmentType::find($id);
 
-        if (!$establishmentType) {
+        if (! $establishmentType) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tipo de establecimiento no encontrado'
+                'message' => 'Tipo de establecimiento no encontrado',
             ], 404);
         }
 
         $request->validate([
-            'name' => 'required|string|max:255|unique:establishment_types,name,' . $id,
+            'name' => 'required|string|max:255|unique:establishment_types,name,'.$id,
             'description' => 'nullable|string|max:500',
         ]);
 
@@ -98,7 +98,7 @@ class EstablishmentTypeController extends Controller
         $originalSlug = $slug;
         $counter = 1;
         while (EstablishmentType::where('slug', $slug)->where('id', '!=', $id)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
@@ -113,7 +113,7 @@ class EstablishmentTypeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tipo de establecimiento actualizado exitosamente',
-            'data' => $dto
+            'data' => $dto,
         ]);
     }
 
@@ -121,19 +121,20 @@ class EstablishmentTypeController extends Controller
     {
         $establishmentType = EstablishmentType::find($id);
 
-        if (!$establishmentType) {
+        if (! $establishmentType) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tipo de establecimiento no encontrado'
+                'message' => 'Tipo de establecimiento no encontrado',
             ], 404);
         }
         $establishmentType->update(
             ['state' => EstablishmentTypeState::INACTIVE]
         );
         $establishmentType->save();
+
         return response()->json([
             'success' => true,
-            'message' => 'Tipo de establecimiento eliminado exitosamente'
+            'message' => 'Tipo de establecimiento eliminado exitosamente',
         ]);
     }
 
@@ -141,17 +142,17 @@ class EstablishmentTypeController extends Controller
     {
         $establishmentType = EstablishmentType::findOrFail($id);
 
-        if (!$establishmentType) {
+        if (! $establishmentType) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tipo de establecimiento no encontrado'
+                'message' => 'Tipo de establecimiento no encontrado',
             ], 404);
         }
 
         if ($establishmentType->state !== EstablishmentTypeState::INACTIVE->value) {
             return response()->json([
                 'success' => false,
-                'message' => 'El tipo de establecimiento no está eliminado'
+                'message' => 'El tipo de establecimiento no está eliminado',
             ], 400);
         }
 
@@ -164,7 +165,7 @@ class EstablishmentTypeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tipo de establecimiento restaurado exitosamente',
-            'data' => $EstablishmentTypedto
+            'data' => $EstablishmentTypedto,
         ]);
     }
 
@@ -172,11 +173,9 @@ class EstablishmentTypeController extends Controller
     {
         $trashedTypes = EstablishmentType::where('state', EstablishmentTypeState::INACTIVE->value)->get();
 
-
         return response()->json([
             'success' => true,
-            'data' => $trashedTypes
+            'data' => $trashedTypes,
         ]);
     }
-
 }

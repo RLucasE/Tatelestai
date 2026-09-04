@@ -24,6 +24,7 @@ class DenySellerSendsEmailTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $seller;
 
     protected function setUp(): void
@@ -49,7 +50,7 @@ class DenySellerSendsEmailTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        $response = $this->patchJson('/api/users/' . $this->seller->id . '/denie-seller');
+        $response = $this->patchJson('/api/users/'.$this->seller->id.'/denie-seller');
 
         $response->assertStatus(200);
 
@@ -66,7 +67,7 @@ class DenySellerSendsEmailTest extends TestCase
 
         $dto = BasicUserDTO::fromModel($this->seller);
         $event = new SellerDenied($dto);
-        $listener = new SendSellerDeniedEmail();
+        $listener = new SendSellerDeniedEmail;
 
         $listener->handle($event);
 
@@ -83,7 +84,7 @@ class DenySellerSendsEmailTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        $response = $this->patchJson('/api/users/' . $this->seller->id . '/denie-seller');
+        $response = $this->patchJson('/api/users/'.$this->seller->id.'/denie-seller');
 
         $response->assertStatus(200);
 
@@ -108,7 +109,7 @@ class DenySellerSendsEmailTest extends TestCase
 
         $this->actingAs($this->admin);
 
-        $response = $this->patchJson('/api/adm/establishments/' . $establishment->id . '/reject', [
+        $response = $this->patchJson('/api/adm/establishments/'.$establishment->id.'/reject', [
             'reason' => 'Los documentos adjuntos no son legibles.',
         ]);
 

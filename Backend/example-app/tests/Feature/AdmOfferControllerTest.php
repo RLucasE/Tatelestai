@@ -45,10 +45,10 @@ class AdmOfferControllerTest extends TestCase
         $restaurante = EstablishmentType::where('name', 'Restaurante')->first();
 
         // Si no existen, crearlos
-        if (!$panaderia) {
+        if (! $panaderia) {
             $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
         }
-        if (!$restaurante) {
+        if (! $restaurante) {
             $restaurante = EstablishmentType::factory()->create(['name' => 'Restaurante']);
         }
 
@@ -113,30 +113,29 @@ class AdmOfferControllerTest extends TestCase
         // Hacer la petición al endpoint
         $response = $this->getJson('/api/adm/offer-stats');
 
-
         // Verificar respuesta
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
                         'establishment_type',
-                        'count'
-                    ]
+                        'count',
+                    ],
                 ],
-                'message'
+                'message',
             ])
             ->assertJson([
                 'message' => 'Estadísticas de ofertas obtenidas exitosamente',
                 'data' => [
                     [
                         'establishment_type' => 'Panadería',
-                        'count' => 20
+                        'count' => 20,
                     ],
                     [
                         'establishment_type' => 'Restaurante',
-                        'count' => 22
-                    ]
-                ]
+                        'count' => 22,
+                    ],
+                ],
             ]);
     }
 
@@ -165,7 +164,7 @@ class AdmOfferControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Estadísticas de ofertas obtenidas exitosamente',
-                'data' => []
+                'data' => [],
             ]);
     }
 
@@ -175,10 +174,10 @@ class AdmOfferControllerTest extends TestCase
         $panaderia = EstablishmentType::where('name', 'Panadería')->first();
         $restaurante = EstablishmentType::where('name', 'Restaurante')->first();
 
-        if (!$panaderia) {
+        if (! $panaderia) {
             $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
         }
-        if (!$restaurante) {
+        if (! $restaurante) {
             $restaurante = EstablishmentType::factory()->create(['name' => 'Restaurante']);
         }
 
@@ -239,23 +238,23 @@ class AdmOfferControllerTest extends TestCase
                 'data' => [
                     '*' => [
                         'establishment_type',
-                        'count'
-                    ]
+                        'count',
+                    ],
                 ],
-                'message'
+                'message',
             ])
             ->assertJson([
                 'message' => 'Cantidad de ofertas activas obtenidas exitosamente',
                 'data' => [
                     [
                         'establishment_type' => 'Panadería',
-                        'count' => 15
+                        'count' => 15,
                     ],
                     [
                         'establishment_type' => 'Restaurante',
-                        'count' => 10
-                    ]
-                ]
+                        'count' => 10,
+                    ],
+                ],
             ]);
     }
 
@@ -282,7 +281,7 @@ class AdmOfferControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Cantidad de ofertas activas obtenidas exitosamente',
-                'data' => []
+                'data' => [],
             ]);
     }
 
@@ -290,7 +289,7 @@ class AdmOfferControllerTest extends TestCase
     public function it_returns_expiring_offers_count_grouped_by_day_of_week(): void
     {
         $panaderia = EstablishmentType::where('name', 'Panadería')->first();
-        if (!$panaderia) {
+        if (! $panaderia) {
             $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
         }
 
@@ -369,13 +368,13 @@ class AdmOfferControllerTest extends TestCase
                 'data' => [
                     '*' => [
                         'day',
-                        'count'
-                    ]
+                        'count',
+                    ],
                 ],
-                'message'
+                'message',
             ])
             ->assertJson([
-                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente'
+                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente',
             ]);
 
         // Verificar que se devuelven 7 días
@@ -426,7 +425,7 @@ class AdmOfferControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente'
+                'message' => 'Ofertas que expiran esta semana obtenidas exitosamente',
             ]);
 
         $data = $response->json('data');
@@ -443,7 +442,7 @@ class AdmOfferControllerTest extends TestCase
     {
         // Crear tipos de establecimiento
         $panaderia = EstablishmentType::where('name', 'Panadería')->first();
-        if (!$panaderia) {
+        if (! $panaderia) {
             $panaderia = EstablishmentType::factory()->create(['name' => 'Panadería']);
         }
 
@@ -554,11 +553,11 @@ class AdmOfferControllerTest extends TestCase
                                 'price',
                                 'quantity',
                                 'expiration_date',
-                            ]
-                        ]
-                    ]
+                            ],
+                        ],
+                    ],
                 ],
-                'message'
+                'message',
             ]);
 
         $data = $response->json('data');
@@ -619,7 +618,7 @@ class AdmOfferControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [],
-                'message' => 'Ofertas pendientes obtenidas exitosamente'
+                'message' => 'Ofertas pendientes obtenidas exitosamente',
             ]);
     }
 
@@ -654,8 +653,8 @@ class AdmOfferControllerTest extends TestCase
                 'message' => 'Oferta aprobada exitosamente',
                 'data' => [
                     'id' => $offer->id,
-                    'state' => OfferState::ACTIVE->value
-                ]
+                    'state' => OfferState::ACTIVE->value,
+                ],
             ]);
 
         // Verificar que el estado cambió en la base de datos
@@ -685,7 +684,7 @@ class AdmOfferControllerTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'message' => 'La oferta no está en estado de verificación'
+                'message' => 'La oferta no está en estado de verificación',
             ]);
 
         // Verificar que el estado NO cambió
@@ -732,8 +731,8 @@ class AdmOfferControllerTest extends TestCase
                 'message' => 'Oferta rechazada exitosamente',
                 'data' => [
                     'id' => $offer->id,
-                    'state' => OfferState::INACTIVE->value
-                ]
+                    'state' => OfferState::INACTIVE->value,
+                ],
             ]);
 
         // Verificar que el estado cambió en la base de datos
@@ -763,7 +762,7 @@ class AdmOfferControllerTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'message' => 'La oferta no está en estado de verificación'
+                'message' => 'La oferta no está en estado de verificación',
             ]);
 
         // Verificar que el estado NO cambió

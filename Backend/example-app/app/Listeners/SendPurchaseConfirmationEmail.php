@@ -16,14 +16,13 @@ class SendPurchaseConfirmationEmail implements ShouldQueue
     {
         $sell = $event->sell;
 
-        if (!$sell->relationLoaded('customer')) {
+        if (! $sell->relationLoaded('customer')) {
             $sell->load(['customer', 'foodEstablishment', 'sellDetails']);
         }
 
         if ($sell->customer && $sell->customer->email) {
-            //Mail::to($sell->customer->email)->send(new PurchaseConfirmation($sell)); 
-            Mail::to("lucascabjnmro2@gmail.com")->send(new PurchaseConfirmation($sell)); 
+            // Mail::to($sell->customer->email)->send(new PurchaseConfirmation($sell));
+            Mail::to('lucascabjnmro2@gmail.com')->send(new PurchaseConfirmation($sell));
         }
     }
 }
-

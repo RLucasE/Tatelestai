@@ -25,7 +25,7 @@ class ActiveOffersSheet implements FromArray, WithHeadings, WithStyles, WithTitl
         foreach ($this->activeOffers as $offer) {
             $rows[] = [
                 $offer['establishment_type'] ?? '',
-                $offer['count'] ?? 0
+                $offer['count'] ?? 0,
             ];
         }
 
@@ -42,7 +42,7 @@ class ActiveOffersSheet implements FromArray, WithHeadings, WithStyles, WithTitl
         return [
             1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'A7F3D0']
+                'startColor' => ['rgb' => 'A7F3D0'],
             ]],
         ];
     }
@@ -52,4 +52,3 @@ class ActiveOffersSheet implements FromArray, WithHeadings, WithStyles, WithTitl
         return 'Ofertas Activas';
     }
 }
-

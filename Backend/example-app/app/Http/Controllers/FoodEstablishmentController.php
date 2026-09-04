@@ -13,11 +13,12 @@ class FoodEstablishmentController extends Controller
     {
         $user = Auth::user();
         $establishment = $user->foodEstablishment()->with('establishmentType')->first();
-        if (!$establishment) {
+        if (! $establishment) {
             return response()->json([
                 'message' => 'No establishment found for this user.',
             ], 404);
         }
+
         return response()->json($establishment);
     }
 
@@ -30,19 +31,18 @@ class FoodEstablishmentController extends Controller
         ]);
         $user = Auth::user();
         $establishment = $user->foodEstablishment()->with('establishmentType')->first();
-        if (!$establishment) {
+        if (! $establishment) {
             return response()->json([
                 'message' => 'No establishment found for this user.',
             ], 404);
         }
         $user->state = UserState::WAITING_FOR_CONFIRMATION->value;
         $user->save();
-        $establishment->update($request->only(['name', 'address' ,'establishment_type_id']));
+        $establishment->update($request->only(['name', 'address', 'establishment_type_id']));
+
         return response()->json([
             'message' => 'Establishment updated successfully.',
             'establishment' => $establishment,
         ]);
     }
-
-
 }

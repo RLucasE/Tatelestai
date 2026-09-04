@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\SellState;
 use App\Models\Sell;
 use Carbon\Carbon;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SellSeeder extends Seeder
@@ -52,7 +51,7 @@ class SellSeeder extends Seeder
                 }
 
                 // Si no fue retirado, determinar el estado según max_pickup_datetime
-                if (!$isPickedUp) {
+                if (! $isPickedUp) {
                     if ($maxPickupDatetime->isBefore($now)) {
                         // Si ya pasó la fecha máxima de retiro, está expirado
                         $state = SellState::EXPIRED;
@@ -66,13 +65,13 @@ class SellSeeder extends Seeder
                 Sell::factory()
                     ->withDetails()
                     ->create([
-                    'created_at' => $createdAt,
-                    'updated_at' => $pickedUpAt ?? $createdAt->copy()->addMinutes(rand(1, 30)),
-                    'is_picked_up' => $isPickedUp,
-                    'picked_up_at' => $pickedUpAt,
-                    'max_pickup_datetime' => $maxPickupDatetime,
-                    'state' => $state,
-                ]);
+                        'created_at' => $createdAt,
+                        'updated_at' => $pickedUpAt ?? $createdAt->copy()->addMinutes(rand(1, 30)),
+                        'is_picked_up' => $isPickedUp,
+                        'picked_up_at' => $pickedUpAt,
+                        'max_pickup_datetime' => $maxPickupDatetime,
+                        'state' => $state,
+                    ]);
 
                 $totalSells++;
             }

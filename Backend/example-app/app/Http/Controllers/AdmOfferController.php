@@ -12,9 +12,8 @@ use Illuminate\Http\Request;
 
 class AdmOfferController extends Controller
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
+
     public function index(): JsonResponse
     {
         try {
@@ -23,53 +22,55 @@ class AdmOfferController extends Controller
                 'foodEstablishment:id,name,user_id',
                 'products:id,name,description',
             ])
-            ->orderBy('created_at', 'desc')
-            ->limit(50)
-            ->get();
+                ->orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
 
             return response()->json([
                 'data' => $offers,
-                'message' => 'Ofertas obtenidas exitosamente'
+                'message' => 'Ofertas obtenidas exitosamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las ofertas',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function update(Request $request,int $id, ChangeOfferStatusAction $changeOfferStatusAction): JsonResponse
+    public function update(Request $request, int $id, ChangeOfferStatusAction $changeOfferStatusAction): JsonResponse
     {
-        if (!is_numeric($id)) {
+        if (! is_numeric($id)) {
             return response()->json(['message' => 'ID inválido'], 422);
         }
         try {
             $offer = $changeOfferStatusAction->execute($id, $request->input('state'));
-        }catch (OfferStatusChangeException $e){
+        } catch (OfferStatusChangeException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'error' => $e->context()
+                'error' => $e->context(),
             ], $e->getCode());
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al cambiar el estado de la oferta',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
+
         return response()->json([
             'message' => 'Estado de la oferta actualizado correctamente',
             'data' => [
                 'id' => $offer->id,
-                'state' => $offer->state
-            ]
+                'state' => $offer->state,
+            ],
         ]);
     }
+
     public function indexByUser(string $id): JsonResponse
     {
         $user = User::findOrFail($id);
-        if(!$user || !$user->hasRole(UserRole::SELLER->value)){
+        if (! $user || ! $user->hasRole(UserRole::SELLER->value)) {
             return response()->json(['message' => 'Usuario no valido para esta operación'], 404);
         }
         try {
@@ -80,15 +81,16 @@ class AdmOfferController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->limit(50)
                 ->get();
+
             return response()->json([
                 'data' => $offers,
-                'message' => 'Ofertas del usuario obtenidas exitosamente'
+                'message' => 'Ofertas del usuario obtenidas exitosamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las ofertas del usuario',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -106,19 +108,19 @@ class AdmOfferController extends Controller
                 ->map(function ($group, $establishmentType) {
                     return [
                         'establishment_type' => $establishmentType,
-                        'count' => $group->count()
+                        'count' => $group->count(),
                     ];
                 })
                 ->values();
 
             return response()->json([
                 'message' => 'Estadísticas de ofertas obtenidas exitosamente',
-                'data' => $stats
+                'data' => $stats,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al obtener las estadísticas de ofertas', 'error' => $e->getMessage()
+                'message' => 'Error al obtener las estadísticas de ofertas', 'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -136,20 +138,20 @@ class AdmOfferController extends Controller
                 ->map(function ($group, $establishmentType) {
                     return [
                         'establishment_type' => $establishmentType,
-                        'count' => $group->count()
+                        'count' => $group->count(),
                     ];
                 })
                 ->values();
 
             return response()->json([
                 'message' => 'Cantidad de ofertas activas obtenidas exitosamente',
-                'data' => $stats
+                'data' => $stats,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener la cantidad de ofertas activas',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -162,7 +164,7 @@ class AdmOfferController extends Controller
 
             // Obtener todas las ofertas activas con sus productos
             $offers = Offer::where('state', \App\Enums\OfferState::ACTIVE->value)
-                ->with(['productOffer' => function($query) use ($today, $nextWeek) {
+                ->with(['productOffer' => function ($query) use ($today, $nextWeek) {
                     $query->whereBetween('expiration_date', [$today, $nextWeek]);
                 }])
                 ->get();
@@ -174,7 +176,7 @@ class AdmOfferController extends Controller
             foreach ($daysOfWeek as $index => $day) {
                 $stats[] = [
                     'day' => $day,
-                    'count' => 0
+                    'count' => 0,
                 ];
             }
 
@@ -194,13 +196,13 @@ class AdmOfferController extends Controller
 
             return response()->json([
                 'message' => 'Ofertas que expiran esta semana obtenidas exitosamente',
-                'data' => $stats
+                'data' => $stats,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las ofertas que expiran',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -252,20 +254,20 @@ class AdmOfferController extends Controller
 
             return response()->json([
                 'data' => $offers,
-                'message' => 'Ofertas pendientes obtenidas exitosamente'
+                'message' => 'Ofertas pendientes obtenidas exitosamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las ofertas pendientes',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     public function approveOffer(int $id, ChangeOfferStatusAction $changeOfferStatusAction): JsonResponse
     {
-        if (!is_numeric($id)) {
+        if (! is_numeric($id)) {
             return response()->json(['message' => 'ID inválido'], 422);
         }
 
@@ -284,30 +286,30 @@ class AdmOfferController extends Controller
                 'message' => 'Oferta aprobada exitosamente',
                 'data' => [
                     'id' => $offer->id,
-                    'state' => $offer->state
-                ]
+                    'state' => $offer->state,
+                ],
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Oferta no encontrada'
+                'message' => 'Oferta no encontrada',
             ], 404);
         } catch (OfferStatusChangeException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'error' => $e->context()
+                'error' => $e->context(),
             ], $e->getCode());
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al aprobar la oferta',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     public function rejectOffer(int $id, ChangeOfferStatusAction $changeOfferStatusAction): JsonResponse
     {
-        if (!is_numeric($id)) {
+        if (! is_numeric($id)) {
             return response()->json(['message' => 'ID inválido'], 422);
         }
 
@@ -326,23 +328,23 @@ class AdmOfferController extends Controller
                 'message' => 'Oferta rechazada exitosamente',
                 'data' => [
                     'id' => $offer->id,
-                    'state' => $offer->state
-                ]
+                    'state' => $offer->state,
+                ],
             ], 200);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Oferta no encontrada'
+                'message' => 'Oferta no encontrada',
             ], 404);
         } catch (OfferStatusChangeException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'error' => $e->context()
+                'error' => $e->context(),
             ], $e->getCode());
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al rechazar la oferta',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

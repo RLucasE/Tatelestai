@@ -22,30 +22,29 @@ class CustomerSellController extends Controller
 {
     public function __construct(
         private readonly ValidateOfferExpirationFromDTOAction $validateOfferExpirationFromDTOAction,
-        private readonly ValidateOfferIsActiveAction          $validateOfferIsActiveAction,
-        private readonly OfferIsFromFoodEstablishmentAction   $offerIsFromFoodEstablishmentAction,
-        private readonly getCustomerSellsAction               $getCustomerSellsAction,
-        private readonly makeSellAction                       $makeSellAction,
-        private readonly VerifyPurchaseDataFreshnessAction    $verifyPurchaseDataFreshnessAction,
+        private readonly ValidateOfferIsActiveAction $validateOfferIsActiveAction,
+        private readonly OfferIsFromFoodEstablishmentAction $offerIsFromFoodEstablishmentAction,
+        private readonly getCustomerSellsAction $getCustomerSellsAction,
+        private readonly makeSellAction $makeSellAction,
+        private readonly VerifyPurchaseDataFreshnessAction $verifyPurchaseDataFreshnessAction,
         private readonly \App\Actions\Sell\ValidateCustomerOwnershipAction $validateCustomerOwnershipAction,
-    )
-    {
-    }
+    ) {}
 
     public function buyOffers(Request $request)
     {
         try {
             $purchaseToken = $request->input('purchase_token');
-            if (!$purchaseToken || !session()->has('purchase_' . $purchaseToken)) {
+            if (! $purchaseToken || ! session()->has('purchase_'.$purchaseToken)) {
                 return response()->json([
-                    'error' => 'Token de compra inválido o expirado'
+                    'error' => 'Token de compra inválido o expirado',
                 ], 400);
             }
-            $purchaseData = session()->get('purchase_' . $purchaseToken);
+            $purchaseData = session()->get('purchase_'.$purchaseToken);
             if (now()->isAfter($purchaseData['expires_at'])) {
-                session()->forget('purchase_' . $purchaseToken);
+                session()->forget('purchase_'.$purchaseToken);
+
                 return response()->json([
-                    'error' => 'El tiempo para confirmar la compra ha expirado'
+                    'error' => 'El tiempo para confirmar la compra ha expirado',
                 ], 400);
             }
 
@@ -75,17 +74,17 @@ class CustomerSellController extends Controller
                 PurchaseCompleted::dispatch($sell);
             }
 
-            session()->forget('purchase_' . $purchaseToken);
+            session()->forget('purchase_'.$purchaseToken);
 
             return response()->json([
                 'message' => 'Compra realizada con éxito',
-                'data' => $preparePurchaseDTO
+                'data' => $preparePurchaseDTO,
             ], 200);
 
         } catch (Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
-                'line' => $exception->getLine()
+                'line' => $exception->getLine(),
             ], 400);
         }
     }
@@ -114,9 +113,9 @@ class CustomerSellController extends Controller
 
             $purchaseToken = md5(uniqid(Auth::id(), true));
 
-            session()->put('purchase_' . $purchaseToken, [
+            session()->put('purchase_'.$purchaseToken, [
                 'preparePurchaseDTO' => $preparePurchaseDTO,
-                'expires_at' => now()->addMinutes(5)
+                'expires_at' => now()->addMinutes(5),
             ]);
 
             return response()->json([
@@ -127,13 +126,13 @@ class CustomerSellController extends Controller
                     'total_offers' => count($preparePurchaseDTO->offers),
                     'food_establishment_id' => $preparePurchaseDTO->food_establishment_id,
                     'expires_at' => now()->addMinutes(5)->toDateTimeString(),
-                ]
+                ],
             ], 200);
 
         } catch (Exception $exception) {
             return response()->json([
                 'error' => 'Failed to prepare purchase',
-                'message' => $exception->getMessage()
+                'message' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -146,7 +145,7 @@ class CustomerSellController extends Controller
             $customerSells = $this->getCustomerSellsAction->execute($customerId);
 
             return response()->json([
-                'data' => $customerSells
+                'data' => $customerSells,
             ]);
         } catch (Exception $exception) {
             return response()->json([
@@ -173,13 +172,14 @@ class CustomerSellController extends Controller
                         'address' => $sell->foodEstablishment->address,
                     ],
                     'created_at' => $sell->created_at,
-                ]
+                ],
             ], 200);
 
         } catch (Exception $exception) {
             $statusCode = $exception->getCode() ?: 500;
+
             return response()->json([
-                'error' => $exception->getMessage()
+                'error' => $exception->getMessage(),
             ], $statusCode);
         }
     }
@@ -197,13 +197,14 @@ class CustomerSellController extends Controller
 
             return response()->json([
                 'message' => 'Historial de compras obtenido exitosamente',
-                'data' => SellResource::collection($sells)
+                'data' => SellResource::collection($sells),
             ], 200);
 
         } catch (Exception $exception) {
             $statusCode = $exception->getCode() ?: 500;
+
             return response()->json([
-                'error' => $exception->getMessage()
+                'error' => $exception->getMessage(),
             ], $statusCode);
         }
     }

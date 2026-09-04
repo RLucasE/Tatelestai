@@ -54,7 +54,7 @@ class TypesenseSearchAdapter implements SearchServiceInterface
 
         $paginator->load([
             'fullProducts',
-            'foodEstablishment' => fn($q) => $q->select('id', 'name', 'address', 'latitude', 'longitude'),
+            'foodEstablishment' => fn ($q) => $q->select('id', 'name', 'address', 'latitude', 'longitude'),
         ]);
 
         return $paginator->getCollection();

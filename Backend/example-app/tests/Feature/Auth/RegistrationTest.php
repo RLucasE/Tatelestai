@@ -23,8 +23,6 @@ test('new users can register via api', function () {
             'message' => 'User registered successfully',
         ]);
 
-    
-
     $this->assertDatabaseHas('users', [
         'email' => 'test@example.com',
         'last_name' => 'User',

@@ -10,8 +10,8 @@ class GetReportsAction
     /**
      * Obtiene reportes con filtros opcionales
      *
-     * @param array $filters Filtros opcionales: status, reportable_type, reported_by, reviewed_by
-     * @param bool $withRelations Si debe cargar las relaciones
+     * @param  array  $filters  Filtros opcionales: status, reportable_type, reported_by, reviewed_by
+     * @param  bool  $withRelations  Si debe cargar las relaciones
      * @return Collection Colección de reportes
      */
     public function execute(array $filters = [], bool $withRelations = true): Collection
@@ -49,4 +49,3 @@ class GetReportsAction
         return $query->get();
     }
 }
-

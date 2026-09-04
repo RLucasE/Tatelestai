@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserState;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -25,7 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProductCategorySeeder::class);
         $this->call(OfferSeeder::class);
         $this->call(SellSeeder::class);
-//        $this->call(ProductOfferSeeder::class);
+        //        $this->call(ProductOfferSeeder::class);
 
         \App\Models\Offer::makeAllSearchable();
     }

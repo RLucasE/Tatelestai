@@ -2,9 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Product;
 use App\Models\productOffer;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ProductOfferSeeder extends Seeder
@@ -15,7 +13,7 @@ class ProductOfferSeeder extends Seeder
     public function run(): void
     {
         ProductOffer::factory()->count(50)->create(
-            ['offer_id' => rand(50,200)]
+            ['offer_id' => rand(50, 200)]
         );
     }
 }

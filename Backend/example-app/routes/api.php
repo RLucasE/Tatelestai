@@ -110,7 +110,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::patch('/adm/establishments/{id}/verify', [AdmUserController::class, 'verifyEstablishment']);
         Route::patch('/adm/establishments/{id}/reject', [AdmUserController::class, 'rejectEstablishment']);
         Route::get('/admin/verification-files/{fileId}', [AdmUserController::class, 'serveVerificationFile']);
-     });
+    });
 });
 
 Route::get('/test', function () {

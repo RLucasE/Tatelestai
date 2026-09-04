@@ -28,6 +28,7 @@ class TypesenseSearchAdapterTest extends TestCase
     use RefreshDatabase;
 
     private TypesenseSearchAdapter $adapter;
+
     private FoodEstablishment $establishment;
 
     protected function setUp(): void
@@ -47,7 +48,7 @@ class TypesenseSearchAdapterTest extends TestCase
             'establishment_type_id' => $establishmentType->id,
         ]);
 
-        $this->adapter = new TypesenseSearchAdapter();
+        $this->adapter = new TypesenseSearchAdapter;
     }
 
     #[Test]
@@ -64,13 +65,13 @@ class TypesenseSearchAdapterTest extends TestCase
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(3),
             'title' => 'Special Margherita Pizza',
-            'description' => 'Cheesy pizza'
+            'description' => 'Cheesy pizza',
         ]);
 
         $product = Product::factory()->create([
             'food_establishment_id' => $this->establishment->id,
             'name' => 'Mozzarella Cheese',
-            'description' => 'Fresh mozzarella'
+            'description' => 'Fresh mozzarella',
         ]);
 
         ProductOffer::create([
@@ -78,7 +79,7 @@ class TypesenseSearchAdapterTest extends TestCase
             'product_id' => $product->id,
             'price' => 12,
             'quantity' => 4,
-            'expiration_date' => now()->addDays(5)
+            'expiration_date' => now()->addDays(5),
         ]);
 
         $offer->searchable();
@@ -114,21 +115,21 @@ class TypesenseSearchAdapterTest extends TestCase
             'food_establishment_id' => $this->establishment->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(2),
-            'title' => 'Empanadas Valid'
+            'title' => 'Empanadas Valid',
         ]);
 
         $expiredOffer = Offer::factory()->create([
             'food_establishment_id' => $this->establishment->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->subDays(1),
-            'title' => 'Empanadas Expired'
+            'title' => 'Empanadas Expired',
         ]);
 
         $inactiveOffer = Offer::factory()->create([
             'food_establishment_id' => $this->establishment->id,
             'state' => OfferState::INACTIVE->value,
             'expiration_datetime' => now()->addDays(2),
-            'title' => 'Empanadas Inactive'
+            'title' => 'Empanadas Inactive',
         ]);
 
         $validOffer->searchable();
@@ -159,14 +160,14 @@ class TypesenseSearchAdapterTest extends TestCase
             'food_establishment_id' => $this->establishment->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(2),
-            'title' => 'Batch Offer 1'
+            'title' => 'Batch Offer 1',
         ]);
 
         $offer2 = Offer::factory()->create([
             'food_establishment_id' => $this->establishment->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(3),
-            'title' => 'Batch Offer 2'
+            'title' => 'Batch Offer 2',
         ]);
 
         // Ejecutar indexación por lote

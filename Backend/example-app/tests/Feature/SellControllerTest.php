@@ -23,10 +23,15 @@ class SellControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $customer;
+
     protected User $seller;
+
     protected User $adm;
+
     protected FoodEstablishment $establishment;
+
     protected Offer $offer;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -81,13 +86,11 @@ class SellControllerTest extends TestCase
                 [
                     'id' => $this->offer->id,
                     'quantity' => 2,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/prepare-purchase', $requestData);
-
-
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -98,21 +101,21 @@ class SellControllerTest extends TestCase
                     'total_offers',
                     'food_establishment_id',
                     'expires_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Purchase preparation completed successfully',
                 'data' => [
                     'total_offers' => 1,
                     'food_establishment_id' => $this->establishment->id,
-                ]
+                ],
             ]);
 
         $purchaseToken = $response->json('data.purchase_token');
         $this->assertNotNull($purchaseToken);
-        $this->assertTrue(session()->has('purchase_' . $purchaseToken));
+        $this->assertTrue(session()->has('purchase_'.$purchaseToken));
 
-        $sessionData = session()->get('purchase_' . $purchaseToken);
+        $sessionData = session()->get('purchase_'.$purchaseToken);
         $this->assertArrayHasKey('preparePurchaseDTO', $sessionData);
         $this->assertArrayHasKey('expires_at', $sessionData);
         $this->assertEquals($this->establishment->id, $sessionData['preparePurchaseDTO']->food_establishment_id);
@@ -131,8 +134,8 @@ class SellControllerTest extends TestCase
                 [
                     'id' => $this->offer->id,
                     'quantity' => 2,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $prepareResponse = $this->postJson('/api/prepare-purchase', $requestData);
@@ -140,19 +143,19 @@ class SellControllerTest extends TestCase
 
         // Ahora realizar la compra
         $buyResponse = $this->postJson('/api/buy-offers', [
-            'purchase_token' => $purchaseToken
+            'purchase_token' => $purchaseToken,
         ]);
 
         $buyResponse->assertStatus(200)
             ->assertJson([
-                'message' => 'Compra realizada con éxito'
+                'message' => 'Compra realizada con éxito',
             ])
             ->assertJsonStructure([
                 'message',
                 'data' => [
                     'food_establishment_id',
-                    'offers'
-                ]
+                    'offers',
+                ],
             ]);
 
         // Verificar que se creó la venta en la base de datos
@@ -173,12 +176,12 @@ class SellControllerTest extends TestCase
         $this->actingAs($this->customer);
 
         $response = $this->postJson('/api/buy-offers', [
-            'purchase_token' => 'invalid_token_123'
+            'purchase_token' => 'invalid_token_123',
         ]);
 
         $response->assertStatus(400)
             ->assertJson([
-                'error' => 'Token de compra inválido o expirado'
+                'error' => 'Token de compra inválido o expirado',
             ]);
 
         // Verificar que no se creó ninguna venta
@@ -196,7 +199,7 @@ class SellControllerTest extends TestCase
 
         $response->assertStatus(400)
             ->assertJson([
-                'error' => 'Token de compra inválido o expirado'
+                'error' => 'Token de compra inválido o expirado',
             ]);
     }
 
@@ -212,26 +215,26 @@ class SellControllerTest extends TestCase
                 [
                     'id' => $this->offer->id,
                     'quantity' => 2,
-                ]
-            ]
+                ],
+            ],
         ];
 
         $prepareResponse = $this->postJson('/api/prepare-purchase', $requestData);
         $purchaseToken = $prepareResponse->json('data.purchase_token');
 
         // Modificar manualmente la sesión para que expire
-        $sessionData = session()->get('purchase_' . $purchaseToken);
+        $sessionData = session()->get('purchase_'.$purchaseToken);
         $sessionData['expires_at'] = now()->subMinutes(10); // Expirado hace 10 minutos
-        session()->put('purchase_' . $purchaseToken, $sessionData);
+        session()->put('purchase_'.$purchaseToken, $sessionData);
 
         // Intentar comprar con token expirado
         $buyResponse = $this->postJson('/api/buy-offers', [
-            'purchase_token' => $purchaseToken
+            'purchase_token' => $purchaseToken,
         ]);
 
         $buyResponse->assertStatus(400)
             ->assertJson([
-                'error' => 'El tiempo para confirmar la compra ha expirado'
+                'error' => 'El tiempo para confirmar la compra ha expirado',
             ]);
 
         // Verificar que no se creó ninguna venta
@@ -240,7 +243,7 @@ class SellControllerTest extends TestCase
         ]);
 
         // Verificar que el token fue eliminado de la sesión
-        $this->assertFalse(session()->has('purchase_' . $purchaseToken));
+        $this->assertFalse(session()->has('purchase_'.$purchaseToken));
     }
 
     #[Test]
@@ -264,9 +267,8 @@ class SellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'chincong',
-            'product_description' => 'aojefjijoijioajeoifj'
+            'product_description' => 'aojefjijoijioajeoifj',
         ]);
-
 
         \App\Models\SellDetail::factory()->create([
             'sell_id' => $sell->id,
@@ -275,14 +277,13 @@ class SellControllerTest extends TestCase
             'product_quantity' => 2,
             'product_price' => 5,
             'product_name' => 'Chinese Food',
-            'product_description' => 'Delicious Chinese food'
+            'product_description' => 'Delicious Chinese food',
         ]);
 
         // Verificar el código
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => $pickupCode
+            'pickup_code' => $pickupCode,
         ]);
-
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -293,14 +294,14 @@ class SellControllerTest extends TestCase
                     'customer',
                     'offers',
                     'created_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Código válido',
                 'data' => [
                     'sell_id' => $sell->id,
                     'pickup_code' => $pickupCode,
-                ]
+                ],
             ]);
     }
 
@@ -310,12 +311,12 @@ class SellControllerTest extends TestCase
         $this->actingAs($this->seller);
 
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => 'INVALID-CODE'
+            'pickup_code' => 'INVALID-CODE',
         ]);
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'Código de pickup no encontrado'
+                'error' => 'Código de pickup no encontrado',
             ]);
     }
 
@@ -344,12 +345,12 @@ class SellControllerTest extends TestCase
 
         // Intentar verificar el código con el seller original
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => $pickupCode
+            'pickup_code' => $pickupCode,
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
-                'error' => 'No tienes permiso para verificar este código'
+                'error' => 'No tienes permiso para verificar este código',
             ]);
     }
 
@@ -357,7 +358,7 @@ class SellControllerTest extends TestCase
     public function it_fails_to_check_code_without_authentication(): void
     {
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => '2X3Y-4Z5A-6B7C'
+            'pickup_code' => '2X3Y-4Z5A-6B7C',
         ]);
 
         $response->assertStatus(401);
@@ -369,7 +370,6 @@ class SellControllerTest extends TestCase
         $this->actingAs($this->seller);
 
         $response = $this->postJson('/api/check-customer-code', []);
-
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['pickup_code']);
@@ -396,7 +396,7 @@ class SellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test nroduct',
-            'product_description' => 'Test Description'
+            'product_description' => 'Test Description',
         ]);
 
         // Obtener el código de retiro
@@ -410,13 +410,13 @@ class SellControllerTest extends TestCase
                     'pickup_code',
                     'establishment',
                     'created_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Código de retiro obtenido exitosamente',
                 'data' => [
                     'pickup_code' => $pickupCode,
-                ]
+                ],
             ]);
     }
 
@@ -425,11 +425,11 @@ class SellControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->getJson("/api/purchase-code/99999");
+        $response = $this->getJson('/api/purchase-code/99999');
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'Compra no encontrada'
+                'error' => 'Compra no encontrada',
             ]);
     }
 
@@ -456,7 +456,7 @@ class SellControllerTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJson([
-                'error' => 'Compra no encontrada'
+                'error' => 'Compra no encontrada',
             ]);
     }
 
@@ -503,7 +503,7 @@ class SellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test Product 1',
-            'product_description' => 'Test Description 1'
+            'product_description' => 'Test Description 1',
         ]);
 
         \App\Models\SellDetail::factory()->create([
@@ -513,7 +513,7 @@ class SellControllerTest extends TestCase
             'product_quantity' => 3,
             'product_price' => 200,
             'product_name' => 'Test Product 2',
-            'product_description' => 'Test Description 2'
+            'product_description' => 'Test Description 2',
         ]);
 
         $response = $this->getJson('/api/sells');
@@ -545,10 +545,10 @@ class SellControllerTest extends TestCase
                                 'quantity',
                                 'is_active',
                                 'expiration_datetime',
-                            ]
-                        ]
-                    ]
-                ]
+                            ],
+                        ],
+                    ],
+                ],
             ]);
 
         $responseData = $response->json();
@@ -642,9 +642,9 @@ class SellControllerTest extends TestCase
                     '*' => [
                         'from',
                         'to',
-                        'count'
-                    ]
-                ]
+                        'count',
+                    ],
+                ],
             ]);
 
         $data = $response->json('data');
@@ -694,6 +694,7 @@ class SellControllerTest extends TestCase
         $emptyIntervals = $intervals->where('count', 0);
         $this->assertGreaterThan(0, $emptyIntervals->count());
     }
+
     #[Test]
     public function it_returns_empty_intervals_when_no_sells_in_last_24_hours(): void
     {
@@ -716,12 +717,12 @@ class SellControllerTest extends TestCase
                     '*' => [
                         'from',
                         'to',
-                        'count'
-                    ]
-                ]
+                        'count',
+                    ],
+                ],
             ])
             ->assertJson([
-                'message' => 'Ventas de las últimas 24 horas obtenidas exitosamente'
+                'message' => 'Ventas de las últimas 24 horas obtenidas exitosamente',
             ]);
 
         $data = $response->json('data');
@@ -737,6 +738,7 @@ class SellControllerTest extends TestCase
 
         $this->assertEquals(0, array_sum(array_column($data, 'count')));
     }
+
     #[Test]
     public function it_only_counts_picked_up_sells_in_last_24_hours(): void
     {

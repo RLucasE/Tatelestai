@@ -1,19 +1,18 @@
 <?php
 
-use App\Models\User;
-use App\Models\Sell;
-use App\Models\SellDetail;
+use App\Actions\Sell\CalculateMaxPickupDatetimeAction;
+use App\Actions\Sell\GeneratePickupCodeAction;
+use App\DTOs\PrepareOfferDTO;
+use App\DTOs\PreparePurchaseDTO;
+use App\Enums\UserState;
+use App\Models\EstablishmentType;
+use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Product;
-use App\Models\FoodEstablishment;
-use App\Models\EstablishmentType;
-use App\Models\Category;
-use App\Enums\UserState;
+use App\Models\Sell;
+use App\Models\SellDetail;
+use App\Models\User;
 use Spatie\Permission\Models\Role;
-use App\Actions\Sell\GeneratePickupCodeAction;
-use App\Actions\Sell\CalculateMaxPickupDatetimeAction;
-use App\DTOs\PreparePurchaseDTO;
-use App\DTOs\PrepareOfferDTO;
 
 beforeEach(function () {
     // Crear datos base que se reutilizarán en todos los tests
@@ -25,17 +24,17 @@ beforeEach(function () {
 test('customer can retrieve their purchases successfully and includes pickup deadline and state', function () {
     // Crear un customer autenticado usando factory
     $customer = User::factory()->withRole('customer')->create([
-        'state' => UserState::ACTIVE->value
+        'state' => UserState::ACTIVE->value,
     ]);
 
     // Crear un seller y su estableciento usando factories
     $seller = User::factory()->withRole('seller')->create([
-        'state' => UserState::ACTIVE->value
+        'state' => UserState::ACTIVE->value,
     ]);
 
     $establishment = FoodEstablishment::factory()->create([
         'user_id' => $seller->id,
-        'establishment_type_id' => $this->establishmentType->id
+        'establishment_type_id' => $this->establishmentType->id,
     ]);
 
     // Crear productos usando factory
@@ -60,10 +59,10 @@ test('customer can retrieve their purchases successfully and includes pickup dea
     $offer2 = PrepareOfferDTO::createFromIdAndQuantity($offer2->id, $offer2->quantity);
 
     // Calcular max_pickup_datetime usando el Action
-    $calculateMaxPickupAction = new CalculateMaxPickupDatetimeAction();
+    $calculateMaxPickupAction = new CalculateMaxPickupDatetimeAction;
     $maxPickupDatetime = $calculateMaxPickupAction->execute([$offer1, $offer2]);
 
-    $generatePickupCodeAction = new GeneratePickupCodeAction();
+    $generatePickupCodeAction = new GeneratePickupCodeAction;
     $pickupCode = $generatePickupCodeAction->execute(
         $customer->id,
         $establishment->id,
@@ -90,7 +89,7 @@ test('customer can retrieve their purchases successfully and includes pickup dea
         'product_quantity' => 1,
         'product_price' => 1500,
         'product_name' => 'Pizza Margherita',
-        'product_description' => 'Pizza con tomate y mozzarella'
+        'product_description' => 'Pizza con tomate y mozzarella',
     ]);
 
     $sellDetail2 = SellDetail::factory()->create([
@@ -100,12 +99,11 @@ test('customer can retrieve their purchases successfully and includes pickup dea
         'product_quantity' => 2,
         'product_price' => 800,
         'product_name' => 'Hamburguesa Clásica',
-        'product_description' => 'Hamburguesa con carne y vegetales'
+        'product_description' => 'Hamburguesa con carne y vegetales',
     ]);
 
     // Hacer la petición como customer autenticado
     $response = $this->actingAs($customer)->getJson('/api/customer/purchases');
-
 
     // Verificar respuesta exitosa
     $response->assertStatus(200);
@@ -129,10 +127,10 @@ test('customer can retrieve their purchases successfully and includes pickup dea
                         'product_price',
                         'product_name',
                         'product_description',
-                    ]
-                ]
-            ]
-        ]
+                    ],
+                ],
+            ],
+        ],
     ]);
 
     // Verificar que los datos son correctos y que max_pickup_datetime coincide con el calculado por el action

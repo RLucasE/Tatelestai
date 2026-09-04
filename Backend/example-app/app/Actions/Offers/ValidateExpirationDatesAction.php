@@ -12,8 +12,6 @@ class ValidateExpirationDatesAction
      * Valida que la fecha de expiración de la oferta sea mayor a ahora
      * y que las fechas de expiración de los productos no sean mayores a la de la oferta
      *
-     * @param CreateNewOfferDTO $offerDTO
-     * @return bool
      * @throws InvalidExpirationDateException
      */
     public function execute(CreateNewOfferDTO $offerDTO): bool

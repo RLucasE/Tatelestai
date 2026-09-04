@@ -16,9 +16,8 @@ class SendSellerActivatedEmail implements ShouldQueue
     {
         $user = $event->user;
 
-        if (!empty($user->email)) {
+        if (! empty($user->email)) {
             Mail::to($user->email)->send(new SellerActivatedMail($user));
         }
     }
 }
-

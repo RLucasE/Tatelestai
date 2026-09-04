@@ -57,7 +57,7 @@ class ProductFactory extends Factory
                 'Arepas',
                 'Chilaquiles',
                 'Ramen Tonkotsu',
-                'Okonomiyaki'
+                'Okonomiyaki',
             ]),
             'description' => $this->faker->randomElement([
                 'Deliciosa preparación con ingredientes frescos',
@@ -80,7 +80,7 @@ class ProductFactory extends Factory
                 'Rápido, sabroso y elaborado al instante',
                 'Sabor internacional con toque local',
                 'Apto para niños y paladares exigentes',
-                'Maridado especialmente para resaltar sabores'
+                'Maridado especialmente para resaltar sabores',
             ]),
         ];
     }

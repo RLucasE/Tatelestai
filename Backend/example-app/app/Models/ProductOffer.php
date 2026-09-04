@@ -9,5 +9,6 @@ class ProductOffer extends Model
 {
     /** @use HasFactory<\Database\Factories\ProductOfferFactory> */
     use HasFactory;
+
     protected $guarded = ['id'];
 }

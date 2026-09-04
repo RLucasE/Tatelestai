@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Category;
+use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
 {
@@ -16,24 +15,24 @@ class CategorySeeder extends Seeder
         //
         Category::factory()->create([
             'category_name' => 'Panaderia',
-            'parent_id' => null
+            'parent_id' => null,
         ]);
 
         $panaderiaId = Category::where('category_name', 'Panaderia')->first()->id;
 
         Category::factory()->create([
             'category_name' => 'Bollos',
-            'parent_id' => $panaderiaId
+            'parent_id' => $panaderiaId,
         ]);
 
         Category::factory()->create([
             'category_name' => 'Facturas',
-            'parent_id' => $panaderiaId
+            'parent_id' => $panaderiaId,
         ]);
 
         Category::factory()->create([
             'category_name' => 'Platos Preparados',
-            'parent_id' => null
+            'parent_id' => null,
         ]);
     }
 }

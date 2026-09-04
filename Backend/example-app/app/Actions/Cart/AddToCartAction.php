@@ -2,20 +2,18 @@
 
 namespace App\Actions\Cart;
 
+use App\Actions\Offers\GetOfferAction;
 use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Actions\Offers\ValidateOfferStateAction;
 use App\Enums\OfferState;
 use App\Exceptions\Cart\OfferQuantityExceededException;
-use App\Models\OfferCart;
-use App\Http\Controllers\OfferController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OfferController;
+use App\Models\OfferCart;
 use Illuminate\Support\Facades\Auth;
-use App\Actions\Offers\GetOfferAction;
 
 class AddToCartAction
 {
-
-
     public function __construct(
         private OfferController $offerController,
         private CartController $cartController,
@@ -30,23 +28,23 @@ class AddToCartAction
      */
     public function handle(int $offerId, int $quantity)
     {
-        if (!$this->validateOfferExpiration->execute($offerId)) {
+        if (! $this->validateOfferExpiration->execute($offerId)) {
             return null;
         }
         try {
-            $this->validateOfferState->execute($offerId,OfferState::ACTIVE->value);
+            $this->validateOfferState->execute($offerId, OfferState::ACTIVE->value);
             if ($this->offerIsInCart($offerId)) {
                 return $this->updateOfferQuantity($offerId, $quantity);
             }
             $offer = $this->getOfferAction->execute($offerId);
-            $this->validQuantity($offer->quantity,0,$quantity);
-        }catch (OfferQuantityExceededException $exception) {
+            $this->validQuantity($offer->quantity, 0, $quantity);
+        } catch (OfferQuantityExceededException $exception) {
             $exception->setOfferId($offerId);
             throw $exception;
+        } catch (\Exception $exception) {
+            throw new \Exception('Error al agregar la oferta al carrito, '.$exception->getMessage());
         }
-        catch (\Exception $exception) {
-            throw new \Exception("Error al agregar la oferta al carrito, " . $exception->getMessage());
-        }
+
         return $this->cartController->addOfferToCart($offer, $quantity);
     }
 
@@ -54,7 +52,7 @@ class AddToCartAction
     {
         $activeCart = $this->cartController->getLastActiveCart(Auth::id());
 
-        if (!$activeCart) {
+        if (! $activeCart) {
             return false;
         }
 
@@ -72,17 +70,13 @@ class AddToCartAction
         $activeCart = $this->cartController->getLastActiveCart(Auth::id());
         $offer = $this->offerController->resolveOffer($offerId);
 
-
-
-        if (!$activeCart) {
+        if (! $activeCart) {
             return null;
         }
 
         $offerCart = OfferCart::where('offer_id', $offerId)
             ->where('user_cart_id', $activeCart->id)
             ->first();
-
-
 
         if ($offerCart) {
             $this->validQuantity($offer->quantity, $offerCart->quantity, $quantity);
@@ -98,6 +92,10 @@ class AddToCartAction
      */
     protected function validQuantity(int $offerQuantity, int $quantityInCart, int $newQuantity): bool
     {
-        if ($offerQuantity < $quantityInCart + $newQuantity) throw (new OfferQuantityExceededException())->setContext(0,$newQuantity,$offerQuantity,$quantityInCart); else return true;
+        if ($offerQuantity < $quantityInCart + $newQuantity) {
+            throw (new OfferQuantityExceededException)->setContext(0, $newQuantity, $offerQuantity, $quantityInCart);
+        } else {
+            return true;
+        }
     }
 }

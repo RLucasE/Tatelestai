@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstablishmentTypeState;
-use App\Http\Controllers\Controller;
 use App\Models\EstablishmentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +23,7 @@ class PublicDataController extends Controller
     public function getUser(Request $request)
     {
         $user = Auth::user();
+
         return [
             'id' => $user->id,
             'name' => $user->name,

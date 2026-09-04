@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 class GooglePlacesService
 {
     protected string $apiKey;
+
     protected string $baseUrl = 'https://maps.googleapis.com/maps/api';
 
     public function __construct()
@@ -36,14 +37,16 @@ class GooglePlacesService
             if ($response->failed()) {
                 Log::error('Google Places API search failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
+
                 return ['status' => 'error', 'results' => []];
             }
 
             return $response->json();
         } catch (\Exception $e) {
             Log::error('Google Places search exception', ['error' => $e->getMessage()]);
+
             return ['status' => 'error', 'results' => []];
         }
     }
@@ -57,7 +60,7 @@ class GooglePlacesService
             $params = [
                 'place_id' => $placeId,
                 'fields' => 'place_id,name,formatted_address,geometry,formatted_phone_number,opening_hours,photos,rating,types,website,business_status,user_ratings_total',
-                'key' => $this->apiKey
+                'key' => $this->apiKey,
             ];
 
             $response = Http::get("{$this->baseUrl}/place/details/json", $params);
@@ -65,14 +68,16 @@ class GooglePlacesService
             if ($response->failed()) {
                 Log::error('Google Places API details failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
+
                 return ['status' => 'error', 'result' => null];
             }
 
             return $response->json();
         } catch (\Exception $e) {
             Log::error('Google Places details exception', ['error' => $e->getMessage()]);
+
             return ['status' => 'error', 'result' => null];
         }
     }
@@ -107,16 +112,17 @@ class GooglePlacesService
             if ($response->failed()) {
                 Log::error('Google Places autocomplete failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
+
                 return ['status' => 'error', 'predictions' => []];
             }
 
             return $response->json();
         } catch (\Exception $e) {
             Log::error('Google Places autocomplete exception', ['error' => $e->getMessage()]);
+
             return ['status' => 'error', 'predictions' => []];
         }
     }
 }
-

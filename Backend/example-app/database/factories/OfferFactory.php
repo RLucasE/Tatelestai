@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\OfferState;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Enums\OfferState;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Offer>
@@ -62,7 +62,7 @@ class OfferFactory extends Factory
             'Promo English breakfast', 'Oferta continental plus', 'Descuento en yogurt parfait',
             'Combo fruit salad', 'Promo detox juice', 'Oferta green smoothie',
             'Descuento en kombucha', 'Combo cold brew coffee', 'Promo matcha latte',
-            'Oferta chai tea latte', 'Descuento en cappuccino', 'Combo espresso doble'
+            'Oferta chai tea latte', 'Descuento en cappuccino', 'Combo espresso doble',
         ];
 
         $descriptions = [
@@ -174,7 +174,7 @@ class OfferFactory extends Factory
             'Técnicas de encapsulado natural. Explosiones de sabor controladas.',
             'Preparaciones ricas en minerales. Nutrición completa en cada bocado.',
             'Cocina latina tradicional. Sabores que abrazan el alma.',
-            'Técnicas de cristalización. Texturas crujientes sorprendentes.'
+            'Técnicas de cristalización. Texturas crujientes sorprendentes.',
         ];
 
         return [
@@ -182,12 +182,12 @@ class OfferFactory extends Factory
             'title' => $this->faker->randomElement($titles),
             'description' => $this->faker->randomElement($descriptions),
             'expiration_date' => $expirationDate->format('Y-m-d'),
-            'expiration_datetime' => $expirationDate->format('Y-m-d') . ' ' . $expirationTime,
+            'expiration_datetime' => $expirationDate->format('Y-m-d').' '.$expirationTime,
             'quantity' => $this->faker->numberBetween(1, 50),
             'state' => $this->faker->randomElement([
                 OfferState::ACTIVE->value,
                 OfferState::VERIFIYING->value,
-                OfferState::PURCHASED->value
+                OfferState::PURCHASED->value,
             ]),
         ];
     }
@@ -197,7 +197,7 @@ class OfferFactory extends Factory
      */
     public function active(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'state' => OfferState::ACTIVE->value,
         ]);
     }
@@ -207,7 +207,7 @@ class OfferFactory extends Factory
      */
     public function purchased(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'state' => OfferState::PURCHASED->value,
             'quantity' => 0,
         ]);
@@ -220,7 +220,7 @@ class OfferFactory extends Factory
     {
         $expirationDateTime = $this->faker->dateTimeBetween('+1 hour', '+6 hours');
 
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'expiration_date' => $expirationDateTime->format('Y-m-d'),
             'expiration_datetime' => $expirationDateTime->format('Y-m-d H:i:s'),
             'state' => OfferState::ACTIVE->value,
@@ -230,7 +230,7 @@ class OfferFactory extends Factory
     /**
      * Configura la oferta con productos aleatorios
      */
-    public function withProducts(int $productCount = null): static
+    public function withProducts(?int $productCount = null): static
     {
         return $this->afterCreating(function ($offer) use ($productCount) {
             $count = $productCount ?? $this->faker->numberBetween(1, 5);
@@ -241,7 +241,7 @@ class OfferFactory extends Factory
 
             foreach ($products as $product) {
                 $offer->products()->attach($product->id, [
-                    'price' => $this->faker->randomDigit(1000,5000),
+                    'price' => $this->faker->randomDigit(1000, 5000),
                     'quantity' => $this->faker->numberBetween(1, 10),
                     'expiration_date' => $this->faker->dateTimeBetween('+1 day', '+1 week')->format('Y-m-d'),
                     'created_at' => now(),
@@ -250,5 +250,4 @@ class OfferFactory extends Factory
             }
         });
     }
-
 }

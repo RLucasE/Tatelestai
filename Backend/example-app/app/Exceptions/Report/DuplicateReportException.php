@@ -7,11 +7,13 @@ use Exception;
 class DuplicateReportException extends Exception
 {
     protected $reportableType;
+
     protected $reportableId;
+
     protected $userId;
 
     public function __construct(
-        $message = "You have already reported this element",
+        $message = 'You have already reported this element',
         $code = 409,
         $reportableType = null,
         $reportableId = null,
@@ -37,4 +39,3 @@ class DuplicateReportException extends Exception
         ];
     }
 }
-

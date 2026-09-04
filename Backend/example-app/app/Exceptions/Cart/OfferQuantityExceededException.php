@@ -7,11 +7,14 @@ use Exception;
 class OfferQuantityExceededException extends Exception
 {
     protected $offerId;
+
     protected $requestedQuantity;
+
     protected $availableQuantity;
+
     protected $alreadyInCart;
 
-    public function __construct($message = "La cantidad solicitada excede la disponible ", $code = 400)
+    public function __construct($message = 'La cantidad solicitada excede la disponible ', $code = 400)
     {
         parent::__construct($message, $code);
     }
@@ -28,17 +31,13 @@ class OfferQuantityExceededException extends Exception
             'requested_quantity' => $this->requestedQuantity,
             'available_quantity' => $this->availableQuantity,
             'already_in_cart' => $this->alreadyInCart,
-            'error' => "OfferQuantityExceded"
+            'error' => 'OfferQuantityExceded',
         ];
     }
 
     /**
      * Establecer datos de contexto para la excepción.
      *
-     * @param int $offerId
-     * @param int $requestedQuantity
-     * @param int $availableQuantity
-     * @param int $alreadyInCart
      * @return $this
      */
     public function setContext(int $offerId, int $requestedQuantity, int $availableQuantity, int $alreadyInCart)
@@ -47,10 +46,12 @@ class OfferQuantityExceededException extends Exception
         $this->requestedQuantity = $requestedQuantity;
         $this->availableQuantity = $availableQuantity;
         $this->alreadyInCart = $alreadyInCart;
+
         return $this;
     }
 
-    public function setOfferId(int $offerId){
+    public function setOfferId(int $offerId)
+    {
         $this->offerId = $offerId;
     }
 }

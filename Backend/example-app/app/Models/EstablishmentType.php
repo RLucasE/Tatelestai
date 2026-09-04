@@ -18,6 +18,6 @@ class EstablishmentType extends Model
         'name',
         'slug',
         'state',
-        'description'
+        'description',
     ];
 }

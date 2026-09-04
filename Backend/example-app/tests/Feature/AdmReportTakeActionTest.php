@@ -11,16 +11,11 @@ use App\Models\Offer;
 use App\Models\Report;
 use App\Models\User;
 use Database\Seeders\CategorySeeder;
-use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\EstablishmentTypeSeeder;
-use Database\Seeders\FoodEstablishmentSeeder;
-use Database\Seeders\OfferSeeder;
 use Database\Seeders\PermissionSeeder;
-use Database\Seeders\ProductCategorySeeder;
-use Database\Seeders\ProductSeeder;
-use Database\Seeders\SellSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\postJson;
 
@@ -43,10 +38,9 @@ test('admin can take action on offer report and deactivate it', function () {
     ]);
     $seller->assignRole(UserRole::SELLER->value);
 
-
     $establishment = FoodEstablishment::factory()->create([
         'user_id' => $seller->id,
-        'establishment_type_id' => EstablishmentType::inRandomOrder()->first()?->id
+        'establishment_type_id' => EstablishmentType::inRandomOrder()->first()?->id,
     ]);
 
     // Crear una oferta activa
@@ -207,7 +201,7 @@ test('admin can take action on user report and deactivate user with all offers',
 });
 
 test('it fails to take action on non existent report', function () {
-    $response = postJson("/api/adm/reports/99999/take-action");
+    $response = postJson('/api/adm/reports/99999/take-action');
 
     $response->assertStatus(404);
 });
@@ -241,4 +235,3 @@ test('it requires authentication to take action on report', function () {
 
     $response->assertStatus(401);
 });
-

@@ -8,7 +8,6 @@ use App\Models\Offer;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -20,20 +19,20 @@ class ProductController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
         ]);
 
         // Obtener el establecimiento del vendedor autenticado
         $establishment = FoodEstablishment::where('user_id', Auth::id())->first();
 
-        if (!$establishment) {
+        if (! $establishment) {
             return response()->json([
-                'message' => 'No se encontró un establecimiento asociado a este usuario'
+                'message' => 'No se encontró un establecimiento asociado a este usuario',
             ], 404);
         }
 
         try {
-            $product = new Product();
+            $product = new Product;
             $product->name = $request->name;
             $product->description = $request->description;
             $product->food_establishment_id = $establishment->id;
@@ -41,12 +40,12 @@ class ProductController extends Controller
 
             return response()->json([
                 'message' => 'Producto creado exitosamente',
-                'product' => $product
+                'product' => $product,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al crear el producto',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -56,9 +55,9 @@ class ProductController extends Controller
         try {
             $establishment = FoodEstablishment::where('user_id', Auth::id())->first();
 
-            if (!$establishment) {
+            if (! $establishment) {
                 return response()->json([
-                    'message' => 'No se encontró el establecimiento del vendedor'
+                    'message' => 'No se encontró el establecimiento del vendedor',
                 ], 404);
             }
 
@@ -67,12 +66,12 @@ class ProductController extends Controller
                 ->get();
 
             return response()->json([
-                'products' => $products
+                'products' => $products,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener los productos',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -84,22 +83,22 @@ class ProductController extends Controller
 
             $establishment = FoodEstablishment::where('user_id', Auth::id())->first();
 
-            if (!$establishment) {
+            if (! $establishment) {
                 return response()->json([
-                    'message' => 'No se encontró el establecimiento del vendedor'
+                    'message' => 'No se encontró el establecimiento del vendedor',
                 ], 404);
             }
 
-            if (!$product || $establishment->id !== $product->food_establishment_id) {
+            if (! $product || $establishment->id !== $product->food_establishment_id) {
                 return response()->json([
-                    'message' => 'Producto no encontrado'
+                    'message' => 'Producto no encontrado',
                 ], 404);
             }
 
             $product->update(
                 [
                     'name' => $request->name,
-                    'description' => $request->description
+                    'description' => $request->description,
                 ]
             );
 
@@ -115,12 +114,12 @@ class ProductController extends Controller
 
             return response()->json([
                 'message' => 'Producto actualizado exitosamente',
-                'product' => $product
+                'product' => $product,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener el producto',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -128,7 +127,7 @@ class ProductController extends Controller
     public function destroy($id)
     {
         return response()->json([
-            'message' => 'No se ah podido eliminar el producto'
+            'message' => 'No se ah podido eliminar el producto',
         ]);
     }
 }

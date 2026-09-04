@@ -13,8 +13,8 @@ class CalculateMaxPickupDatetimeAction
      * Calcula la fecha/hora máxima para retirar el pedido basada en múltiples ofertas.
      * Toma las fechas de expiración de las ofertas y devuelve la más cercana a ahora (la más temprana).
      *
-     * @param array<int, PrepareOfferDTO> $offers
-     * @return Carbon
+     * @param  array<int, PrepareOfferDTO>  $offers
+     *
      * @throws InvalidArgumentException
      */
     public function execute(array $offers): Carbon
@@ -35,13 +35,13 @@ class CalculateMaxPickupDatetimeAction
                 $offerId = $offer['id'];
             }
 
-            if (!$offerId) {
+            if (! $offerId) {
                 continue;
             }
 
             $offerModel = Offer::find($offerId);
 
-            if ($offerModel && !empty($offerModel->expiration_datetime)) {
+            if ($offerModel && ! empty($offerModel->expiration_datetime)) {
                 $this->pushParsedDate($dates, $offerModel->expiration_datetime);
             }
         }
@@ -51,17 +51,13 @@ class CalculateMaxPickupDatetimeAction
         }
 
         // Ordenar fechas de menor a mayor y devolver la más cercana (primera)
-        usort($dates, fn(Carbon $a, Carbon $b) => $a->lessThan($b) ? -1 : 1);
+        usort($dates, fn (Carbon $a, Carbon $b) => $a->lessThan($b) ? -1 : 1);
 
         return $dates[0];
     }
 
     /**
      * Intenta parsear una fecha y agregarla al array si es válida
-     *
-     * @param array $dates
-     * @param string|Carbon $date
-     * @return void
      */
     private function pushParsedDate(array &$dates, string|Carbon $date): void
     {
@@ -77,4 +73,3 @@ class CalculateMaxPickupDatetimeAction
         }
     }
 }
-

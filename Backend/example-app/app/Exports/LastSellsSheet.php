@@ -26,7 +26,7 @@ class LastSellsSheet implements FromArray, WithHeadings, WithStyles, WithTitle
             $rows[] = [
                 $interval['from'] ?? '',
                 $interval['to'] ?? '',
-                $interval['count'] ?? 0
+                $interval['count'] ?? 0,
             ];
         }
 
@@ -43,7 +43,7 @@ class LastSellsSheet implements FromArray, WithHeadings, WithStyles, WithTitle
         return [
             1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'E2E8F0']
+                'startColor' => ['rgb' => 'E2E8F0'],
             ]],
         ];
     }
@@ -53,4 +53,3 @@ class LastSellsSheet implements FromArray, WithHeadings, WithStyles, WithTitle
         return 'Ventas Últimas 24h';
     }
 }
-

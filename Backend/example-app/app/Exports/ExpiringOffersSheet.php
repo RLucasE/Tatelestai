@@ -25,7 +25,7 @@ class ExpiringOffersSheet implements FromArray, WithHeadings, WithStyles, WithTi
         foreach ($this->expiringOffers as $offer) {
             $rows[] = [
                 $offer['day'] ?? $offer['label'] ?? '',
-                $offer['count'] ?? $offer['value'] ?? 0
+                $offer['count'] ?? $offer['value'] ?? 0,
             ];
         }
 
@@ -42,7 +42,7 @@ class ExpiringOffersSheet implements FromArray, WithHeadings, WithStyles, WithTi
         return [
             1 => ['font' => ['bold' => true, 'size' => 12], 'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'FDE68A']
+                'startColor' => ['rgb' => 'FDE68A'],
             ]],
         ];
     }

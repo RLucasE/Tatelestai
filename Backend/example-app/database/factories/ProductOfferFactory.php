@@ -29,7 +29,7 @@ class ProductOfferFactory extends Factory
         }
 
         // Si no hay establishment, crear datos básicos
-        if (!$establishment) {
+        if (! $establishment) {
             return [
                 'product_id' => Product::factory(),
                 'offer_id' => Offer::factory(),

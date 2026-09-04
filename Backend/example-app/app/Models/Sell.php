@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Sell extends Model
 {
     protected $guarded = ['id'];
+
     /** @use HasFactory<\Database\Factories\SellFactory> */
     use HasFactory;
 
@@ -26,11 +27,11 @@ class Sell extends Model
 
     public function foodEstablishment(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(FoodEstablishment::class,'sold_by');
+        return $this->belongsTo(FoodEstablishment::class, 'sold_by');
     }
 
     public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(User::class,'bought_by');
+        return $this->belongsTo(User::class, 'bought_by');
     }
 }

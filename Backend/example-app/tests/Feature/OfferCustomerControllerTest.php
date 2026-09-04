@@ -6,11 +6,11 @@ use App\Enums\OfferState;
 use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\EstablishmentType;
-use App\Models\Offer;
-use App\Models\User;
-use App\Models\Product;
 use App\Models\FoodEstablishment;
+use App\Models\Offer;
+use App\Models\Product;
 use App\Models\ProductOffer;
+use App\Models\User;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +23,9 @@ class OfferCustomerControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $user;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
 
     protected function setUp(): void
@@ -58,7 +60,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(1),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Active Offer 1',
-            'description' => 'Description for active offer 1'
+            'description' => 'Description for active offer 1',
         ]);
 
         $activeOffer2 = Offer::factory()->create([
@@ -66,16 +68,16 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(2),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Active Offer 2',
-            'description' => 'Description for active offer 2'
+            'description' => 'Description for active offer 2',
         ]);
 
         $product1 = Product::factory()->create([
-                'food_establishment_id' => $this->establishment->id,
-            ]
+            'food_establishment_id' => $this->establishment->id,
+        ]
         );
         $product2 = Product::factory()->create([
-                'food_establishment_id' => $this->establishment->id,
-            ]
+            'food_establishment_id' => $this->establishment->id,
+        ]
         );
 
         ProductOffer::create([
@@ -83,7 +85,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product1->id,
             'price' => 10,
             'quantity' => 5,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         ProductOffer::create([
@@ -91,19 +93,19 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product2->id,
             'price' => 15,
             'quantity' => 3,
-            'expiration_date' => now()->addDays(15)
+            'expiration_date' => now()->addDays(15),
         ]);
 
         Offer::factory()->create([
             'state' => OfferState::INACTIVE->value,
             'expiration_datetime' => now()->addDays(1),
-            'food_establishment_id' => $this->establishment->id
+            'food_establishment_id' => $this->establishment->id,
         ]);
 
         Offer::factory()->create([
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->subDays(1),
-            'food_establishment_id' => $this->establishment->id
+            'food_establishment_id' => $this->establishment->id,
         ]);
 
         $response = $this->getJson('/api/offers');
@@ -127,14 +129,14 @@ class OfferCustomerControllerTest extends TestCase
                                 'description',
                                 'quantity',
                                 'price',
-                                'expiration_date'
-                            ]
-                        ]
-                    ]
+                                'expiration_date',
+                            ],
+                        ],
+                    ],
                 ],
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
 
         $responseData = $response->json();
@@ -169,7 +171,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(1),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Pizza Special Offer',
-            'description' => 'Special pizza discount'
+            'description' => 'Special pizza discount',
         ]);
 
         $nonSearchableOffer = Offer::factory()->create([
@@ -177,7 +179,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(1),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Burger Combo',
-            'description' => 'Burger with fries'
+            'description' => 'Burger with fries',
         ]);
 
         $product = Product::factory()->create([
@@ -190,7 +192,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 12,
             'quantity' => 2,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         ProductOffer::create([
@@ -198,7 +200,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 8,
             'quantity' => 1,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         $searchableOffer->searchable();
@@ -210,7 +212,7 @@ class OfferCustomerControllerTest extends TestCase
                 'data',
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
 
         $responseData = $response->json();
@@ -236,7 +238,7 @@ class OfferCustomerControllerTest extends TestCase
                 'data',
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
 
         $responseCoconutData = $responseCoconut->json();
@@ -261,7 +263,7 @@ class OfferCustomerControllerTest extends TestCase
                 'state' => OfferState::ACTIVE->value,
                 'expiration_datetime' => now()->addDays(1),
                 'food_establishment_id' => $this->establishment->id,
-                'title' => "Offer $i"
+                'title' => "Offer $i",
             ]);
 
             $product = Product::factory()->create([
@@ -272,7 +274,7 @@ class OfferCustomerControllerTest extends TestCase
                 'product_id' => $product->id,
                 'price' => 10,
                 'quantity' => 1,
-                'expiration_date' => now()->addDays(10)
+                'expiration_date' => now()->addDays(10),
             ]);
         }
 
@@ -297,14 +299,14 @@ class OfferCustomerControllerTest extends TestCase
                                 'description',
                                 'quantity',
                                 'price',
-                                'expiration_date'
-                            ]
-                        ]
-                    ]
+                                'expiration_date',
+                            ],
+                        ],
+                    ],
                 ],
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
         $responseData = $response->json();
 
@@ -334,14 +336,14 @@ class OfferCustomerControllerTest extends TestCase
                                 'description',
                                 'quantity',
                                 'price',
-                                'expiration_date'
-                            ]
-                        ]
-                    ]
+                                'expiration_date',
+                            ],
+                        ],
+                    ],
                 ],
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
         $responseData = $response->json();
 
@@ -357,25 +359,25 @@ class OfferCustomerControllerTest extends TestCase
         $activeValidOffer = Offer::factory()->create([
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(1),
-            'food_establishment_id' => $this->establishment->id
+            'food_establishment_id' => $this->establishment->id,
         ]);
 
         $inactiveOffer = Offer::factory()->create([
             'state' => OfferState::INACTIVE->value,
             'expiration_datetime' => now()->addDays(1),
-            'food_establishment_id' => $this->establishment->id
+            'food_establishment_id' => $this->establishment->id,
         ]);
 
         $verifyingOffer = Offer::factory()->create([
             'state' => OfferState::VERIFIYING->value,
             'expiration_datetime' => now()->addDays(1),
-            'food_establishment_id' => $this->establishment->id
+            'food_establishment_id' => $this->establishment->id,
         ]);
 
         $expiredOffer = Offer::factory()->create([
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->subDays(1),
-            'food_establishment_id' => $this->establishment->id
+            'food_establishment_id' => $this->establishment->id,
         ]);
 
         $product = Product::factory()->create([
@@ -386,7 +388,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 10,
             'quantity' => 1,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         $response = $this->getJson('/api/offers');
@@ -410,14 +412,14 @@ class OfferCustomerControllerTest extends TestCase
                                 'description',
                                 'quantity',
                                 'price',
-                                'expiration_date'
-                            ]
-                        ]
-                    ]
+                                'expiration_date',
+                            ],
+                        ],
+                    ],
                 ],
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
         $responseData = $response->json();
 
@@ -435,13 +437,13 @@ class OfferCustomerControllerTest extends TestCase
                 'data',
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ])
             ->assertJson([
                 'data' => [],
                 'current_page' => 1,
                 'per_page' => 20,
-                'has_more' => false
+                'has_more' => false,
             ]);
     }
 
@@ -453,7 +455,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(1),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Pizza Special Active',
-            'description' => 'Active pizza offer'
+            'description' => 'Active pizza offer',
         ]);
 
         $verifyingOffer = Offer::factory()->create([
@@ -461,7 +463,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(1),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Pizza Special Verifying',
-            'description' => 'Verifying pizza offer'
+            'description' => 'Verifying pizza offer',
         ]);
 
         $product = Product::factory()->create([
@@ -473,7 +475,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 10,
             'quantity' => 1,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         ProductOffer::create([
@@ -481,7 +483,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 12,
             'quantity' => 1,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         $activeOffer->searchable();
@@ -508,7 +510,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->addDays(2),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Delicious Pizza Active',
-            'description' => 'Active pizza'
+            'description' => 'Active pizza',
         ]);
 
         $expiredOffer = Offer::factory()->create([
@@ -516,7 +518,7 @@ class OfferCustomerControllerTest extends TestCase
             'expiration_datetime' => now()->subDays(2),
             'food_establishment_id' => $this->establishment->id,
             'title' => 'Delicious Pizza Expired',
-            'description' => 'Expired pizza'
+            'description' => 'Expired pizza',
         ]);
 
         $product = Product::factory()->create([
@@ -528,7 +530,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 10,
             'quantity' => 1,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         ProductOffer::create([
@@ -536,7 +538,7 @@ class OfferCustomerControllerTest extends TestCase
             'product_id' => $product->id,
             'price' => 10,
             'quantity' => 1,
-            'expiration_date' => now()->addDays(10)
+            'expiration_date' => now()->addDays(10),
         ]);
 
         $validOffer->searchable();
@@ -567,7 +569,7 @@ class OfferCustomerControllerTest extends TestCase
                 'expiration_datetime' => now()->addDays(1),
                 'food_establishment_id' => $this->establishment->id,
                 'title' => "Tacos Batch $i",
-                'description' => "Description for taco $i"
+                'description' => "Description for taco $i",
             ]);
 
             ProductOffer::create([
@@ -575,7 +577,7 @@ class OfferCustomerControllerTest extends TestCase
                 'product_id' => $product->id,
                 'price' => 10,
                 'quantity' => 1,
-                'expiration_date' => now()->addDays(10)
+                'expiration_date' => now()->addDays(10),
             ]);
 
             $offer->searchable();
@@ -588,7 +590,7 @@ class OfferCustomerControllerTest extends TestCase
                 'data',
                 'current_page',
                 'per_page',
-                'has_more'
+                'has_more',
             ]);
 
         $dataPage1 = $responsePage1->json();
@@ -708,4 +710,3 @@ class OfferCustomerControllerTest extends TestCase
         $this->assertEquals(-58.3816, (float) $foundOffer['establishment_longitude']);
     }
 }
-

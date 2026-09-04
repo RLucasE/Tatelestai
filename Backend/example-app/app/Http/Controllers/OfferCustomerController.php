@@ -23,7 +23,7 @@ class OfferCustomerController extends Controller
         $perPage = 20; // Número de ofertas por página
 
         // Si hay una query de búsqueda, usar el servicio de búsqueda
-        if ($request->has('search') && !empty(trim($request->get('search')))) {
+        if ($request->has('search') && ! empty(trim($request->get('search')))) {
             $searchQuery = trim($request->get('search'));
             $searchQueryDTO = new SearchQueryDTO(
                 query: $searchQuery,
@@ -54,7 +54,7 @@ class OfferCustomerController extends Controller
                 'fullProducts',
                 'foodEstablishment' => function ($query) {
                     $query->select('id', 'name', 'address', 'latitude', 'longitude');
-                }
+                },
             ])
             ->paginate($perPage, ['*'], 'page', $page);
 
@@ -66,12 +66,13 @@ class OfferCustomerController extends Controller
             'data' => $transformedOffers,
             'current_page' => $offers->currentPage(),
             'per_page' => $offers->perPage(),
-            'has_more' => $offers->hasMorePages()
+            'has_more' => $offers->hasMorePages(),
         ]);
     }
 
     /**
      * Transform an Offer model to OfferDTO
+     *
      * @throws \Exception
      */
     private function transformOfferToDTO(Offer $offer): OfferDTO
@@ -102,7 +103,7 @@ class OfferCustomerController extends Controller
                 establishment_latitude: $offer->foodEstablishment?->latitude !== null ? (float) $offer->foodEstablishment->latitude : null,
                 establishment_longitude: $offer->foodEstablishment?->longitude !== null ? (float) $offer->foodEstablishment->longitude : null,
             );
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             throw new \Exception($exception->getMessage());
         }
     }

@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OfferCart extends Model
 {
-    protected $guarded = ["id"];
+    protected $guarded = ['id'];
+
     use softDeletes;
 
     public function offer()

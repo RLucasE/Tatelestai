@@ -13,7 +13,5 @@ class SellerDenied
     /**
      * Create a new event instance.
      */
-    public function __construct(public BasicUserDTO $user)
-    {
-    }
+    public function __construct(public BasicUserDTO $user) {}
 }

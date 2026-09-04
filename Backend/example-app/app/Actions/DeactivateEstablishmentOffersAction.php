@@ -3,8 +3,8 @@
 namespace App\Actions;
 
 use App\Enums\OfferState;
-use App\Models\Offer;
 use App\Models\FoodEstablishment;
+use App\Models\Offer;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,8 +15,8 @@ class DeactivateEstablishmentOffersAction
     /**
      * Deactivate all active offers from a food establishment
      *
-     * @param int $foodEstablishmentId
      * @return int Number of offers deactivated
+     *
      * @throws \Exception
      */
     public function execute(int $foodEstablishmentId): int
@@ -35,8 +35,8 @@ class DeactivateEstablishmentOffersAction
     /**
      * Deactivate all active offers from a user's food establishment
      *
-     * @param int $userId
      * @return int Number of offers deactivated
+     *
      * @throws \Exception
      */
     public function executeByUserId(int $userId): int
@@ -45,7 +45,7 @@ class DeactivateEstablishmentOffersAction
             return DB::transaction(function () use ($userId) {
                 $foodEstablishment = FoodEstablishment::where('user_id', $userId)->first();
 
-                if (!$foodEstablishment) {
+                if (! $foodEstablishment) {
                     return 0;
                 }
 

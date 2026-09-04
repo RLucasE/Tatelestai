@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class CreateOfferAction
 {
-
-
     public function __construct(
         private GetUserEstablishmentAction $getUserEstablishmentAction,
         private ValidateProductOwnershipAction $validateProductOwnershipAction
@@ -19,19 +17,20 @@ class CreateOfferAction
     /**
      * Crea una nueva oferta con sus productos asociados
      *
-     * @param Request $request Datos de la oferta
+     * @param  Request  $request  Datos de la oferta
      * @return Offer Oferta creada
+     *
      * @throws \Exception Si no se encuentra el establecimiento o los productos no pertenecen al usuario
      */
     public function execute(Request $request): Offer
     {
         $establishment = $this->getUserEstablishmentAction->execute();
-        if (!$establishment) {
+        if (! $establishment) {
             throw new \Exception('No se encontró establecimiento asociado al usuario');
         }
         $products = $request->array('products');
         $productIDs = $this->productsToProductsIDs($products);
-        if (!$this->validateProductOwnershipAction->execute($productIDs)) {
+        if (! $this->validateProductOwnershipAction->execute($productIDs)) {
             throw new \Exception('Uno o más productos no pertenecen a tu establecimiento');
         }
         DB::beginTransaction();
@@ -50,6 +49,7 @@ class CreateOfferAction
             ]);
             $this->attachProductsToOffer($offer, $products);
             DB::commit();
+
             return $offer;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -60,7 +60,7 @@ class CreateOfferAction
     /**
      * Convierte un array de productos a un array de IDs de productos
      *
-     * @param array $products Array de productos
+     * @param  array  $products  Array de productos
      * @return array Array de IDs de productos
      */
     private function productsToProductsIDs(array $products): array
@@ -73,9 +73,8 @@ class CreateOfferAction
     /**
      * Asocia productos a una oferta
      *
-     * @param Offer $offer Oferta
-     * @param array $products Array de productos
-     * @return void
+     * @param  Offer  $offer  Oferta
+     * @param  array  $products  Array de productos
      */
     private function attachProductsToOffer(Offer $offer, array $products): void
     {

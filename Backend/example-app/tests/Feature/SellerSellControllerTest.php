@@ -23,9 +23,13 @@ class SellerSellControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $customer;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
+
     protected Offer $offer;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -80,7 +84,7 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'chincong',
-            'product_description' => 'aojefjijoijioajeoifj'
+            'product_description' => 'aojefjijoijioajeoifj',
         ]);
 
         SellDetail::factory()->create([
@@ -90,12 +94,12 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 2,
             'product_price' => 5,
             'product_name' => 'Chinese Food',
-            'product_description' => 'Delicious Chinese food'
+            'product_description' => 'Delicious Chinese food',
         ]);
 
         // Verificar el código
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => $pickupCode
+            'pickup_code' => $pickupCode,
         ]);
 
         $response->assertStatus(200)
@@ -107,14 +111,14 @@ class SellerSellControllerTest extends TestCase
                     'customer',
                     'offers',
                     'created_at',
-                ]
+                ],
             ])
             ->assertJson([
                 'message' => 'Código válido',
                 'data' => [
                     'sell_id' => $sell->id,
                     'pickup_code' => $pickupCode,
-                ]
+                ],
             ]);
     }
 
@@ -124,12 +128,12 @@ class SellerSellControllerTest extends TestCase
         $this->actingAs($this->seller);
 
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => 'INVALID-CODE'
+            'pickup_code' => 'INVALID-CODE',
         ]);
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'Código de pickup no encontrado'
+                'error' => 'Código de pickup no encontrado',
             ]);
     }
 
@@ -158,12 +162,12 @@ class SellerSellControllerTest extends TestCase
 
         // Intentar verificar el código con el seller original
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => $pickupCode
+            'pickup_code' => $pickupCode,
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
-                'error' => 'No tienes permiso para verificar este código'
+                'error' => 'No tienes permiso para verificar este código',
             ]);
     }
 
@@ -171,7 +175,7 @@ class SellerSellControllerTest extends TestCase
     public function it_fails_to_check_code_without_authentication(): void
     {
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => '2X3Y-4Z5A-6B7C'
+            'pickup_code' => '2X3Y-4Z5A-6B7C',
         ]);
 
         $response->assertStatus(401);
@@ -209,17 +213,17 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'chincong',
-            'product_description' => 'aojefjijoijioajeoifj'
+            'product_description' => 'aojefjijoijioajeoifj',
         ]);
 
         // Intentar verificar el código expirado
         $response = $this->postJson('/api/check-customer-code', [
-            'pickup_code' => $pickupCode
+            'pickup_code' => $pickupCode,
         ]);
 
         $response->assertStatus(410)
             ->assertJson([
-                'error' => 'El tiempo para recoger esta venta ha expirado'
+                'error' => 'El tiempo para recoger esta venta ha expirado',
             ]);
     }
 
@@ -252,7 +256,7 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test Product 1',
-            'product_description' => 'Test Description 1'
+            'product_description' => 'Test Description 1',
         ]);
 
         SellDetail::factory()->create([
@@ -262,7 +266,7 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 3,
             'product_price' => 200,
             'product_name' => 'Test Product 2',
-            'product_description' => 'Test Description 2'
+            'product_description' => 'Test Description 2',
         ]);
 
         $response = $this->getJson('/api/sells');
@@ -294,10 +298,10 @@ class SellerSellControllerTest extends TestCase
                                 'quantity',
                                 'is_active',
                                 'expiration_datetime',
-                            ]
-                        ]
-                    ]
-                ]
+                            ],
+                        ],
+                    ],
+                ],
             ]);
 
         $responseData = $response->json();
@@ -347,7 +351,7 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test Product',
-            'product_description' => 'Test Description'
+            'product_description' => 'Test Description',
         ]);
 
         // Verificar estado inicial
@@ -356,12 +360,12 @@ class SellerSellControllerTest extends TestCase
 
         // Completar la venta con el código correcto
         $response = $this->postJson("/api/complete-sell/{$sell->id}", [
-            'pick_up_code' => $pickupCode
+            'pick_up_code' => $pickupCode,
         ]);
 
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'Venta completada exitosamente'
+                'message' => 'Venta completada exitosamente',
             ])
             ->assertJsonStructure([
                 'message',
@@ -369,7 +373,7 @@ class SellerSellControllerTest extends TestCase
                     'sell_id',
                     'is_picked_up',
                     'picked_up_at',
-                ]
+                ],
             ]);
 
         // Verificar en base de datos que se actualizó
@@ -406,17 +410,17 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test Product',
-            'product_description' => 'Test Description'
+            'product_description' => 'Test Description',
         ]);
 
         // Intentar completar la venta con un código incorrecto
         $response = $this->postJson("/api/complete-sell/{$sell->id}", [
-            'pick_up_code' => 'WRONG-CODE'
+            'pick_up_code' => 'WRONG-CODE',
         ]);
 
         $response->assertStatus(400)
             ->assertJson([
-                'error' => 'Código de pickup incorrecto'
+                'error' => 'Código de pickup incorrecto',
             ]);
 
         // Verificar que NO se actualizó
@@ -453,7 +457,7 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test Product',
-            'product_description' => 'Test Description'
+            'product_description' => 'Test Description',
         ]);
 
         // Intentar completar la venta sin enviar el código
@@ -496,12 +500,12 @@ class SellerSellControllerTest extends TestCase
 
         // Intentar completar la venta con el seller original
         $response = $this->postJson("/api/complete-sell/{$sell->id}", [
-            'pick_up_code' => $pickupCode
+            'pick_up_code' => $pickupCode,
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
-                'error' => 'No tienes permiso para completar esta venta'
+                'error' => 'No tienes permiso para completar esta venta',
             ]);
 
         // Verificar que no se actualizó
@@ -516,13 +520,13 @@ class SellerSellControllerTest extends TestCase
     {
         $this->actingAs($this->seller);
 
-        $response = $this->postJson("/api/complete-sell/99999", [
-            'pick_up_code' => 'ANY-CODE'
+        $response = $this->postJson('/api/complete-sell/99999', [
+            'pick_up_code' => 'ANY-CODE',
         ]);
 
         $response->assertStatus(404)
             ->assertJson([
-                'error' => 'Venta no encontrada'
+                'error' => 'Venta no encontrada',
             ]);
     }
 
@@ -539,7 +543,7 @@ class SellerSellControllerTest extends TestCase
         ]);
 
         $response = $this->postJson("/api/complete-sell/{$sell->id}", [
-            'pick_up_code' => $pickupCode
+            'pick_up_code' => $pickupCode,
         ]);
 
         $response->assertStatus(401);
@@ -569,17 +573,17 @@ class SellerSellControllerTest extends TestCase
             'product_quantity' => 1,
             'product_price' => 400,
             'product_name' => 'Test Product',
-            'product_description' => 'Test Description'
+            'product_description' => 'Test Description',
         ]);
 
         // Intentar completar la venta expirada
         $response = $this->postJson("/api/complete-sell/{$sell->id}", [
-            'pick_up_code' => $pickupCode
+            'pick_up_code' => $pickupCode,
         ]);
 
         $response->assertStatus(410)
             ->assertJson([
-                'error' => 'El tiempo para recoger esta venta ha expirado'
+                'error' => 'El tiempo para recoger esta venta ha expirado',
             ]);
 
         // Verificar que NO se actualizó

@@ -6,26 +6,24 @@ use App\Models\Sell;
 
 class getCustomerSellsAction
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     /**
      * Obtiene todas las compras (sells) de un customer específico con sus detalles
      *
-     * @param int $userId ID del usuario customer
+     * @param  int  $userId  ID del usuario customer
      * @return array Array con las ventas y sus detalles
      */
     public function execute(int $userId): array
     {
         $sells = Sell::with([
             'sellDetails',
-            'foodEstablishment'
+            'foodEstablishment',
         ])
-        ->where('bought_by', $userId)
-        ->where('is_picked_up', false)
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->where('bought_by', $userId)
+            ->where('is_picked_up', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Mapear para asegurar estructura y casting del enum state
         return $sells->map(function (Sell $sell) {

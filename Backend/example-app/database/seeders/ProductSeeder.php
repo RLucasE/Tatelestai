@@ -1,9 +1,10 @@
 <?php
+
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
@@ -12,12 +13,10 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::where('email','seller@gmail.com')->first();
+        $user = User::where('email', 'seller@gmail.com')->first();
         $establishment = $user->foodEstablishment;
         Product::factory()->count(50)->create([
-            'food_establishment_id' => $establishment->id
+            'food_establishment_id' => $establishment->id,
         ]);
     }
 }
-
-
