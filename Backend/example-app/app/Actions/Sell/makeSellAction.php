@@ -4,8 +4,10 @@ namespace App\Actions\Sell;
 
 use App\Actions\Offers\GetOfferAction;
 use App\DTOs\PreparePurchaseDTO;
+use App\Models\Offer;
 use App\Models\Sell;
 use App\Models\SellDetail;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Pre-Requirements
@@ -27,47 +29,53 @@ class makeSellAction
      */
     public function execute(PreparePurchaseDTO $preparePurchaseDTO, int $bought_by, int $sold_by): array
     {
-        $pickupCode = $this->generatePickupCodeAction->execute($bought_by, $sold_by, $preparePurchaseDTO);
+        return DB::transaction(function () use ($preparePurchaseDTO, $bought_by, $sold_by) {
+            $pickupCode = $this->generatePickupCodeAction->execute($bought_by, $sold_by, $preparePurchaseDTO);
 
-        $maxPickupDatetime = $this->calculateMaxPickupDatetimeAction->execute($preparePurchaseDTO->offers);
+            $maxPickupDatetime = $this->calculateMaxPickupDatetimeAction->execute($preparePurchaseDTO->offers);
 
-        $sell = Sell::create([
-            'bought_by' => $bought_by,
-            'sold_by' => $sold_by,
-            'pickup_code' => $pickupCode,
-            'max_pickup_datetime' => $maxPickupDatetime,
-        ]);
+            $sell = Sell::create([
+                'bought_by' => $bought_by,
+                'sold_by' => $sold_by,
+                'pickup_code' => $pickupCode,
+                'max_pickup_datetime' => $maxPickupDatetime,
+            ]);
 
-        foreach ($preparePurchaseDTO->offers as $offerDTO) {
-            $offer = $this->getOfferAction->execute($offerDTO->id, true);
+            foreach ($preparePurchaseDTO->offers as $offerDTO) {
+                $updatedRows = Offer::query()
+                    ->where('id', $offerDTO->id)
+                    ->where('quantity', '>=', $offerDTO->quantity)
+                    ->decrement('quantity', $offerDTO->quantity);
 
-            if ($offer->quantity < $offerDTO->quantity) {
-                throw new \Exception("No hay suficiente stock disponible para la oferta: {$offer->title}");
+                if ($updatedRows === 0) {
+                    $currentOffer = $this->getOfferAction->execute($offerDTO->id, false);
+                    throw new \Exception("No hay suficiente stock disponible para la oferta: {$currentOffer->title}");
+                }
+
+                $offer = $this->getOfferAction->execute($offerDTO->id, true);
+
+                foreach ($offerDTO->products as $productDTO) {
+                    SellDetail::create([
+                        'sell_id' => $sell->id,
+                        'offer_quantity' => $offerDTO->quantity,
+                        'offer_id' => $offerDTO->id,
+                        'product_name' => $productDTO->name,
+                        'product_description' => $productDTO->description,
+                        'product_quantity' => $productDTO->quantity,
+                        'product_price' => $productDTO->price,
+                    ]);
+                }
+
+                if ($offer->quantity <= 0) {
+                    $offer->update(['state' => 'purchased']);
+                }
             }
 
-            foreach ($offerDTO->products as $productDTO) {
-                SellDetail::create([
-                    'sell_id' => $sell->id,
-                    'offer_quantity' => $offerDTO->quantity,
-                    'offer_id' => $offerDTO->id,
-                    'product_name' => $productDTO->name,
-                    'product_description' => $productDTO->description,
-                    'product_quantity' => $productDTO->quantity,
-                    'product_price' => $productDTO->price,
-                ]);
-            }
-
-            $offer->decrement('quantity', $offerDTO->quantity);
-
-            if ($offer->quantity <= 0) {
-                $offer->update(['state' => 'purchased']);
-            }
-        }
-
-        return [
-            'sell_id' => $sell->id,
-            'message' => 'Venta realizada exitosamente',
-            'offers_processed' => count($preparePurchaseDTO->offers),
-        ];
+            return [
+                'sell_id' => $sell->id,
+                'message' => 'Venta realizada exitosamente',
+                'offers_processed' => count($preparePurchaseDTO->offers),
+            ];
+        });
     }
 }

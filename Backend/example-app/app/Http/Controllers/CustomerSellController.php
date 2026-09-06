@@ -16,6 +16,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CustomerSellController extends Controller
@@ -34,15 +35,29 @@ class CustomerSellController extends Controller
     {
         try {
             $purchaseToken = $request->input('purchase_token');
-            if (! $purchaseToken || ! session()->has('purchase_'.$purchaseToken)) {
+            if (! $purchaseToken) {
                 return response()->json([
                     'error' => 'Token de compra inválido o expirado',
                 ], 400);
             }
-            $purchaseData = session()->get('purchase_'.$purchaseToken);
-            if (now()->isAfter($purchaseData['expires_at'])) {
-                session()->forget('purchase_'.$purchaseToken);
+            $lock = Cache::lock('purchase_token_'.$purchaseToken, 300);
 
+            if (! $lock->get()) {
+                return response()->json([
+                    'error' => 'Token de compra inválido o expirado',
+                ], 400);
+            }
+
+            // Reclamar y remover el token de la sesión
+            $purchaseData = session()->pull('purchase_'.$purchaseToken);
+            if (! $purchaseData) {
+                return response()->json([
+                    'error' => 'Token de compra inválido o expirado',
+                ], 400);
+            }
+            session()->save();
+
+            if (now()->isAfter($purchaseData['expires_at'])) {
                 return response()->json([
                     'error' => 'El tiempo para confirmar la compra ha expirado',
                 ], 400);
@@ -73,8 +88,6 @@ class CustomerSellController extends Controller
             if ($sell) {
                 PurchaseCompleted::dispatch($sell);
             }
-
-            session()->forget('purchase_'.$purchaseToken);
 
             return response()->json([
                 'message' => 'Compra realizada con éxito',
