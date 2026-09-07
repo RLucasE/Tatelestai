@@ -48,7 +48,10 @@ class TypesenseSearchAdapter implements SearchServiceInterface
 
         $options['filter_by'] = implode(' && ', $filterConditions);
 
-        $paginator = Offer::search($query->query)
+        $searchQuery = trim($query->query);
+        $scoutQuery = $searchQuery === '' ? '*' : $searchQuery;
+
+        $paginator = Offer::search($scoutQuery)
             ->options($options)
             ->paginate($query->perPage, 'page', $query->page);
 

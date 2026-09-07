@@ -306,6 +306,88 @@ class TypesenseSearchAdapterTest extends TestCase
     }
 
     #[Test]
+    public function it_can_search_offers_with_geolocation_without_text_query(): void
+    {
+        $establishmentType = EstablishmentType::first();
+
+        // Establecimiento A (cercano, Obelisco CABA: -34.6037, -58.3816)
+        $sellerA = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishmentA = FoodEstablishment::factory()->create([
+            'user_id' => $sellerA->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.6037,
+            'longitude' => -58.3816,
+        ]);
+
+        // Establecimiento B (lejano, La Plata: -34.9214, -57.9545, ~55 km)
+        $sellerB = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishmentB = FoodEstablishment::factory()->create([
+            'user_id' => $sellerB->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.9214,
+            'longitude' => -57.9545,
+        ]);
+
+        $offerA = Offer::factory()->create([
+            'food_establishment_id' => $establishmentA->id,
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(3),
+            'title' => 'Empanada Criolla',
+            'description' => 'Empanada casera',
+        ]);
+
+        $productA = Product::factory()->create([
+            'food_establishment_id' => $establishmentA->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $offerA->id,
+            'product_id' => $productA->id,
+            'price' => 15,
+            'quantity' => 2,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $offerB = Offer::factory()->create([
+            'food_establishment_id' => $establishmentB->id,
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(3),
+            'title' => 'Asado Tira',
+            'description' => 'Asado a la leña',
+        ]);
+
+        $productB = Product::factory()->create([
+            'food_establishment_id' => $establishmentB->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $offerB->id,
+            'product_id' => $productB->id,
+            'price' => 18,
+            'quantity' => 3,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $offerA->searchable();
+        $offerB->searchable();
+
+        $query = new SearchQueryDTO(
+            query: '',
+            latitude: -34.6037,
+            longitude: -58.3816,
+            radiusKm: 10.0,
+        );
+
+        $results = $this->adapter->searchOffers($query);
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertTrue($results->contains('id', $offerA->id), 'El resultado debe contener la oferta cercana A');
+        $this->assertFalse($results->contains('id', $offerB->id), 'El resultado NO debe contener la oferta lejana B');
+    }
+
+    #[Test]
     public function it_orders_offers_by_distance_when_geofilter_is_applied(): void
     {
         $establishmentType = EstablishmentType::first();

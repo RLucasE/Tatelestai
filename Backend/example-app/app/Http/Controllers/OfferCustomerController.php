@@ -22,9 +22,12 @@ class OfferCustomerController extends Controller
         $page = $request->get('page', 1);
         $perPage = 20; // Número de ofertas por página
 
-        // Si hay una query de búsqueda, usar el servicio de búsqueda
-        if ($request->has('search') && ! empty(trim($request->get('search')))) {
-            $searchQuery = trim($request->get('search'));
+        $hasSearch = $request->filled('search');
+        $hasGeo = $request->filled('lat') && $request->filled('lng');
+
+        // Si hay una query de búsqueda o coordenadas geográficas, usar el servicio de búsqueda
+        if ($hasSearch || $hasGeo) {
+            $searchQuery = $hasSearch ? trim($request->get('search')) : '';
             $searchQueryDTO = new SearchQueryDTO(
                 query: $searchQuery,
                 page: (int) $page,

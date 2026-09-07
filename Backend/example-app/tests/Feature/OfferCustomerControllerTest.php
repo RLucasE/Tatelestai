@@ -709,4 +709,101 @@ class OfferCustomerControllerTest extends TestCase
         $this->assertEquals(-34.6037, (float) $foundOffer['establishment_latitude']);
         $this->assertEquals(-58.3816, (float) $foundOffer['establishment_longitude']);
     }
+
+    #[Test]
+    public function it_can_search_offers_with_geolocation_and_radius_without_search_text(): void
+    {
+        $establishmentType = EstablishmentType::first();
+
+        // Establecimiento cercano (Obelisco CABA)
+        $sellerNear = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $nearEstablishment = FoodEstablishment::factory()->create([
+            'user_id' => $sellerNear->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.6037,
+            'longitude' => -58.3816,
+        ]);
+
+        // Establecimiento lejano (La Plata, ~55 km)
+        $sellerFar = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $farEstablishment = FoodEstablishment::factory()->create([
+            'user_id' => $sellerFar->id,
+            'establishment_type_id' => $establishmentType->id,
+            'latitude' => -34.9214,
+            'longitude' => -57.9545,
+        ]);
+
+        $nearOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(2),
+            'food_establishment_id' => $nearEstablishment->id,
+            'title' => 'Empanadas CABA',
+            'description' => 'Comida cerca',
+        ]);
+
+        $productNear = Product::factory()->create([
+            'food_establishment_id' => $nearEstablishment->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $nearOffer->id,
+            'product_id' => $productNear->id,
+            'price' => 15,
+            'quantity' => 2,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $farOffer = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(2),
+            'food_establishment_id' => $farEstablishment->id,
+            'title' => 'Asado La Plata',
+            'description' => 'Comida lejos',
+        ]);
+
+        $productFar = Product::factory()->create([
+            'food_establishment_id' => $farEstablishment->id,
+        ]);
+        ProductOffer::create([
+            'offer_id' => $farOffer->id,
+            'product_id' => $productFar->id,
+            'price' => 18,
+            'quantity' => 1,
+            'expiration_date' => now()->addDays(5),
+        ]);
+
+        $nearOffer->searchable();
+        $farOffer->searchable();
+
+        // Petición SIN parámetro search, solo coordenadas y radio
+        $response = $this->getJson('/api/offers?lat=-34.6037&lng=-58.3816&radius=5');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'establishment_latitude',
+                        'establishment_longitude',
+                    ],
+                ],
+                'current_page',
+                'per_page',
+                'has_more',
+            ]);
+
+        $responseData = $response->json();
+
+        $this->assertTrue(
+            collect($responseData['data'])->contains('id', $nearOffer->id),
+            'La oferta cercana debe estar presente en los resultados'
+        );
+        $this->assertFalse(
+            collect($responseData['data'])->contains('id', $farOffer->id),
+            'La oferta lejana NO debe estar presente al filtrar por coordenadas'
+        );
+    }
 }
