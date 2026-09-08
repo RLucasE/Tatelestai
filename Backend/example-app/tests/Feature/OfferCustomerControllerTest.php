@@ -806,4 +806,86 @@ class OfferCustomerControllerTest extends TestCase
             'La oferta lejana NO debe estar presente al filtrar por coordenadas'
         );
     }
+
+    #[Test]
+    public function it_accepts_custom_per_page_in_standard_listing(): void
+    {
+        $product = Product::factory()->create([
+            'food_establishment_id' => $this->establishment->id,
+        ]);
+
+        for ($i = 1; $i <= 10; $i++) {
+            $offer = Offer::factory()->create([
+                'state' => OfferState::ACTIVE->value,
+                'expiration_datetime' => now()->addDays(1),
+                'food_establishment_id' => $this->establishment->id,
+                'title' => "Standard Offer $i",
+                'description' => "Description $i",
+            ]);
+
+            ProductOffer::create([
+                'offer_id' => $offer->id,
+                'product_id' => $product->id,
+                'price' => 10,
+                'quantity' => 1,
+                'expiration_date' => now()->addDays(10),
+            ]);
+        }
+
+        $response = $this->getJson('/api/offers?per_page=4');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data',
+                'current_page',
+                'per_page',
+                'has_more',
+            ]);
+
+        $data = $response->json();
+        $this->assertCount(4, $data['data']);
+        $this->assertEquals(4, $data['per_page']);
+        $this->assertTrue($data['has_more']);
+    }
+
+    #[Test]
+    public function it_accepts_custom_per_page_in_search_and_clamps_bounds(): void
+    {
+        $product = Product::factory()->create([
+            'food_establishment_id' => $this->establishment->id,
+        ]);
+
+        for ($i = 1; $i <= 8; $i++) {
+            $offer = Offer::factory()->create([
+                'state' => OfferState::ACTIVE->value,
+                'expiration_datetime' => now()->addDays(1),
+                'food_establishment_id' => $this->establishment->id,
+                'title' => "Empanadas Batch $i",
+                'description' => "Empanadas salteñas $i",
+            ]);
+
+            ProductOffer::create([
+                'offer_id' => $offer->id,
+                'product_id' => $product->id,
+                'price' => 10,
+                'quantity' => 1,
+                'expiration_date' => now()->addDays(10),
+            ]);
+
+            $offer->searchable();
+        }
+
+        // Custom per_page = 3
+        $response = $this->getJson('/api/offers?search=Empanadas&per_page=3');
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertCount(3, $data['data']);
+        $this->assertEquals(3, $data['per_page']);
+        $this->assertTrue($data['has_more']);
+
+        // Clamping check: per_page > 100 is capped to 100
+        $responseCapped = $this->getJson('/api/offers?search=Empanadas&per_page=500');
+        $responseCapped->assertStatus(200);
+        $this->assertEquals(100, $responseCapped->json()['per_page']);
+    }
 }

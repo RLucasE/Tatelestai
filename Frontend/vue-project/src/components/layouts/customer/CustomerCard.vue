@@ -1,30 +1,35 @@
-<script>
-export default {
-  name: "CustomerCard",
-  props: {
-    offer: {
-      type: Object,
-      required: true,
-    },
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  offer: {
+    type: Object,
+    required: true,
   },
-  computed: {
-    formattedDate() {
-      return new Date(this.offer.expiration_datetime).toLocaleDateString();
-    },
-    feormattedTime() {
-      return new Date(this.offer.expiration_datetime).toLocaleTimeString();
-    },
-    totalProducts() {
-      return this.offer.products?.length || 0;
-    },
+  distance: {
+    type: String,
+    default: null,
   },
-};
+})
+
+const formattedDate = computed(() => {
+  return new Date(props.offer.expiration_datetime).toLocaleDateString()
+})
+
+const formattedTime = computed(() => {
+  return new Date(props.offer.expiration_datetime).toLocaleTimeString()
+})
+
+const totalProducts = computed(() => {
+  return props.offer.products?.length || 0
+})
 </script>
 
 <template>
   <div class="customer-card">
     <div class="card-header">
       <h3 class="offer-title">{{ offer.title }}</h3>
+      <span v-if="distance" class="distance-badge">{{ distance }}</span>
     </div>
 
     <div class="card-content">
@@ -39,7 +44,7 @@ export default {
           {{ formattedDate }}
         </span>
         <span class="expiration-time">
-          {{ feormattedTime }}
+          {{ formattedTime }}
         </span>
       </div>
     </div>
@@ -74,6 +79,10 @@ export default {
   padding: 20px 20px 10px;
   border-bottom: 1px solid var(--color-focus);
   background: var(--color-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .offer-title {
@@ -82,6 +91,17 @@ export default {
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.3;
+}
+
+.distance-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  background-color: var(--color-accent);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .establishment-name {

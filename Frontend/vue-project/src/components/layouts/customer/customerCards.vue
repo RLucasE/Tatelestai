@@ -3,8 +3,15 @@ import axiosInstance from "@/lib/axios";
 import CustomerCard from "./CustomerCard.vue";
 import OfferModal from "../../common/OfferModal.vue";
 import SearchBar from "../../common/SearchBar.vue";
-import { ref, onMounted, onUnmounted } from "vue";
+import LocationBar from "../../common/LocationBar.vue";
+import LocationPickerModal from "../../common/LocationPickerModal.vue";
+import OffersMap from "../../common/OffersMap.vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from 'vue-router';
+import { useLocationStore } from '@/stores/location';
+import { calculateDistance, formatDistance } from '@/lib/helpers/geo';
+
+const locationStore = useLocationStore();
 
 const offers = ref([]);
 const originalOffers = ref([]);
@@ -17,6 +24,32 @@ const isSearchActive = ref(false);
 const currentPage = ref(1);
 const hasMorePages = ref(true);
 const searchQuery = ref('');
+
+// Geolocation state
+const showLocationPicker = ref(false);
+const viewMode = ref('list'); // 'list' | 'map'
+
+// Computed: offers with distance info
+const offersWithDistance = computed(() => {
+  if (!locationStore.isActive) return offers.value;
+  return offers.value.map(offer => ({
+    ...offer,
+    _distance: (offer.establishment_latitude != null && offer.establishment_longitude != null)
+      ? calculateDistance(
+          locationStore.latitude, locationStore.longitude,
+          offer.establishment_latitude, offer.establishment_longitude
+        )
+      : null,
+    _distanceFormatted: (offer.establishment_latitude != null && offer.establishment_longitude != null)
+      ? formatDistance(
+          calculateDistance(
+            locationStore.latitude, locationStore.longitude,
+            offer.establishment_latitude, offer.establishment_longitude
+          )
+        )
+      : null,
+  }));
+});
 
 // Sistema de notificaciones
 const notification = ref({
@@ -49,6 +82,11 @@ const getOffers = async (page = 1, isLoadMore = false) => {
     const params = { page };
     if (isSearchActive.value && searchQuery.value) {
       params.search = searchQuery.value;
+    }
+    if (locationStore.isActive) {
+      params.lat = locationStore.latitude;
+      params.lng = locationStore.longitude;
+      params.radius = locationStore.radiusKm;
     }
 
     const response = await axiosInstance.get("/offers", { params });
@@ -191,6 +229,34 @@ const handleCloseOffer = () => {
   isVisible.value = false;
 };
 
+// Geolocation handlers
+const handleLocationChanged = () => {
+  currentPage.value = 1;
+  getOffers(1, false);
+};
+
+const handleLocationConfirmed = () => {
+  showLocationPicker.value = false;
+  currentPage.value = 1;
+  getOffers(1, false);
+};
+
+const handleMapOfferSelected = (offer) => {
+  selectedOffer.value = offer;
+  isVisible.value = true;
+};
+
+// Watch location store for radius changes
+watch(
+  () => locationStore.radiusKm,
+  () => {
+    if (locationStore.isActive) {
+      currentPage.value = 1;
+      getOffers(1, false);
+    }
+  }
+);
+
 onMounted(() => {
   getOffers();
   window.addEventListener('scroll', handleScroll);
@@ -207,59 +273,133 @@ const changueLoading = (state) => {
 
 <template>
   <div class="offers-container">
-    <!-- Loading State -->
-    <SearchBar
-        @search-results="handleSearchResults"
-        @search-error="handleSearchError"
-        @search-clear="handleSearchClear"
-        @search-leading="changueLoading"
-        placeholder="Buscar ofertas por nombre, descripción o establecimiento..."
-    />
+    <!-- Fila de Búsqueda y Control Discreto de Ubicación perfectamente centrado -->
+    <div class="search-location-row">
+      <div class="search-spacer-left" aria-hidden="true"></div>
 
-    <div v-if="loading && !loadingMore" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Cargando ofertas...</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="error-container">
-      <p>{{ error }}</p>
-      <button @click="getOffers" class="retry-btn">Reintentar</button>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="offers.length === 0 && !isSearchActive" class="empty-container">
-      <p>No hay ofertas disponibles en este momento</p>
-    </div>
-
-    <!-- Search Results Empty State -->
-    <div v-else-if="offers.length === 0 && isSearchActive" class="empty-container">
-      <p>No se encontraron ofertas que coincidan con tu búsqueda</p>
-    </div>
-
-    <!-- Content (Search Bar + Offers Grid) -->
-    <div v-else>
-      <!-- Offers Grid -->
-      <div class="offers-grid">
-        <CustomerCard
-          v-for="offer in offers"
-          :key="offer.id"
-          :offer="offer"
-          @click="handleOfferClick(offer)"
+      <div class="search-input-center">
+        <SearchBar
+            @search-results="handleSearchResults"
+            @search-error="handleSearchError"
+            @search-clear="handleSearchClear"
+            @search-leading="changueLoading"
+            placeholder="Buscar ofertas por nombre, descripción o establecimiento..."
         />
       </div>
 
-      <!-- Loading More Indicator -->
-      <div v-if="loadingMore" class="loading-more">
-        <div class="loading-spinner-small"></div>
-        <p>Cargando más ofertas...</p>
-      </div>
-
-      <!-- End Message -->
-      <div v-else-if="!hasMorePages && offers.length > 0" class="end-message">
-        <p>No hay más ofertas para mostrar</p>
+      <div class="search-location-right">
+        <LocationBar
+          @location-changed="handleLocationChanged"
+          @open-picker="showLocationPicker = true"
+        />
       </div>
     </div>
+
+    <!-- View Toggle (GEO-05) -->
+    <div class="view-toggle">
+      <button
+        class="toggle-btn"
+        :class="{ 'toggle-active': viewMode === 'list' }"
+        @click="viewMode = 'list'"
+        type="button"
+      >
+        Lista
+      </button>
+      <button
+        class="toggle-btn"
+        :class="{ 'toggle-active': viewMode === 'map' }"
+        @click="viewMode = 'map'"
+        type="button"
+      >
+        Mapa
+      </button>
+    </div>
+
+    <!-- Map View -->
+    <div v-if="viewMode === 'map'" class="map-view-container">
+      <OffersMap
+        :userLat="locationStore.latitude"
+        :userLng="locationStore.longitude"
+        :searchQuery="searchQuery"
+        @offer-selected="handleMapOfferSelected"
+      />
+    </div>
+
+    <!-- List View -->
+    <div v-else class="list-view-container">
+      <!-- Loading State -->
+      <div v-if="loading && !loadingMore" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Cargando ofertas...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="error-container">
+        <p>{{ error }}</p>
+        <button @click="getOffers" class="retry-btn">Reintentar</button>
+      </div>
+
+      <!-- Empty State — con ubicación activa (GEO-06) -->
+      <div v-else-if="offers.length === 0 && locationStore.isActive" class="empty-container empty-geo">
+        <p>No encontramos ofertas dentro de {{ locationStore.radiusKm }} km de tu ubicación.</p>
+        <div class="empty-actions">
+          <button
+            v-if="locationStore.radiusKm < 10"
+            class="empty-btn"
+            @click="locationStore.setRadius(Math.min(locationStore.radiusKm * 2, 10)); handleLocationChanged()"
+          >
+            Ampliar radio
+          </button>
+          <button class="empty-btn" @click="showLocationPicker = true">
+            Cambiar ubicación
+          </button>
+          <button class="empty-btn empty-btn-secondary" @click="locationStore.clearLocation(); handleLocationChanged()">
+            Ver todo el catálogo
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State — sin ubicación -->
+      <div v-else-if="offers.length === 0 && !isSearchActive" class="empty-container">
+        <p>No hay ofertas disponibles en este momento</p>
+      </div>
+
+      <!-- Search Results Empty State -->
+      <div v-else-if="offers.length === 0 && isSearchActive" class="empty-container">
+        <p>No se encontraron ofertas que coincidan con tu búsqueda</p>
+      </div>
+
+      <!-- Content -->
+      <div v-else>
+        <div class="offers-grid">
+          <CustomerCard
+            v-for="offer in offersWithDistance"
+            :key="offer.id"
+            :offer="offer"
+            :distance="offer._distanceFormatted"
+            @click="handleOfferClick(offer)"
+          />
+        </div>
+
+        <!-- Loading More Indicator -->
+        <div v-if="loadingMore" class="loading-more">
+          <div class="loading-spinner-small"></div>
+          <p>Cargando más ofertas...</p>
+        </div>
+
+        <!-- End Message -->
+        <div v-else-if="!hasMorePages && offers.length > 0" class="end-message">
+          <p>No hay más ofertas para mostrar</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location Picker Modal (GEO-01) -->
+    <LocationPickerModal
+      :isVisible="showLocationPicker"
+      @close="showLocationPicker = false"
+      @confirmed="handleLocationConfirmed"
+    />
 
     <OfferModal
       :isVisible="isVisible"
@@ -333,6 +473,133 @@ const changueLoading = (state) => {
   .offers-container {
     padding: 15px;
   }
+}
+
+/* Fila de Búsqueda y Ubicación: Grid de 3 columnas para centrado matemático perfecto del buscador */
+.search-location-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(auto, 500px) 1fr;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto 24px auto;
+}
+
+.search-spacer-left {
+  /* Columna izquierda simétrica a la columna derecha para mantener el buscador en el 50% exacto */
+}
+
+.search-input-center {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.search-input-center :deep(.search-container) {
+  margin-bottom: 0 !important;
+}
+
+.search-input-center :deep(.search-input-wrapper) {
+  max-width: 100%;
+  margin: 0;
+}
+
+.search-location-right {
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  justify-self: start;
+}
+
+@media (max-width: 680px) {
+  .search-location-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .search-spacer-left {
+    display: none;
+  }
+
+  .search-location-right {
+    padding-left: 0;
+  }
+}
+
+/* View Toggle (GEO-05) */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background-color: var(--color-primary);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+  width: fit-content;
+}
+
+.toggle-btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  color: var(--color-text);
+}
+
+.toggle-active {
+  background-color: var(--color-accent);
+  color: #fff;
+}
+
+.toggle-active:hover {
+  background-color: var(--color-accent-hover);
+  color: #fff;
+}
+
+/* Geo Empty State (GEO-06) */
+.empty-geo {
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.empty-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.empty-btn:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.empty-btn-secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+}
+
+.empty-btn-secondary:hover {
+  background-color: var(--color-focus);
 }
 
 /* Loading State */

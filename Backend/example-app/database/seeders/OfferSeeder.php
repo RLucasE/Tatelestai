@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class OfferSeeder extends Seeder
@@ -13,35 +13,39 @@ class OfferSeeder extends Seeder
      */
     public function run(): void
     {
-        $seller = User::where('email', 'seller@gmail.com')->first();
-        $seller2 = User::where('email', 'seller2@gmail.com')->first();
-        if ($seller && $seller2) {
+        $establishments = FoodEstablishment::all();
 
+        foreach ($establishments as $establishment) {
+            // Ofertas activas estándar con productos del establecimiento
             Offer::factory()
-                ->count(20)
-                ->withProducts(3)
-                ->for($seller->foodEstablishment)
-                ->create();
-
-            echo "Mitad del OfferSeeder completada - Primera parte de ofertas creada\n";
-
-            Offer::factory()
-                ->count(20)
-                ->withProducts(2)
-                ->for($seller2->foodEstablishment)
-                ->create();
-
-            Offer::factory()
-                ->count(20)
+                ->count(3)
+                ->active()
                 ->withProducts(random_int(1, 3))
-                ->for($seller->foodEstablishment)
+                ->for($establishment)
                 ->create();
 
+            // Oferta activa que vence pronto (urgencia / próximas horas)
             Offer::factory()
-                ->count(20)
-                ->withProducts(random_int(1, 3))
-                ->for($seller2->foodEstablishment)
+                ->expiringSoon()
+                ->withProducts(random_int(1, 2))
+                ->for($establishment)
+                ->create();
+
+            // Oferta adicional activa
+            Offer::factory()
+                ->active()
+                ->withProducts(1)
+                ->for($establishment)
+                ->create();
+
+            // Oferta agotada/comprada para pruebas de estados
+            Offer::factory()
+                ->purchased()
+                ->withProducts(1)
+                ->for($establishment)
                 ->create();
         }
+
+        $this->command?->info("Ofertas creadas exitosamente para {$establishments->count()} locales en Salta Capital.");
     }
 }

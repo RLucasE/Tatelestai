@@ -22,6 +22,11 @@ class FoodEstablishmentFactory extends Factory
                 ?? \App\Models\EstablishmentType::factory(),
             'name' => $this->faker->company(),
             'address' => $this->faker->address(),
+            'latitude' => $this->faker->latitude(-24.84, -24.73),
+            'longitude' => $this->faker->longitude(-65.46, -65.39),
+            'phone' => '387' . $this->faker->numerify('#######'),
+            'description' => $this->faker->sentence(),
+            'verification_status' => 'approved',
         ];
     }
 }

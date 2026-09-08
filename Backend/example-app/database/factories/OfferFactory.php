@@ -235,13 +235,20 @@ class OfferFactory extends Factory
         return $this->afterCreating(function ($offer) use ($productCount) {
             $count = $productCount ?? $this->faker->numberBetween(1, 5);
 
-            $products = Product::inRandomOrder()
+            $products = Product::where('food_establishment_id', $offer->food_establishment_id)
+                ->inRandomOrder()
                 ->limit($count)
                 ->get();
 
+            if ($products->isEmpty()) {
+                $products = Product::inRandomOrder()
+                    ->limit($count)
+                    ->get();
+            }
+
             foreach ($products as $product) {
                 $offer->products()->attach($product->id, [
-                    'price' => $this->faker->randomDigit(1000, 5000),
+                    'price' => $this->faker->numberBetween(1500, 7500),
                     'quantity' => $this->faker->numberBetween(1, 10),
                     'expiration_date' => $this->faker->dateTimeBetween('+1 day', '+1 week')->format('Y-m-d'),
                     'created_at' => now(),

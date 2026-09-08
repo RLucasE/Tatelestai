@@ -20,7 +20,9 @@ class OfferCustomerController extends Controller
     public function index(Request $request): JsonResponse
     {
         $page = $request->get('page', 1);
-        $perPage = 20; // Número de ofertas por página
+        $perPage = $request->filled('per_page')
+            ? max(1, min((int) $request->get('per_page'), 100))
+            : 20;
 
         $hasSearch = $request->filled('search');
         $hasGeo = $request->filled('lat') && $request->filled('lng');
