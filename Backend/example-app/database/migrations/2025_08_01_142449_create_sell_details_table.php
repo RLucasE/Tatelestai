@@ -18,10 +18,9 @@ return new class extends Migration
             $table->foreign('offer_id')->references('id')->on('offers')->onDelete('cascade');
             $table->foreign('sell_id')->references('id')->on('sells')->onDelete('cascade');
             $table->bigInteger('offer_quantity');
-            $table->bigInteger('product_quantity');
-            $table->bigInteger('product_price');
-            $table->string('product_name');
-            $table->string('product_description')->nullable();
+            $table->bigInteger('pack_price');
+            $table->string('pack_name');
+            $table->string('pack_description')->nullable();
             $table->timestamps();
         });
     }

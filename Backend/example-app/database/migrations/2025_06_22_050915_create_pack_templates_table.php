@@ -11,13 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('pack_templates', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->softDeletes();
             $table->unsignedBigInteger('food_establishment_id');
             $table->foreign('food_establishment_id')->references('id')->on('food_establishments')->onDelete('cascade');
-            $table->string('name');
-            $table->text('description')->nullable();
+            $table->string('title');
+            $table->text('description');
+            $table->json('allergens')->nullable();
+            $table->decimal('estimated_weight_kg', 6, 2)->nullable();
         });
     }
 
@@ -26,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('pack_templates');
     }
 };
