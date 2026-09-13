@@ -11,7 +11,6 @@ use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\OfferCart;
-use App\Models\Product;
 use App\Models\User;
 use App\Models\UserCart;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,18 +67,12 @@ class GetCustomerCartActionTest extends TestCase
             'establishment_type_id' => $this->establishmentType->id,
         ]);
 
-        $product = Product::factory()->create([
-            'food_establishment_id' => $establishment->id,
-        ]);
-
         $offer = Offer::factory()->active()->create([
             'food_establishment_id' => $establishment->id,
-        ]);
-
-        $offer->products()->attach($product->id, [
-            'quantity' => 2,
             'price' => 1500,
-            'expiration_date' => now()->addDays(3)->toDateString(),
+            'minimum_value' => 4500,
+            'allergens' => ['gluten'],
+            'estimated_weight_kg' => 1.2,
         ]);
 
         $cart = UserCart::create([
@@ -109,11 +102,15 @@ class GetCustomerCartActionTest extends TestCase
             'establishment_address',
             'offer_title',
             'offer_description',
+            'offer_price',
+            'minimum_value',
+            'allergens',
+            'estimated_weight_kg',
             'offer_max_quantity',
             'offer_state',
+            'pickup_start_datetime',
             'offer_expiration_datetime',
             'quantity',
-            'products',
         ])
             ->and($offerData['offer_id'])->toBe($offer->id)
             ->and($offerData['establishment_id'])->toBe($establishment->id)
@@ -121,22 +118,13 @@ class GetCustomerCartActionTest extends TestCase
             ->and($offerData['establishment_address'])->toBe($establishment->address)
             ->and($offerData['offer_title'])->toBe($offer->title)
             ->and($offerData['offer_description'])->toBe($offer->description)
+            ->and($offerData['offer_price'])->toBe(1500)
+            ->and($offerData['minimum_value'])->toBe(4500)
+            ->and($offerData['allergens'])->toBe(['gluten'])
+            ->and((float) $offerData['estimated_weight_kg'])->toBe(1.2)
             ->and($offerData['offer_max_quantity'])->toBe($offer->quantity)
             ->and($offerData['offer_state'])->toBe($offer->state)
-            ->and($offerData['quantity'])->toBe(2)
-            ->and($offerData['products'])->toHaveCount(1)
-            ->and($offerData['products'][0])->toHaveKeys([
-                'product_name',
-                'product_description',
-                'product_price',
-                'product_quantity',
-                'product_expiration_date',
-            ])
-            ->and($offerData['products'][0]['product_name'])->toBe($product->name)
-            ->and($offerData['products'][0]['product_description'])->toBe($product->description)
-            ->and($offerData['products'][0]['product_price'])->toBe(1500)
-            ->and($offerData['products'][0]['product_quantity'])->toBe(2);
-
+            ->and($offerData['quantity'])->toBe(2);
     }
 
     #[Test]
@@ -164,24 +152,15 @@ class GetCustomerCartActionTest extends TestCase
             'establishment_type_id' => $this->establishmentType->id,
         ]);
 
-        $product1 = Product::factory()->create([
-            'food_establishment_id' => $establishment1->id,
-        ]);
-
-        $product2 = Product::factory()->create([
-            'food_establishment_id' => $establishment2->id,
-        ]);
-
         $offer1 = Offer::factory()->active()->create([
             'food_establishment_id' => $establishment1->id,
+            'price' => 1000,
         ]);
 
         $offer2 = Offer::factory()->active()->create([
             'food_establishment_id' => $establishment2->id,
+            'price' => 1200,
         ]);
-
-        $offer1->products()->attach($product1->id, ['quantity' => 1, 'price' => 1000]);
-        $offer2->products()->attach($product2->id, ['quantity' => 1, 'price' => 1200]);
 
         $cart = UserCart::create([
             'user_id' => $customer->id,
@@ -228,15 +207,10 @@ class GetCustomerCartActionTest extends TestCase
             'establishment_type_id' => $this->establishmentType->id,
         ]);
 
-        $product = Product::factory()->create([
-            'food_establishment_id' => $establishment->id,
-        ]);
-
         $purchasedOffer = Offer::factory()->purchased()->create([
             'food_establishment_id' => $establishment->id,
+            'quantity' => 0,
         ]);
-
-        $purchasedOffer->products()->attach($product->id, ['quantity' => 1, 'price' => 1000]);
 
         $cart = UserCart::create([
             'user_id' => $customer->id,
@@ -274,10 +248,6 @@ class GetCustomerCartActionTest extends TestCase
             'establishment_type_id' => $this->establishmentType->id,
         ]);
 
-        $product = Product::factory()->create([
-            'food_establishment_id' => $establishment->id,
-        ]);
-
         $offer1 = Offer::factory()->active()->create([
             'food_establishment_id' => $establishment->id,
             'title' => 'First Offer',
@@ -287,9 +257,6 @@ class GetCustomerCartActionTest extends TestCase
             'food_establishment_id' => $establishment->id,
             'title' => 'Second Offer',
         ]);
-
-        $offer1->products()->attach($product->id, ['quantity' => 1, 'price' => 1000]);
-        $offer2->products()->attach($product->id, ['quantity' => 1, 'price' => 1200]);
 
         $cart = UserCart::create([
             'user_id' => $customer->id,

@@ -7,7 +7,6 @@ use App\Enums\UserState;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
@@ -31,8 +30,6 @@ class SellControllerTest extends TestCase
     protected FoodEstablishment $establishment;
 
     protected Offer $offer;
-
-    protected Product $product;
 
     protected function setUp(): void
     {
@@ -59,16 +56,12 @@ class SellControllerTest extends TestCase
             'establishment_type_id' => $establishmentType->id,
         ]);
 
-        $this->product = Product::factory()->create([
-            'food_establishment_id' => $this->establishment->id,
-        ]);
-
-        $this->offer = Offer::factory()->active()->withProducts(4)->create([
+        $this->offer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
             'quantity' => 10,
+            'price' => 2000,
             'expiration_datetime' => now()->addDays(5),
         ]);
-
     }
 
     /**
@@ -264,20 +257,18 @@ class SellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'chincong',
-            'product_description' => 'aojefjijoijioajeoifj',
+            'pack_price' => 400,
+            'pack_name' => 'Pack Especial',
+            'pack_description' => 'Descripción especial',
         ]);
 
         \App\Models\SellDetail::factory()->create([
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 2,
-            'product_price' => 5,
-            'product_name' => 'Chinese Food',
-            'product_description' => 'Delicious Chinese food',
+            'pack_price' => 500,
+            'pack_name' => 'Chinese Food Pack',
+            'pack_description' => 'Delicious Chinese food pack',
         ]);
 
         // Verificar el código
@@ -393,10 +384,9 @@ class SellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test nroduct',
-            'product_description' => 'Test Description',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack',
+            'pack_description' => 'Test Description',
         ]);
 
         // Obtener el código de retiro
@@ -500,20 +490,18 @@ class SellControllerTest extends TestCase
             'sell_id' => $sell1->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test Product 1',
-            'product_description' => 'Test Description 1',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack 1',
+            'pack_description' => 'Test Description 1',
         ]);
 
         \App\Models\SellDetail::factory()->create([
             'sell_id' => $sell2->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 1,
-            'product_quantity' => 3,
-            'product_price' => 200,
-            'product_name' => 'Test Product 2',
-            'product_description' => 'Test Description 2',
+            'pack_price' => 200,
+            'pack_name' => 'Test Pack 2',
+            'pack_description' => 'Test Description 2',
         ]);
 
         $response = $this->getJson('/api/sells');
@@ -531,10 +519,9 @@ class SellControllerTest extends TestCase
                             'sell_id',
                             'offer_id',
                             'offer_quantity',
-                            'product_quantity',
-                            'product_price',
-                            'product_name',
-                            'product_description',
+                            'pack_price',
+                            'pack_name',
+                            'pack_description',
                             'created_at',
                             'updated_at',
                             'offer' => [
@@ -543,7 +530,7 @@ class SellControllerTest extends TestCase
                                 'description',
                                 'price',
                                 'quantity',
-                                'is_active',
+                                'state',
                                 'expiration_datetime',
                             ],
                         ],

@@ -8,7 +8,6 @@ use App\Events\PurchaseCompleted;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\Product;
 use App\Models\User;
 use Carbon\Carbon;
 use Database\Seeders\EstablishmentTypeSeeder;
@@ -33,8 +32,6 @@ class CustomerSellControllerTest extends TestCase
 
     protected Offer $offer;
 
-    protected Product $product;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,14 +53,12 @@ class CustomerSellControllerTest extends TestCase
             'establishment_type_id' => $establishmentType->id,
         ]);
 
-        $this->product = Product::factory()->create([
-            'food_establishment_id' => $this->establishment->id,
-        ]);
-
-        $this->offer = Offer::factory()->active()->withProducts(4)->create([
+        $this->offer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
             'quantity' => 10,
             'expiration_datetime' => now()->addDays(5),
+            'price' => 2000,
+            'minimum_value' => 6000,
         ]);
     }
 
@@ -184,13 +179,13 @@ class CustomerSellControllerTest extends TestCase
         $closestExpiration = now()->copy()->addHours(6);
         $farExpiration = now()->copy()->addDay();
 
-        $closestOffer = Offer::factory()->active()->withProducts(2)->create([
+        $closestOffer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
-            'quantity' => 5,
             'expiration_datetime' => $closestExpiration,
+            'quantity' => 5,
         ]);
 
-        $farOffer = Offer::factory()->active()->withProducts(2)->create([
+        $farOffer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
             'quantity' => 5,
             'expiration_datetime' => $farExpiration,
@@ -318,10 +313,9 @@ class CustomerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test nroduct',
-            'product_description' => 'Test Description',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack',
+            'pack_description' => 'Test Description',
         ]);
 
         // Obtener el código de retiro
@@ -432,30 +426,27 @@ class CustomerSellControllerTest extends TestCase
             'sell_id' => $sell1->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 250,
-            'product_name' => 'Product 1',
-            'product_description' => 'Description 1',
+            'pack_price' => 250,
+            'pack_name' => 'Pack 1',
+            'pack_description' => 'Description 1',
         ]);
 
         \App\Models\SellDetail::factory()->create([
             'sell_id' => $sell2->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 3,
-            'product_quantity' => 2,
-            'product_price' => 250,
-            'product_name' => 'Product 2',
-            'product_description' => 'Description 2',
+            'pack_price' => 250,
+            'pack_name' => 'Pack 2',
+            'pack_description' => 'Description 2',
         ]);
 
         \App\Models\SellDetail::factory()->create([
             'sell_id' => $sell3->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 1,
-            'product_quantity' => 1,
-            'product_price' => 300,
-            'product_name' => 'Product 3',
-            'product_description' => 'Description 3',
+            'pack_price' => 300,
+            'pack_name' => 'Pack 3',
+            'pack_description' => 'Description 3',
         ]);
 
         $anotherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
@@ -487,10 +478,9 @@ class CustomerSellControllerTest extends TestCase
                             '*' => [
                                 'offer_id',
                                 'offer_quantity',
-                                'product_name',
-                                'product_description',
-                                'product_quantity',
-                                'product_price',
+                                'pack_name',
+                                'pack_description',
+                                'pack_price',
                             ],
                         ],
                     ],

@@ -10,8 +10,6 @@ use App\Enums\UserState;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\Product;
-use App\Models\ProductOffer;
 use App\Models\Report;
 use App\Models\User;
 use Database\Seeders\EstablishmentTypeSeeder;
@@ -63,18 +61,6 @@ class CustomerReportControllerTest extends TestCase
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(5),
             'food_establishment_id' => $this->establishment->id,
-        ]);
-
-        // Crear productos para la oferta
-        $product = Product::factory()->create([
-            'food_establishment_id' => $this->establishment->id,
-        ]);
-
-        ProductOffer::create([
-            'quantity' => 10,
-            'price' => 5,
-            'product_id' => $product->id,
-            'offer_id' => $this->offer->id,
         ]);
 
         $this->actingAs($this->customer);

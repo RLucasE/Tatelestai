@@ -9,8 +9,6 @@ use App\Enums\UserState;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\Product;
-use App\Models\ProductOffer;
 use App\Models\User;
 use App\Search\Adapters\TypesenseSearchAdapter;
 use App\Search\DTOs\SearchQueryDTO;
@@ -64,22 +62,12 @@ class TypesenseSearchAdapterTest extends TestCase
             'food_establishment_id' => $this->establishment->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(3),
-            'title' => 'Special Margherita Pizza',
-            'description' => 'Cheesy pizza',
-        ]);
-
-        $product = Product::factory()->create([
-            'food_establishment_id' => $this->establishment->id,
-            'name' => 'Mozzarella Cheese',
-            'description' => 'Fresh mozzarella',
-        ]);
-
-        ProductOffer::create([
-            'offer_id' => $offer->id,
-            'product_id' => $product->id,
-            'price' => 12,
-            'quantity' => 4,
-            'expiration_date' => now()->addDays(5),
+            'title' => 'Special Margherita Pizza Pack',
+            'description' => 'Cheesy pizza pack with extras',
+            'price' => 2500,
+            'minimum_value' => 7500,
+            'allergens' => ['gluten', 'lácteos'],
+            'estimated_weight_kg' => 1.2,
         ]);
 
         $offer->searchable();
@@ -92,19 +80,13 @@ class TypesenseSearchAdapterTest extends TestCase
 
         $foundOffer = $results->first();
         $this->assertEquals($offer->id, $foundOffer->id);
+        $this->assertEquals('Special Margherita Pizza Pack', $foundOffer->title);
+        $this->assertEquals(2500, $foundOffer->price);
+        $this->assertEquals(7500, $foundOffer->minimum_value);
+        $this->assertEquals(['gluten', 'lácteos'], $foundOffer->allergens);
 
-        // Verificar que las relaciones esenciales para el DTO estén cargadas en memoria (evita consultas N+1)
-        $this->assertTrue($foundOffer->relationLoaded('fullProducts'), 'fullProducts debe estar cargada vía eager loading');
+        // Verificar que la relación foodEstablishment esté cargada en memoria
         $this->assertTrue($foundOffer->relationLoaded('foodEstablishment'), 'foodEstablishment debe estar cargada vía eager loading');
-
-        $this->assertCount(1, $foundOffer->fullProducts);
-        $loadedProduct = $foundOffer->fullProducts->first();
-        $this->assertEquals('Mozzarella Cheese', $loadedProduct->name);
-        $this->assertEquals(12, $loadedProduct->pivot->price);
-
-        $this->assertEquals(4, $loadedProduct->pivot->quantity);
-        $this->assertNotNull($loadedProduct->pivot->expiration_date);
-
         $this->assertEquals($this->establishment->id, $foundOffer->foodEstablishment->id);
     }
 
@@ -170,10 +152,7 @@ class TypesenseSearchAdapterTest extends TestCase
             'title' => 'Batch Offer 2',
         ]);
 
-        // Ejecutar indexación por lote
         $this->adapter->indexOffers([$offer1->id, $offer2->id]);
-
-        // Si se pasa un arreglo vacío, no debe fallar
         $this->adapter->indexOffers([]);
 
         $this->assertTrue(true);
@@ -208,7 +187,6 @@ class TypesenseSearchAdapterTest extends TestCase
         Log::shouldReceive('error')
             ->once();
 
-        // Adaptador con método performSearch que arroja excepción para simular fallo de red en Typesense
         $mockAdapter = $this->getMockBuilder(TypesenseSearchAdapter::class)
             ->onlyMethods(['performSearch'])
             ->getMock();
@@ -258,34 +236,12 @@ class TypesenseSearchAdapterTest extends TestCase
             'description' => 'Deliciosa pizza napolitana',
         ]);
 
-        $productA = Product::factory()->create([
-            'food_establishment_id' => $establishmentA->id,
-        ]);
-        ProductOffer::create([
-            'offer_id' => $offerA->id,
-            'product_id' => $productA->id,
-            'price' => 15,
-            'quantity' => 2,
-            'expiration_date' => now()->addDays(5),
-        ]);
-
         $offerB = Offer::factory()->create([
             'food_establishment_id' => $establishmentB->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(3),
             'title' => 'Pizza Fugazzeta',
             'description' => 'Deliciosa pizza fugazzeta',
-        ]);
-
-        $productB = Product::factory()->create([
-            'food_establishment_id' => $establishmentB->id,
-        ]);
-        ProductOffer::create([
-            'offer_id' => $offerB->id,
-            'product_id' => $productB->id,
-            'price' => 18,
-            'quantity' => 3,
-            'expiration_date' => now()->addDays(5),
         ]);
 
         $offerA->searchable();
@@ -340,34 +296,12 @@ class TypesenseSearchAdapterTest extends TestCase
             'description' => 'Empanada casera',
         ]);
 
-        $productA = Product::factory()->create([
-            'food_establishment_id' => $establishmentA->id,
-        ]);
-        ProductOffer::create([
-            'offer_id' => $offerA->id,
-            'product_id' => $productA->id,
-            'price' => 15,
-            'quantity' => 2,
-            'expiration_date' => now()->addDays(5),
-        ]);
-
         $offerB = Offer::factory()->create([
             'food_establishment_id' => $establishmentB->id,
             'state' => OfferState::ACTIVE->value,
             'expiration_datetime' => now()->addDays(3),
             'title' => 'Asado Tira',
             'description' => 'Asado a la leña',
-        ]);
-
-        $productB = Product::factory()->create([
-            'food_establishment_id' => $establishmentB->id,
-        ]);
-        ProductOffer::create([
-            'offer_id' => $offerB->id,
-            'product_id' => $productB->id,
-            'price' => 18,
-            'quantity' => 3,
-            'expiration_date' => now()->addDays(5),
         ]);
 
         $offerA->searchable();
@@ -392,8 +326,6 @@ class TypesenseSearchAdapterTest extends TestCase
     {
         $establishmentType = EstablishmentType::first();
 
-        // Punto de referencia: Obelisco (-34.6037, -58.3816)
-        // Establecimiento cercano (~1 km: delta latitud ~0.009)
         $sellerNear = User::factory()->withRole(UserRole::SELLER->value)->create([
             'state' => UserState::ACTIVE->value,
         ]);
@@ -404,7 +336,6 @@ class TypesenseSearchAdapterTest extends TestCase
             'longitude' => -58.3816,
         ]);
 
-        // Establecimiento más lejano dentro del radio (~4 km: delta latitud ~0.036)
         $sellerFar = User::factory()->withRole(UserRole::SELLER->value)->create([
             'state' => UserState::ACTIVE->value,
         ]);
@@ -422,17 +353,6 @@ class TypesenseSearchAdapterTest extends TestCase
             'title' => 'Pizza Lejana',
         ]);
 
-        $productFar = Product::factory()->create([
-            'food_establishment_id' => $establishmentFar->id,
-        ]);
-        ProductOffer::create([
-            'offer_id' => $offerFar->id,
-            'product_id' => $productFar->id,
-            'price' => 12,
-            'quantity' => 1,
-            'expiration_date' => now()->addDays(5),
-        ]);
-
         $offerNear = Offer::factory()->create([
             'food_establishment_id' => $establishmentNear->id,
             'state' => OfferState::ACTIVE->value,
@@ -440,18 +360,6 @@ class TypesenseSearchAdapterTest extends TestCase
             'title' => 'Pizza Cercana',
         ]);
 
-        $productNear = Product::factory()->create([
-            'food_establishment_id' => $establishmentNear->id,
-        ]);
-        ProductOffer::create([
-            'offer_id' => $offerNear->id,
-            'product_id' => $productNear->id,
-            'price' => 14,
-            'quantity' => 1,
-            'expiration_date' => now()->addDays(5),
-        ]);
-
-        // Indexamos primero la lejana para verificar que el orden responda a la distancia y no al orden de inserción
         $offerFar->searchable();
         $offerNear->searchable();
 

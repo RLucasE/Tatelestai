@@ -7,7 +7,6 @@ use App\Enums\UserState;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\Product;
 use App\Models\Sell;
 use App\Models\SellDetail;
 use App\Models\User;
@@ -30,8 +29,6 @@ class SellerSellControllerTest extends TestCase
 
     protected Offer $offer;
 
-    protected Product $product;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,13 +50,10 @@ class SellerSellControllerTest extends TestCase
             'establishment_type_id' => $establishmentType->id,
         ]);
 
-        $this->product = Product::factory()->create([
-            'food_establishment_id' => $this->establishment->id,
-        ]);
-
-        $this->offer = Offer::factory()->active()->withProducts(4)->create([
+        $this->offer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
             'quantity' => 10,
+            'price' => 2000,
             'expiration_datetime' => now()->addDays(5),
         ]);
     }
@@ -81,20 +75,18 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'chincong',
-            'product_description' => 'aojefjijoijioajeoifj',
+            'pack_price' => 400,
+            'pack_name' => 'Pack Especial 1',
+            'pack_description' => 'Descripción 1',
         ]);
 
         SellDetail::factory()->create([
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 2,
-            'product_price' => 5,
-            'product_name' => 'Chinese Food',
-            'product_description' => 'Delicious Chinese food',
+            'pack_price' => 500,
+            'pack_name' => 'Pack Especial 2',
+            'pack_description' => 'Descripción 2',
         ]);
 
         // Verificar el código
@@ -109,7 +101,16 @@ class SellerSellControllerTest extends TestCase
                     'sell_id',
                     'pickup_code',
                     'customer',
-                    'offers',
+                    'offers' => [
+                        '*' => [
+                            'offer_id',
+                            'offer_title',
+                            'offer_quantity',
+                            'pack_name',
+                            'pack_description',
+                            'pack_price',
+                        ],
+                    ],
                     'created_at',
                 ],
             ])
@@ -210,10 +211,9 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'chincong',
-            'product_description' => 'aojefjijoijioajeoifj',
+            'pack_price' => 400,
+            'pack_name' => 'Pack 1',
+            'pack_description' => 'Descripción 1',
         ]);
 
         // Intentar verificar el código expirado
@@ -253,20 +253,18 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell1->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test Product 1',
-            'product_description' => 'Test Description 1',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack 1',
+            'pack_description' => 'Test Description 1',
         ]);
 
         SellDetail::factory()->create([
             'sell_id' => $sell2->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 1,
-            'product_quantity' => 3,
-            'product_price' => 200,
-            'product_name' => 'Test Product 2',
-            'product_description' => 'Test Description 2',
+            'pack_price' => 200,
+            'pack_name' => 'Test Pack 2',
+            'pack_description' => 'Test Description 2',
         ]);
 
         $response = $this->getJson('/api/sells');
@@ -284,10 +282,9 @@ class SellerSellControllerTest extends TestCase
                             'sell_id',
                             'offer_id',
                             'offer_quantity',
-                            'product_quantity',
-                            'product_price',
-                            'product_name',
-                            'product_description',
+                            'pack_price',
+                            'pack_name',
+                            'pack_description',
                             'created_at',
                             'updated_at',
                             'offer' => [
@@ -296,7 +293,7 @@ class SellerSellControllerTest extends TestCase
                                 'description',
                                 'price',
                                 'quantity',
-                                'is_active',
+                                'state',
                                 'expiration_datetime',
                             ],
                         ],
@@ -348,10 +345,9 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test Product',
-            'product_description' => 'Test Description',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack',
+            'pack_description' => 'Test Description',
         ]);
 
         // Verificar estado inicial
@@ -407,10 +403,9 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test Product',
-            'product_description' => 'Test Description',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack',
+            'pack_description' => 'Test Description',
         ]);
 
         // Intentar completar la venta con un código incorrecto
@@ -454,10 +449,9 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test Product',
-            'product_description' => 'Test Description',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack',
+            'pack_description' => 'Test Description',
         ]);
 
         // Intentar completar la venta sin enviar el código
@@ -570,10 +564,9 @@ class SellerSellControllerTest extends TestCase
             'sell_id' => $sell->id,
             'offer_id' => $this->offer->id,
             'offer_quantity' => 2,
-            'product_quantity' => 1,
-            'product_price' => 400,
-            'product_name' => 'Test Product',
-            'product_description' => 'Test Description',
+            'pack_price' => 400,
+            'pack_name' => 'Test Pack',
+            'pack_description' => 'Test Description',
         ]);
 
         // Intentar completar la venta expirada

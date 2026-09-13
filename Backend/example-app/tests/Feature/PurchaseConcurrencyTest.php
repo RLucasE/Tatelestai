@@ -10,7 +10,6 @@ use App\Enums\UserState;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
-use App\Models\Product;
 use App\Models\Sell;
 use App\Models\User;
 use Database\Seeders\EstablishmentTypeSeeder;
@@ -34,8 +33,6 @@ class PurchaseConcurrencyTest extends TestCase
     protected FoodEstablishment $establishment;
 
     protected Offer $offer;
-
-    protected Product $product;
 
     protected function setUp(): void
     {
@@ -62,13 +59,10 @@ class PurchaseConcurrencyTest extends TestCase
             'establishment_type_id' => $establishmentType->id,
         ]);
 
-        $this->product = Product::factory()->create([
-            'food_establishment_id' => $this->establishment->id,
-        ]);
-
-        $this->offer = Offer::factory()->active()->withProducts(2)->create([
+        $this->offer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
             'quantity' => 1,
+            'price' => 2000,
             'expiration_datetime' => now()->addDays(5),
         ]);
     }

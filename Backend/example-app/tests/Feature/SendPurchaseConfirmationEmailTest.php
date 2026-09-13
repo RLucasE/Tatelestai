@@ -84,9 +84,10 @@ class SendPurchaseConfirmationEmailTest extends TestCase
     {
         Event::fake([PurchaseCompleted::class]);
 
-        $offer = Offer::factory()->active()->withProducts(2)->create([
+        $offer = Offer::factory()->active()->create([
             'food_establishment_id' => $this->establishment->id,
             'quantity' => 5,
+            'price' => 2000,
             'expiration_datetime' => now()->addDays(2),
         ]);
 

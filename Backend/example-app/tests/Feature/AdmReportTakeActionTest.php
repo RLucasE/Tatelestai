@@ -10,7 +10,6 @@ use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Report;
 use App\Models\User;
-use Database\Seeders\CategorySeeder;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\UserSeeder;
@@ -24,7 +23,6 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
     $this->seed(UserSeeder::class);
-    $this->seed(CategorySeeder::class);
     $this->seed(EstablishmentTypeSeeder::class);
     // Crear admin
     $this->admin = User::where('email', 'admin@gmail.com')->first();
