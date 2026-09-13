@@ -11,9 +11,9 @@ use App\Http\Controllers\DashboardExportController;
 use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\GooglePlacesController;
-use App\Http\Controllers\OfferCustomerController;
-use App\Http\Controllers\OfferSellerController;
-use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PackCustomerController;
+use App\Http\Controllers\PackSellerController;
+use App\Http\Controllers\PackTemplateController;
 use App\Http\Controllers\PublicDataController;
 use App\Http\Controllers\SellController;
 use App\Http\Controllers\SellerSellController;
@@ -24,7 +24,8 @@ Route::middleware(['auth:sanctum', 'role:default'])->post('/select-role', [UserM
 
 Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
     Route::middleware(['user.state:'.UserState::ACTIVE->value])->group(function () {
-        Route::get('/offers', [OfferCustomerController::class, 'index']);
+        Route::get('/packs', [PackCustomerController::class, 'index']);
+        Route::get('/packs/{id}', [PackCustomerController::class, 'show']);
         Route::get('/customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
         Route::post('/prepare-purchase', [CustomerSellController::class, 'prepareBuyOffers']);
@@ -57,15 +58,18 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
 
     Route::middleware('user.state:'.UserState::ACTIVE->value)->group(function () {
         Route::get('/my-establishment', [FoodEstablishmentController::class, 'getMyEstablishment']);
-        Route::post('/product', [ProductController::class, 'store']);
-        Route::get('/products', [ProductController::class, 'show']);
-        Route::patch('/products/{id}', [ProductController::class, 'update']);
-        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-        Route::post('/offer', [OfferSellerController::class, 'store']);
-        Route::get('my-offers', [OfferSellerController::class, 'show']);
-        Route::get('/offer/{offerID}', [OfferSellerController::class, 'offer']);
-        Route::patch('/offer/{offerID}', [OfferSellerController::class, 'update']);
-        Route::delete('/offer/{offerID}', [OfferSellerController::class, 'destroy']);
+
+        Route::get('/pack-templates', [PackTemplateController::class, 'index']);
+        Route::post('/pack-templates', [PackTemplateController::class, 'store']);
+        Route::get('/pack-templates/{id}', [PackTemplateController::class, 'show']);
+        Route::patch('/pack-templates/{id}', [PackTemplateController::class, 'update']);
+        Route::delete('/pack-templates/{id}', [PackTemplateController::class, 'destroy']);
+
+        Route::post('/packs', [PackSellerController::class, 'store']);
+        Route::get('/my-packs', [PackSellerController::class, 'index']);
+        Route::get('/my-packs/{id}', [PackSellerController::class, 'show']);
+        Route::patch('/packs/{id}', [PackSellerController::class, 'update']);
+        Route::delete('/packs/{id}', [PackSellerController::class, 'destroy']);
         Route::get('/sells', [SellerSellController::class, 'sellerSells']);
         Route::put('/my-establishment', [FoodEstablishmentController::class, 'updateMyEstablishment']);
         Route::post('/check-customer-code', [SellerSellController::class, 'checkCustomerCode']);
@@ -83,9 +87,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/user/{id}/offers', [AdmOfferController::class, 'indexByUser']);
         Route::get('/adm-offers', [AdmOfferController::class, 'index']);
         Route::patch('/adm-offers/{id}/status', [AdmOfferController::class, 'update']);
-        Route::get('/adm-pending-offers', [AdmOfferController::class, 'pendingOffers']);
-        Route::patch('/adm-offers/{id}/approve', [AdmOfferController::class, 'approveOffer']);
-        Route::patch('/adm-offers/{id}/reject', [AdmOfferController::class, 'rejectOffer']);
         Route::get('/adm-sells', [SellController::class, 'adminSells']);
         Route::get('/adm-sells/{id}', [SellController::class, 'adminSellDetail']);
         Route::get('/adm-customer-purchases/{id}', [SellController::class, 'adminCustomerSells']);
