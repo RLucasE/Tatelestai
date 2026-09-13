@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\OfferState;
-use App\Models\Product;
+use App\Models\PackTemplate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,8 +18,9 @@ class OfferFactory extends Factory
      */
     public function definition(): array
     {
-        $expirationDate = $this->faker->dateTimeBetween('+1 day', '+1 week');
-        $expirationTime = $this->faker->time('H:i:s');
+        $pickupStart = $this->faker->dateTimeBetween('now', '+3 hours');
+        $pickupEnd = (clone $pickupStart)->modify('+2 hours');
+        $price = $this->faker->numberBetween(1500, 5000);
 
         $titles = [
             '¡Combo especial 2x1!', 'Descuento del 30% en menú completo', 'Promo familiar - 4 personas',
@@ -181,12 +182,18 @@ class OfferFactory extends Factory
             'food_establishment_id' => \App\Models\FoodEstablishment::factory(),
             'title' => $this->faker->randomElement($titles),
             'description' => $this->faker->randomElement($descriptions),
-            'expiration_date' => $expirationDate->format('Y-m-d'),
-            'expiration_datetime' => $expirationDate->format('Y-m-d').' '.$expirationTime,
+            'price' => $price,
+            'minimum_value' => $price * $this->faker->numberBetween(2, 3),
+            'allergens' => $this->faker->randomElements(
+                ['gluten', 'lácteos', 'huevo', 'frutos secos', 'soja', 'pescado'],
+                $this->faker->numberBetween(0, 3)
+            ),
+            'estimated_weight_kg' => $this->faker->randomFloat(2, 0.5, 5.0),
+            'pickup_start_datetime' => $pickupStart->format('Y-m-d H:i:s'),
+            'expiration_datetime' => $pickupEnd->format('Y-m-d H:i:s'),
             'quantity' => $this->faker->numberBetween(1, 50),
             'state' => $this->faker->randomElement([
                 OfferState::ACTIVE->value,
-                OfferState::VERIFIYING->value,
                 OfferState::PURCHASED->value,
             ]),
         ];
@@ -218,43 +225,32 @@ class OfferFactory extends Factory
      */
     public function expiringSoon(): static
     {
-        $expirationDateTime = $this->faker->dateTimeBetween('+1 hour', '+6 hours');
+        $pickupStart = $this->faker->dateTimeBetween('now', '+1 hour');
+        $pickupEnd = (clone $pickupStart)->modify('+2 hours');
 
         return $this->state(fn (array $attributes) => [
-            'expiration_date' => $expirationDateTime->format('Y-m-d'),
-            'expiration_datetime' => $expirationDateTime->format('Y-m-d H:i:s'),
+            'pickup_start_datetime' => $pickupStart->format('Y-m-d H:i:s'),
+            'expiration_datetime' => $pickupEnd->format('Y-m-d H:i:s'),
             'state' => OfferState::ACTIVE->value,
         ]);
     }
 
     /**
-     * Configura la oferta con productos aleatorios
+     * Configura la oferta como pack publicado desde una plantilla
      */
-    public function withProducts(?int $productCount = null): static
+    public function fromTemplate(PackTemplate $template): static
     {
-        return $this->afterCreating(function ($offer) use ($productCount) {
-            $count = $productCount ?? $this->faker->numberBetween(1, 5);
+        $price = $this->faker->numberBetween(1500, 5000);
 
-            $products = Product::where('food_establishment_id', $offer->food_establishment_id)
-                ->inRandomOrder()
-                ->limit($count)
-                ->get();
-
-            if ($products->isEmpty()) {
-                $products = Product::inRandomOrder()
-                    ->limit($count)
-                    ->get();
-            }
-
-            foreach ($products as $product) {
-                $offer->products()->attach($product->id, [
-                    'price' => $this->faker->numberBetween(1500, 7500),
-                    'quantity' => $this->faker->numberBetween(1, 10),
-                    'expiration_date' => $this->faker->dateTimeBetween('+1 day', '+1 week')->format('Y-m-d'),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        });
+        return $this->state(fn (array $attributes) => [
+            'food_establishment_id' => $template->food_establishment_id,
+            'pack_template_id' => $template->id,
+            'title' => $template->title,
+            'description' => $template->description,
+            'allergens' => $template->allergens,
+            'estimated_weight_kg' => $template->estimated_weight_kg,
+            'price' => $price,
+            'minimum_value' => $price * $this->faker->numberBetween(2, 3),
+        ]);
     }
 }

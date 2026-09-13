@@ -32,14 +32,14 @@ class FoodEstablishment extends Model
         return $this->belongsTo(EstablishmentType::class, 'establishment_type_id', 'id');
     }
 
-    public function products()
-    {
-        return $this->hasMany(Product::class);
-    }
-
     public function offers()
     {
         return $this->hasMany(Offer::class);
+    }
+
+    public function packTemplates()
+    {
+        return $this->hasMany(PackTemplate::class);
     }
 
     public function reports()

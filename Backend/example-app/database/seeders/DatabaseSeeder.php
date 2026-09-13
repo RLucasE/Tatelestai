@@ -17,14 +17,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call(PermissionSeeder::class);
         $this->call(UserSeeder::class);
-        $this->call(CategorySeeder::class);
         $this->call(EstablishmentTypeSeeder::class);
         $this->call(FoodEstablishmentSeeder::class);
-        $this->call(ProductSeeder::class);
-        $this->call(ProductCategorySeeder::class);
-        $this->call(OfferSeeder::class);
+        $this->call(PackTemplateSeeder::class);
+        $this->call(PackOfferSeeder::class);
         $this->call(SellSeeder::class);
-        //        $this->call(ProductOfferSeeder::class);
 
         \App\Models\Offer::makeAllSearchable();
     }

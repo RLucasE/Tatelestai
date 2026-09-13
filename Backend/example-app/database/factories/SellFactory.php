@@ -100,10 +100,9 @@ class SellFactory extends Factory
                     'sell_id' => $sell->id,
                     'offer_id' => $offer->id,
                     'offer_quantity' => $this->faker->numberBetween(1, 5),
-                    'product_quantity' => $this->faker->numberBetween(1, 3),
-                    'product_price' => $this->faker->numberBetween(300, 2000),
-                    'product_name' => $this->faker->words(3, true),
-                    'product_description' => $this->faker->sentence(),
+                    'pack_price' => $offer->price ?? $this->faker->numberBetween(300, 2000),
+                    'pack_name' => $offer->title,
+                    'pack_description' => $offer->description,
                 ]);
             }
         });
