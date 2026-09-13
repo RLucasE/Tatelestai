@@ -49,10 +49,9 @@ class getCustomerSellsAction
                         'id' => $detail->id,
                         'offer_id' => $detail->offer_id,
                         'offer_quantity' => $detail->offer_quantity,
-                        'product_quantity' => $detail->product_quantity,
-                        'product_price' => $detail->product_price,
-                        'product_name' => $detail->product_name,
-                        'product_description' => $detail->product_description,
+                        'pack_price' => $detail->pack_price,
+                        'pack_name' => $detail->pack_name,
+                        'pack_description' => $detail->pack_description,
                     ];
                 })->toArray(),
             ];

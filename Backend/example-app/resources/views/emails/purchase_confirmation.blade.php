@@ -221,13 +221,15 @@
             <h3>📦 Detalles de tu compra</h3>
             @foreach($sell->sellDetails as $detail)
                 <div class="offer-item">
-                    <h4>{{ $detail->product_name }}</h4>
-                    <p>{{ $detail->product_description }}</p>
+                    <h4>{{ $detail->pack_name }}</h4>
+                    @if($detail->pack_description)
+                        <p>{{ $detail->pack_description }}</p>
+                    @endif
                     <p>
-                        <span class="quantity">Cantidad: {{ $detail->offer_quantity }} x {{ $detail->product_quantity }} unidades</span>
+                        <span class="quantity">Cantidad: {{ $detail->offer_quantity }}</span>
                     </p>
                     <p>
-                        <span class="price">Precio: ${{ number_format($detail->product_price, 2) }}</span>
+                        <span class="price">Precio unitario: ${{ number_format($detail->pack_price, 2) }}</span>
                     </p>
                 </div>
             @endforeach

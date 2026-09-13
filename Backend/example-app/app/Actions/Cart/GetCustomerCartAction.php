@@ -25,7 +25,7 @@ class GetCustomerCartAction
             return null;
         }
 
-        $offers = OfferCart::with(['offer.fullProducts', 'offer', 'offer.foodEstablishment'])
+        $offers = OfferCart::with(['offer', 'offer.foodEstablishment'])
             ->where('user_cart_id', $cart->id)
             ->orderByDesc('created_at')
             ->get()
@@ -33,23 +33,19 @@ class GetCustomerCartAction
                 return [
                     'offer_id' => $offerCart->offer->id,
                     'establishment_id' => $offerCart->offer->food_establishment_id,
-                    'establishment_name' => $offerCart->offer->foodEstablishment->name,
-                    'establishment_address' => $offerCart->offer->foodEstablishment->address,
+                    'establishment_name' => $offerCart->offer->foodEstablishment?->name,
+                    'establishment_address' => $offerCart->offer->foodEstablishment?->address,
                     'offer_title' => $offerCart->offer->title,
                     'offer_description' => $offerCart->offer->description,
+                    'offer_price' => (int) $offerCart->offer->price,
+                    'minimum_value' => (int) $offerCart->offer->minimum_value,
+                    'allergens' => $offerCart->offer->allergens,
+                    'estimated_weight_kg' => $offerCart->offer->estimated_weight_kg,
                     'offer_max_quantity' => $offerCart->offer->quantity,
                     'offer_state' => $offerCart->offer->state,
+                    'pickup_start_datetime' => $offerCart->offer->pickup_start_datetime,
                     'offer_expiration_datetime' => $offerCart->offer->expiration_datetime,
                     'quantity' => $offerCart->quantity,
-                    'products' => $offerCart->offer->fullProducts->map(function ($product) {
-                        return [
-                            'product_name' => $product->name,
-                            'product_description' => $product->description,
-                            'product_price' => $product->pivot->price,
-                            'product_quantity' => $product->pivot->quantity,
-                            'product_expiration_date' => $product->pivot->expiration_date,
-                        ];
-                    })->toArray(),
                 ];
             });
 

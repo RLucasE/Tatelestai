@@ -10,9 +10,8 @@ class PrepareOfferDTO
         public readonly int $id,
         public readonly string $title,
         public readonly string $description,
+        public readonly int $price,
         public readonly int $quantity,
-        /** @var array<ProductOfferDTO> */
-        public readonly array $products,
     ) {}
 
     /**
@@ -20,45 +19,14 @@ class PrepareOfferDTO
      */
     public static function createFromIdAndQuantity(int $id, int $quantity): self
     {
-        $offer = Offer::with('fullProducts')->find($id);
-        $productsData = array_map(function ($product) {
-            return [
-                'name' => $product['name'],
-                'description' => $product['description'],
-                'quantity' => $product['pivot']['quantity'],
-                'price' => $product['pivot']['price'],
-                'expiration_date' => $product['pivot']['expiration_date'],
-            ];
-        }, $offer->fullProducts->toArray());
-        $productsDTO = array_map(function ($productData) {
-            return new ProductOfferDTO(
-                name: $productData['name'],
-                description: $productData['description'],
-                quantity: $productData['quantity'],
-                price: $productData['price'],
-                expiration_date: $productData['expiration_date'],
-            );
-        }, $productsData);
+        $offer = Offer::findOrFail($id);
 
         return new self(
-            id: $id,
+            id: $offer->id,
             title: $offer->title,
             description: $offer->description,
+            price: (int) $offer->price,
             quantity: $quantity,
-            products: $productsDTO
         );
-    }
-
-    public function resolveProducts(array $productsData): array
-    {
-        return array_map(function ($productData) {
-            return new ProductOfferDTO(
-                name: $productData['name'],
-                description: $productData['description'],
-                quantity: $productData['quantity'],
-                price: $productData['price'],
-                expiration_date: $productData['expiration_date']
-            );
-        }, $productsData);
     }
 }

@@ -41,10 +41,9 @@ class SellerSellController extends Controller
                             'sell_id' => $detail->sell_id,
                             'offer_id' => $detail->offer_id,
                             'offer_quantity' => $detail->offer_quantity,
-                            'product_quantity' => $detail->product_quantity,
-                            'product_price' => $detail->product_price,
-                            'product_name' => $detail->product_name,
-                            'product_description' => $detail->product_description,
+                            'pack_price' => $detail->pack_price,
+                            'pack_name' => $detail->pack_name,
+                            'pack_description' => $detail->pack_description,
                             'created_at' => $detail->created_at,
                             'updated_at' => $detail->updated_at,
                             'offer' => $detail->offer ? [
@@ -53,7 +52,7 @@ class SellerSellController extends Controller
                                 'description' => $detail->offer->description,
                                 'price' => $detail->offer->price,
                                 'quantity' => $detail->offer->quantity,
-                                'is_active' => $detail->offer->is_active,
+                                'state' => $detail->offer->state,
                                 'expiration_datetime' => $detail->offer->expiration_datetime,
                             ] : null,
                         ];
@@ -86,10 +85,9 @@ class SellerSellController extends Controller
                     'offer_id' => $detail->offer_id,
                     'offer_title' => $detail->offer->title ?? 'N/A',
                     'offer_quantity' => $detail->offer_quantity,
-                    'product_name' => $detail->product_name,
-                    'product_description' => $detail->product_description,
-                    'product_quantity' => $detail->product_quantity,
-                    'product_price' => $detail->product_price,
+                    'pack_name' => $detail->pack_name,
+                    'pack_description' => $detail->pack_description,
+                    'pack_price' => $detail->pack_price,
                 ];
             });
 

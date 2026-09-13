@@ -48,23 +48,20 @@ class makeSellAction
                     ->decrement('quantity', $offerDTO->quantity);
 
                 if ($updatedRows === 0) {
-                    $currentOffer = $this->getOfferAction->execute($offerDTO->id, false);
+                    $currentOffer = $this->getOfferAction->execute($offerDTO->id);
                     throw new \Exception("No hay suficiente stock disponible para la oferta: {$currentOffer->title}");
                 }
 
-                $offer = $this->getOfferAction->execute($offerDTO->id, true);
+                $offer = $this->getOfferAction->execute($offerDTO->id);
 
-                foreach ($offerDTO->products as $productDTO) {
-                    SellDetail::create([
-                        'sell_id' => $sell->id,
-                        'offer_quantity' => $offerDTO->quantity,
-                        'offer_id' => $offerDTO->id,
-                        'product_name' => $productDTO->name,
-                        'product_description' => $productDTO->description,
-                        'product_quantity' => $productDTO->quantity,
-                        'product_price' => $productDTO->price,
-                    ]);
-                }
+                SellDetail::create([
+                    'sell_id' => $sell->id,
+                    'offer_id' => $offerDTO->id,
+                    'offer_quantity' => $offerDTO->quantity,
+                    'pack_name' => $offerDTO->title,
+                    'pack_description' => $offerDTO->description,
+                    'pack_price' => $offerDTO->price,
+                ]);
 
                 if ($offer->quantity <= 0) {
                     $offer->update(['state' => 'purchased']);

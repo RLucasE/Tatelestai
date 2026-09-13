@@ -3,19 +3,19 @@
 namespace App\Actions\Cart;
 
 use App\Actions\Offers\GetOfferAction;
+use App\Actions\Offers\ResolveOfferAction;
 use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Actions\Offers\ValidateOfferStateAction;
 use App\Enums\OfferState;
 use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Http\Controllers\CartController;
-use App\Http\Controllers\OfferController;
 use App\Models\OfferCart;
 use Illuminate\Support\Facades\Auth;
 
 class AddToCartAction
 {
     public function __construct(
-        private OfferController $offerController,
+        private ResolveOfferAction $resolveOfferAction,
         private CartController $cartController,
         private ValidateOfferExpirationAction $validateOfferExpiration,
         private GetOfferAction $getOfferAction,
@@ -68,7 +68,7 @@ class AddToCartAction
     protected function updateOfferQuantity(int $offerId, int $quantity)
     {
         $activeCart = $this->cartController->getLastActiveCart(Auth::id());
-        $offer = $this->offerController->resolveOffer($offerId);
+        $offer = ($this->resolveOfferAction)($offerId);
 
         if (! $activeCart) {
             return null;

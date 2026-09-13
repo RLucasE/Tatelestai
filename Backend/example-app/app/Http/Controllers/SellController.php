@@ -28,11 +28,10 @@ class SellController extends Controller
                     'sell_details' => $sell->sellDetails->map(function ($detail) {
                         return [
                             'id' => $detail->id,
-                            'product_name' => $detail->product_name ?? 'N/A',
-                            'product_description' => $detail->product_description ?? 'N/A',
-                            'product_price' => $detail->product_price ?? 0,
+                            'pack_name' => $detail->pack_name ?? 'N/A',
+                            'pack_description' => $detail->pack_description ?? 'N/A',
+                            'pack_price' => $detail->pack_price ?? 0,
                             'offer_quantity' => $detail->offer_quantity ?? 0,
-                            'product_quantity' => $detail->product_quantity ?? 0,
                         ];
                     }),
                 ];
