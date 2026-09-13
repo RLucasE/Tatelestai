@@ -203,14 +203,6 @@ return [
                             'type' => 'string',
                         ],
                         [
-                            'name' => 'products',
-                            'type' => 'string',
-                        ],
-                        [
-                            'name' => 'product_descriptions',
-                            'type' => 'string',
-                        ],
-                        [
                             'name' => 'created_at',
                             'type' => 'int64',
                         ],
@@ -223,6 +215,25 @@ return [
                             'type' => 'int64',
                         ],
                         [
+                            'name' => 'price',
+                            'type' => 'int64',
+                        ],
+                        [
+                            'name' => 'minimum_value',
+                            'type' => 'int64',
+                        ],
+                        [
+                            'name' => 'pickup_start_datetime',
+                            'type' => 'int64',
+                            'optional' => true,
+                        ],
+                        [
+                            'name' => 'allergens',
+                            'type' => 'string[]',
+                            'optional' => true,
+                            'facet' => true,
+                        ],
+                        [
                             'name' => '_geoloc',
                             'type' => 'geopoint',
                             'optional' => true,
@@ -231,7 +242,7 @@ return [
                     'default_sorting_field' => 'created_at',
                 ],
                 'search-parameters' => [
-                    'query_by' => 'title,products,product_descriptions,description',
+                    'query_by' => 'title,description,food_establishment',
                 ],
             ],
         ],

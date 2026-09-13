@@ -56,7 +56,6 @@ class TypesenseSearchAdapter implements SearchServiceInterface
             ->paginate($query->perPage, 'page', $query->page);
 
         $paginator->load([
-            'fullProducts',
             'foodEstablishment' => fn ($q) => $q->select('id', 'name', 'address', 'latitude', 'longitude'),
         ]);
 
@@ -65,7 +64,7 @@ class TypesenseSearchAdapter implements SearchServiceInterface
 
     public function indexOffer(int $offerId): void
     {
-        Offer::with(['products', 'fullProducts', 'foodEstablishment'])
+        Offer::with('foodEstablishment')
             ->findOrFail($offerId)
             ->searchable();
     }
@@ -76,7 +75,7 @@ class TypesenseSearchAdapter implements SearchServiceInterface
             return;
         }
 
-        Offer::with(['products', 'fullProducts', 'foodEstablishment'])
+        Offer::with('foodEstablishment')
             ->whereIn('id', $offerIds)
             ->get()
             ->searchable();
