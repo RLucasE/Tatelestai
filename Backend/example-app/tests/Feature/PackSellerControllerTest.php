@@ -299,4 +299,63 @@ class PackSellerControllerTest extends TestCase
             'state' => OfferState::INACTIVE->value,
         ]);
     }
+
+    #[Test]
+    public function it_can_publish_a_pack_without_template_id_creating_a_template_automatically(): void
+    {
+        $payload = [
+            'title' => 'Bolsa Sorpresa Pastelería',
+            'description' => 'Tortas, budines y tartas del día',
+            'allergens' => ['gluten', 'lacteos', 'huevo'],
+            'estimated_weight_kg' => 1.5,
+            'price' => 3500,
+            'minimum_value' => 10500,
+            'quantity' => 6,
+            'pickup_start_datetime' => now()->addHour()->format('Y-m-d H:i:s'),
+            'pickup_end_datetime' => now()->addHours(3)->format('Y-m-d H:i:s'),
+        ];
+
+        $response = $this->postJson('/api/packs', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('message', 'Pack publicado exitosamente')
+            ->assertJsonPath('data.title', 'Bolsa Sorpresa Pastelería')
+            ->assertJsonPath('data.description', 'Tortas, budines y tartas del día');
+
+        $this->assertDatabaseHas('pack_templates', [
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Bolsa Sorpresa Pastelería',
+            'description' => 'Tortas, budines y tartas del día',
+        ]);
+
+        $createdTemplate = PackTemplate::where('title', 'Bolsa Sorpresa Pastelería')->first();
+        $this->assertNotNull($createdTemplate);
+
+        $this->assertDatabaseHas('offers', [
+            'pack_template_id' => $createdTemplate->id,
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Bolsa Sorpresa Pastelería',
+            'price' => 3500,
+            'minimum_value' => 10500,
+            'quantity' => 6,
+        ]);
+    }
+
+    #[Test]
+    public function it_validates_title_and_description_when_no_template_id_is_provided(): void
+    {
+        $payload = [
+            'price' => 3500,
+            'minimum_value' => 10500,
+            'quantity' => 6,
+            'pickup_start_datetime' => now()->addHour()->format('Y-m-d H:i:s'),
+            'pickup_end_datetime' => now()->addHours(3)->format('Y-m-d H:i:s'),
+        ];
+
+        $response = $this->postJson('/api/packs', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['title', 'description']);
+    }
 }
+

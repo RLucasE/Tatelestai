@@ -104,4 +104,43 @@ class PublishPackActionTest extends TestCase
 
         app(PublishPackAction::class)->execute($this->dtoFor($otherTemplate->id));
     }
+
+    #[Test]
+    public function it_publishes_a_pack_and_automatically_creates_a_template_when_no_template_is_provided(): void
+    {
+        $dto = new PackDTO(
+            packTemplateId: null,
+            title: 'Bolsa Sorpresa Panadería',
+            description: 'Medialunas y panes artesanales del día',
+            allergens: ['gluten', 'lacteos'],
+            estimatedWeightKg: 1.25,
+            price: 2500,
+            minimumValue: 7500,
+            quantity: 3,
+            pickupStartDatetime: now()->addHour()->toDateTimeString(),
+            pickupEndDatetime: now()->addHours(2)->toDateTimeString(),
+        );
+
+        $offer = app(PublishPackAction::class)->execute($dto);
+
+        $this->assertSame(OfferState::ACTIVE->value, $offer->state);
+        $this->assertNotNull($offer->pack_template_id);
+        $this->assertSame($this->establishment->id, $offer->food_establishment_id);
+        $this->assertSame('Bolsa Sorpresa Panadería', $offer->title);
+        $this->assertSame('Medialunas y panes artesanales del día', $offer->description);
+        $this->assertEquals(['gluten', 'lacteos'], $offer->allergens);
+        $this->assertEquals(1.25, (float) $offer->estimated_weight_kg);
+        $this->assertSame(2500, (int) $offer->price);
+        $this->assertSame(7500, (int) $offer->minimum_value);
+        $this->assertSame(3, (int) $offer->quantity);
+
+        $template = PackTemplate::find($offer->pack_template_id);
+        $this->assertNotNull($template);
+        $this->assertSame($this->establishment->id, $template->food_establishment_id);
+        $this->assertSame('Bolsa Sorpresa Panadería', $template->title);
+        $this->assertSame('Medialunas y panes artesanales del día', $template->description);
+        $this->assertEquals(['gluten', 'lacteos'], $template->allergens);
+        $this->assertEquals(1.25, (float) $template->estimated_weight_kg);
+    }
 }
+

@@ -22,7 +22,12 @@ class StorePackRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pack_template_id' => 'required|integer|exists:pack_templates,id',
+            'pack_template_id' => 'nullable|integer|exists:pack_templates,id',
+            'title' => 'required_without:pack_template_id|nullable|string|max:100',
+            'description' => 'required_without:pack_template_id|nullable|string|max:1000',
+            'allergens' => 'nullable|array',
+            'allergens.*' => 'string|max:50',
+            'estimated_weight_kg' => 'nullable|numeric|min:0.01|max:100',
             'price' => 'required|numeric|min:1',
             'minimum_value' => 'required|numeric|min:1|gte:price',
             'quantity' => 'required|integer|min:1',
@@ -39,8 +44,9 @@ class StorePackRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'pack_template_id.required' => 'Debes seleccionar una plantilla de pack',
             'pack_template_id.exists' => 'La plantilla de pack seleccionada no existe',
+            'title.required_without' => 'El título es obligatorio si no seleccionas una plantilla',
+            'description.required_without' => 'La descripción es obligatoria si no seleccionas una plantilla',
             'price.required' => 'El precio del pack es requerido',
             'minimum_value.required' => 'El valor mínimo garantizado es requerido',
             'minimum_value.gte' => 'El valor mínimo garantizado debe ser mayor o igual al precio del pack',

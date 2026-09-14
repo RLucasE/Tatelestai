@@ -13,9 +13,8 @@ const error = ref(null);
 const fetchOffers = async () => {
   try {
     loading.value = true;
-    const response = await axiosInstance.get("/my-offers");
-    console.log(response.data);
-    offers.value = response.data.data || response.data;
+    const response = await axiosInstance.get("/my-packs");
+    offers.value = response.data?.data || response.data || [];
     error.value = null;
   } catch (err) {
     console.error("Error fetching offers:", err);
@@ -30,6 +29,10 @@ const handleOfferClick = (offer) => {
   router.push({ name: "edit-offer", params: { id: offer.id } });
 };
 
+const goToCreateOffer = () => {
+  router.push({ name: "create-offer" });
+};
+
 onMounted(() => {
   fetchOffers();
 });
@@ -39,10 +42,16 @@ onMounted(() => {
   <div class="my-offers-container">
     <!-- Header -->
     <div class="header-section">
-      <h1 class="page-title">Mis Ofertas</h1>
-      <p class="page-subtitle">
-        Gestiona y visualiza todas tus ofertas creadas
-      </p>
+      <div class="header-titles">
+        <h1 class="page-title">Mis Ofertas de Packs</h1>
+        <p class="page-subtitle">
+          Gestiona y supervisa tus bolsas sorpresa activas y pasadas.
+        </p>
+      </div>
+      <button @click="goToCreateOffer" class="create-pack-cta">
+        <span class="cta-icon">+</span>
+        <span>Publicar Oferta</span>
+      </button>
     </div>
 
     <!-- Loading State -->
@@ -59,9 +68,12 @@ onMounted(() => {
 
     <!-- Empty State -->
     <div v-else-if="offers.length === 0" class="empty-container">
-      <div class="empty-icon">📋</div>
+      <div class="empty-icon">🛍️</div>
       <h3>No tienes ofertas creadas</h3>
-      <p>Comienza creando tu primera oferta para atraer más clientes</p>
+      <p>Comienza publicando tu primera bolsa sorpresa para rescatar excedentes y captar clientes.</p>
+      <button @click="goToCreateOffer" class="empty-cta-btn">
+        + Crear Mi Primera Oferta
+      </button>
     </div>
 
     <!-- Offers Grid -->
@@ -79,85 +91,78 @@ onMounted(() => {
 
 <style scoped>
 .my-offers-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 1.5rem 2rem;
+  max-width: 1300px;
   margin: 0 auto;
-  background-color: var(--color-bg);
+  color: var(--color-text, #e8eaf6);
   min-height: 100vh;
 }
 
 /* Header Section */
 .header-section {
-  margin-bottom: 30px;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
 }
 
 .page-title {
-  font-size: 2.5em;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 10px 0;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
-  font-size: 1.1em;
-  color: var(--color-text);
-  opacity: 0.8;
+  font-size: 1.05rem;
+  color: #b3acc0;
   margin: 0;
-  font-weight: 400;
+}
+
+.create-pack-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.6rem;
+  background: #7c3aed;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+}
+
+.create-pack-cta:hover {
+  background: #6d28d9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+}
+
+.cta-icon {
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 /* Offers Grid */
 .offers-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
 .clickable-card {
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.clickable-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(34, 32, 31, 0.5);
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .offers-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-  }
-
-  .page-title {
-    font-size: 2.2em;
-  }
-}
-
-@media (max-width: 768px) {
-  .offers-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-
-  .my-offers-container {
-    padding: 15px;
-  }
-
-  .page-title {
-    font-size: 2em;
-  }
-
-  .page-subtitle {
-    font-size: 1em;
-  }
 }
 
 /* Loading State */
@@ -166,33 +171,24 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 40px;
-  text-align: center;
-  color: var(--color-text);
+  padding: 80px 20px;
+  color: #b3acc0;
 }
 
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--color-secondary);
-  border-top: 4px solid var(--color-primary);
+  width: 44px;
+  height: 44px;
+  border: 4px solid #3d3450;
+  border-top: 4px solid #7c3aed;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
+  to {
     transform: rotate(360deg);
   }
-}
-
-.loading-container p {
-  font-size: 1.1em;
-  font-weight: 500;
 }
 
 /* Error State */
@@ -200,38 +196,23 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 60px 40px;
+  padding: 50px 20px;
+  background: #2d2438;
+  border-radius: 12px;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
   text-align: center;
-  color: var(--color-text);
-  background-color: var(--color-darkest);
-  border-radius: 16px;
-  margin: 20px;
-  border: 2px solid var(--color-secondary);
-}
-
-.error-container p {
-  font-size: 1.1em;
-  margin-bottom: 20px;
-  font-weight: 500;
 }
 
 .retry-btn {
-  padding: 12px 24px;
-  background-color: var(--color-primary);
-  color: var(--color-text);
+  margin-top: 1rem;
+  padding: 0.6rem 1.4rem;
+  background: #7c3aed;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   font-weight: 600;
-  font-size: 1em;
-}
-
-.retry-btn:hover {
-  background-color: var(--color-focus);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
 
 /* Empty State */
@@ -240,33 +221,61 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 40px;
+  padding: 80px 20px;
   text-align: center;
-  color: var(--color-text);
-  background-color: var(--color-secondary);
+  background: #2d2438;
   border-radius: 16px;
-  margin: 20px;
-  border: 2px dashed var(--color-focus);
+  border: 2px dashed #4a4058;
 }
 
 .empty-icon {
-  font-size: 4em;
-  margin-bottom: 20px;
-  opacity: 0.6;
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
 }
 
 .empty-container h3 {
-  font-size: 1.5em;
-  font-weight: 600;
-  margin: 0 0 10px 0;
-  color: var(--color-text);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
 }
 
 .empty-container p {
-  font-size: 1em;
-  margin: 0;
-  opacity: 0.8;
-  max-width: 400px;
+  color: #b3acc0;
+  max-width: 440px;
   line-height: 1.5;
+  margin: 0 0 1.5rem 0;
+}
+
+.empty-cta-btn {
+  padding: 0.85rem 1.6rem;
+  background: #7c3aed;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+}
+
+.empty-cta-btn:hover {
+  background: #6d28d9;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .my-offers-container {
+    padding: 1rem;
+  }
+
+  .header-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .create-pack-cta {
+    justify-content: center;
+  }
 }
 </style>

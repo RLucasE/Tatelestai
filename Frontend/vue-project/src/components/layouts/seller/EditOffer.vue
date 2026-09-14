@@ -16,16 +16,14 @@ const loading = ref(true);
 const error = ref(null);
 const offer = ref(null);
 const deleting = ref(false);
+const saving = ref(false);
+const actionMessage = ref("");
 
-const products = computed(() => (offer.value?.products ?? []));
-
-const totalOfferPrice = computed(() => {
-  const offerQty = Number(offer.value?.quantity ?? 0);
-  return (offer.value?.products ?? []).reduce((accumulated, product) => {
-    const price = Number(product.pivot?.price ?? 0);
-    const qty = Number(product.pivot?.quantity ?? 0);
-    return accumulated + price * qty * offerQty;
-  }, 0);
+// Edición de cupos y precio
+const editForm = ref({
+  quantity: 1,
+  price: 0,
+  minimum_value: 0,
 });
 
 const isExpired = computed(() => {
@@ -41,37 +39,44 @@ const isActive = computed(() => {
   return offer.value?.state === "active" && !isExpired.value;
 });
 
-const isPurchased = computed(() => {
-  return offer.value?.state === "purchased";
+const discountPercentage = computed(() => {
+  const price = Number(offer.value?.price || 0);
+  const minVal = Number(offer.value?.minimum_value || 0);
+  if (!price || !minVal || minVal <= price) return 0;
+  return Math.round(((minVal - price) / minVal) * 100);
 });
 
-const offerStateText = computed(() => {
-  if (isInactive.value) return "Inactiva";
-  if (isExpired.value) return "Expirada";
-  return "Activa";
-});
+const formattedPickupWindow = computed(() => {
+  if (!offer.value?.pickup_start_datetime && !offer.value?.expiration_datetime) return "-";
+  try {
+    const start = offer.value.pickup_start_datetime ? new Date(offer.value.pickup_start_datetime) : null;
+    const end = offer.value.expiration_datetime ? new Date(offer.value.expiration_datetime) : null;
 
-const offerStateClass = computed(() => {
-  if (isInactive.value) return "badge-inactive";
-  if (isExpired.value) return "badge-expired";
-  return "badge-active";
-});
-
-const formattedDate = computed(() => {
-  if (!offer.value?.expiration_datetime) return "-";
-  return new Date(offer.value.expiration_datetime).toLocaleDateString();
-});
-
-const formattedTime = computed(() => {
-  if (!offer.value?.expiration_datetime) return "-";
-  return new Date(offer.value.expiration_datetime).toLocaleTimeString();
+    if (start && end) {
+      const isToday = start.toDateString() === new Date().toDateString();
+      const dateLabel = isToday
+        ? "Hoy"
+        : start.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
+      const startTime = start.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+      const endTime = end.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+      return `${dateLabel}, ${startTime} - ${endTime} hs`;
+    }
+    return "-";
+  } catch (e) {
+    return "-";
+  }
 });
 
 const fetchOffer = async () => {
   try {
     loading.value = true;
-    const response = await axiosInstance.get(`/offer/${props.id}`);
+    const response = await axiosInstance.get(`/my-packs/${props.id}`);
     offer.value = response.data?.data ?? response.data;
+    if (offer.value) {
+      editForm.value.quantity = offer.value.quantity;
+      editForm.value.price = offer.value.price;
+      editForm.value.minimum_value = offer.value.minimum_value;
+    }
     error.value = null;
   } catch (err) {
     console.error("Error al cargar la oferta:", err);
@@ -84,362 +89,522 @@ const fetchOffer = async () => {
 
 const goBack = () => router.push({ name: "my-offers" });
 
-onMounted(fetchOffer);
+const onUpdatePack = async () => {
+  if (!offer.value) return;
+  try {
+    saving.value = true;
+    actionMessage.value = "";
+    await axiosInstance.patch(`/packs/${offer.value.id}`, {
+      quantity: Number(editForm.value.quantity),
+      price: Number(editForm.value.price),
+      minimum_value: Number(editForm.value.minimum_value),
+    });
+    actionMessage.value = "Pack actualizado correctamente";
+    await fetchOffer();
+  } catch (err) {
+    console.error("Error al actualizar oferta:", err);
+    alert(err.response?.data?.message || "No se pudo actualizar el pack");
+  } finally {
+    saving.value = false;
+  }
+};
 
 const onDeleteOffer = async () => {
   if (!offer.value) return;
   const confirmed = window.confirm(
-    "¿Seguro que quieres eliminar esta oferta? Esta acción no se puede deshacer."
+    "¿Seguro que deseas dar de baja este pack? La oferta dejará de estar disponible para los clientes."
   );
   if (!confirmed) return;
   try {
     deleting.value = true;
-    await axiosInstance.delete(`/offer/${offer.value.id}`);
-    fetchOffer();
+    await axiosInstance.delete(`/packs/${offer.value.id}`);
+    await fetchOffer();
   } catch (err) {
-    console.error("Error al eliminar la oferta:", err);
-    alert("No se pudo eliminar la oferta");
+    console.error("Error al deshabilitar pack:", err);
+    alert("No se pudo deshabilitar el pack");
   } finally {
     deleting.value = false;
   }
 };
+
+onMounted(fetchOffer);
 </script>
 
 <template>
-  <div class="edit-offer-container">
-    <div class="header">
+  <div class="edit-pack-container">
+    <!-- Header -->
+    <div class="page-header">
       <button class="back-btn" @click="goBack">← Volver a mis ofertas</button>
-      <h1 class="title">Detalles de la oferta</h1>
-      <div class="spacer"></div>
-      <button class="danger-btn" @click="onDeleteOffer" :disabled="deleting">
-        {{ deleting ? 'Eliminando...' : 'Deshabilitar offerta' }}
-      </button>
+      <div class="header-actions">
+        <button
+          v-if="!isInactive"
+          class="danger-btn"
+          @click="onDeleteOffer"
+          :disabled="deleting"
+        >
+          {{ deleting ? "Dando de baja..." : "Deshabilitar Pack" }}
+        </button>
+      </div>
     </div>
 
-    <div v-if="loading" class="loading">
+    <!-- Loading -->
+    <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <p>Cargando oferta...</p>
+      <p>Cargando detalles de la oferta...</p>
     </div>
 
-    <div v-else-if="error" class="error">
+    <!-- Error -->
+    <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
       <button class="retry-btn" @click="fetchOffer">Reintentar</button>
     </div>
 
-    <div v-else-if="!offer" class="empty">
-      <p>No se encontró la oferta</p>
-    </div>
-
-    <div v-else class="content">
-      <!-- Info principal de la oferta -->
-      <section class="offer-info" :class="{ expired: isExpired }">
-        <div class="offer-header">
-          <h2 class="offer-title">{{ offer.title }}</h2>
-          <span v-if="isInactive" class="badge badge-inactive">Inactiva</span>
-          <span v-else-if="isExpired" class="badge badge-expired">Expirada</span>
-          <span v-else-if="isActive" class="badge badge-active">Activa</span>
-          <span v-else class="badge badge-purchased">Agotada</span>
-        </div>
-        <p class="offer-description">{{ offer.description }}</p>
-
-        <div class="meta">
-          <div class="meta-item">
-            <span class="meta-label">Válida hasta</span>
-            <span class="meta-value">{{ formattedDate }} {{ formattedTime }}</span>
+    <!-- Contenido -->
+    <div v-else-if="offer" class="content-grid">
+      <!-- Tarjeta Principal de Información -->
+      <section class="main-card">
+        <div class="card-top">
+          <div>
+            <span class="pack-type-badge">🛍️ Bolsa Sorpresa</span>
+            <h1 class="pack-title">{{ offer.title }}</h1>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">Cantidad</span>
-            <span class="meta-value">{{ offer.quantity ?? '-' }}</span>
+          <div class="status-wrapper">
+            <span v-if="isInactive" class="status-badge inactive">Inactiva</span>
+            <span v-else-if="isExpired" class="status-badge expired">Expirada</span>
+            <span v-else class="status-badge active">Activa</span>
+          </div>
+        </div>
+
+        <p class="pack-description">{{ offer.description }}</p>
+
+        <!-- Alérgenos -->
+        <div v-if="offer.allergens?.length" class="section-row">
+          <span class="row-label">Alérgenos e ingredientes:</span>
+          <div class="allergens-chips">
+            <span v-for="(alg, idx) in offer.allergens" :key="idx" class="allergen-chip">
+              {{ alg }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Peso estimado -->
+        <div v-if="offer.estimated_weight_kg" class="section-row">
+          <span class="row-label">Peso estimado:</span>
+          <span class="row-value">~{{ offer.estimated_weight_kg }} kg</span>
+        </div>
+
+        <!-- Ventana de retiro -->
+        <div class="pickup-info-box">
+          <span class="pickup-icon">🕒</span>
+          <div>
+            <div class="pickup-title">Ventana de Retiro</div>
+            <div class="pickup-timing">{{ formattedPickupWindow }}</div>
+          </div>
+        </div>
+
+        <!-- Precios y Descuento -->
+        <div class="pricing-metrics">
+          <div class="metric-card">
+            <span class="metric-label">Precio al cliente</span>
+            <span class="metric-value">${{ Number(offer.price).toLocaleString("es-AR") }}</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Valor mínimo original</span>
+            <span class="metric-value text-gray-400">
+              ${{ Number(offer.minimum_value).toLocaleString("es-AR") }}
+            </span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Ahorro para el cliente</span>
+            <span class="metric-value text-emerald-400">
+              {{ discountPercentage }}% OFF
+            </span>
           </div>
         </div>
       </section>
 
-      <!-- Listado de productos -->
-      <section class="products">
-        <h3 class="section-title">Productos en la oferta</h3>
+      <!-- Panel de Ajustes Rápidos -->
+      <aside class="side-card">
+        <h3 class="side-title">Modificar Cupos y Precios</h3>
+        <p class="side-description">
+          Ajusta la cantidad disponible o el precio de esta oferta mientras esté activa.
+        </p>
 
-        <div v-if="products.length === 0" class="empty-products">
-          <p>Esta oferta no tiene productos asociados.</p>
+        <div v-if="actionMessage" class="success-alert">
+          {{ actionMessage }}
         </div>
 
-        <div v-else class="product-list">
-          <div class="product-row header-row">
-            <div>Producto</div>
-            <div class="hide-sm">Descripción</div>
-            <div>Cantidad</div>
-            <div>Precio</div>
-            <div>Subtotal</div>
+        <form @submit.prevent="onUpdatePack" class="update-form">
+          <div class="form-group">
+            <label class="form-label">Cupos Disponibles</label>
+            <input
+              v-model.number="editForm.quantity"
+              type="number"
+              min="0"
+              class="form-input"
+              :disabled="isInactive"
+            />
           </div>
 
-          <div
-            class="product-row"
-            v-for="product in products"
-            :key="product.id"
+          <div class="form-group">
+            <label class="form-label">Precio ($ ARS)</label>
+            <input
+              v-model.number="editForm.price"
+              type="number"
+              min="1"
+              class="form-input"
+              :disabled="isInactive"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Valor Original ($ ARS)</label>
+            <input
+              v-model.number="editForm.minimum_value"
+              type="number"
+              min="1"
+              class="form-input"
+              :disabled="isInactive"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="save-btn"
+            :disabled="saving || isInactive"
           >
-            <div class="product-name">{{ product.name }}</div>
-            <div class="product-description hide-sm">{{ product.description }}</div>
-            <div class="product-quantity">{{ product.pivot?.quantity ?? '-' }}</div>
-            <div class="product-price">{{ product.pivot?.price ?? '-' }}</div>
-            <div class="product-subtotal">{{ calcSubtotal(product.pivot?.price, product.pivot?.quantity, offer?.quantity) }}</div>
-          </div>
-          <div class="product-row footer-row">
-            <div></div>
-            <div class="hide-sm"></div>
-            <div></div>
-            <div class="total-label">Total oferta</div>
-            <div class="total-value">{{ totalOfferPrice }}</div>
-          </div>
-        </div>
-      </section>
+            {{ saving ? "Guardando..." : "Actualizar Oferta" }}
+          </button>
+        </form>
+      </aside>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  methods: {
-    calcSubtotal(price, qty, offerQty) {
-      const p = Number(price ?? 0);
-      const q = Number(qty ?? 0);
-      const oq = Number(offerQty ?? 0);
-      return p * q * oq;
-    },
-  },
-};
-</script>
-
 <style scoped>
-.edit-offer-container {
-  padding: 20px;
-  max-width: 1100px;
+.edit-pack-container {
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
   margin: 0 auto;
-  color: var(--color-text);
+  color: var(--color-text, #e8eaf6);
+  min-height: 100vh;
 }
 
-.header {
+.page-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 2rem;
 }
-
-.spacer { flex: 1; }
 
 .back-btn {
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
-  padding: 8px 12px;
+  background: transparent;
+  color: #b3acc0;
+  border: 1px solid #4a4058;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .back-btn:hover {
-  background: var(--color-primary);
+  color: #ffffff;
+  border-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
 }
 
 .danger-btn {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
-  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.danger-btn[disabled] {
-  opacity: 0.7;
-  cursor: not-allowed;
+.danger-btn:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
 }
 
-.danger-btn:hover:not([disabled]) {
-  background: var(--color-secondary);
-}
-
-.title {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.loading,
-.error,
-.empty {
+.loading-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  background: var(--color-darkest);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
+  padding: 80px 20px;
+  color: #b3acc0;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
-  border-top: 4px solid var(--color-primary);
+  width: 44px;
+  height: 44px;
+  border: 4px solid #3d3450;
+  border-top: 4px solid #7c3aed;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 14px;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
 .retry-btn {
-  margin-top: 12px;
-  padding: 10px 16px;
-  background: var(--color-primary);
-  color: var(--color-text);
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  background: #7c3aed;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
-.content {
+/* Layout */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 2fr 1.2fr;
+    align-items: start;
+  }
+}
+
+.main-card,
+.side-card {
+  background: var(--color-primary, #2d2438);
+  border: 1px solid #3d3450;
+  border-radius: 14px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.card-top {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.offer-info {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.offer-info.expired {
-  background: var(--color-darkest);
-}
-
-.offer-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.offer-title {
-  margin: 0;
-  font-size: 1.3rem;
+.pack-type-badge {
+  font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-text);
-}
-
-.badge {
-  padding: 4px 8px;
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+}
+
+.pack-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0.5rem 0 0 0;
+}
+
+.status-badge {
+  font-size: 0.75rem;
   font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
 }
 
-.badge-active {
-  background: var(--color-focus);
-  color: var(--color-text);
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
 }
 
-.badge-expired {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
+.status-badge.expired {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid #ef4444;
 }
 
-.badge-inactive {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
+.status-badge.inactive {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  border: 1px solid #6b7280;
 }
 
-.badge-purchased {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
-}
-
-.offer-description {
-  margin: 6px 0 12px;
+.pack-description {
+  font-size: 1rem;
   line-height: 1.5;
+  color: #b3acc0;
+  margin-bottom: 1.5rem;
 }
 
-.meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.meta-item {
+.section-row {
   display: flex;
-  flex-direction: column;
-  background: var(--color-primary);
-  border: 1px solid var(--color-focus);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-
-.meta-label {
-  font-size: 0.8rem;
-  opacity: 0.8;
-}
-
-.meta-value {
-  font-weight: 700;
-}
-
-.products {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.section-title {
-  margin: 0 0 12px 0;
-  font-size: 1.1rem;
-}
-
-.product-list {
-  width: 100%;
-}
-
-.product-row {
-  display: grid;
-  grid-template-columns: 2fr 3fr 1fr 1fr 1fr;
-  gap: 10px;
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--color-focus);
   align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.header-row {
-  font-weight: 700;
-  background: var(--color-primary);
-  border-radius: 8px;
+.row-label {
+  font-size: 0.9rem;
+  color: #8b8399;
+  font-weight: 500;
 }
 
-.product-name {
+.row-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.allergens-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.allergen-chip {
+  font-size: 0.75rem;
+  background: #1f1a2b;
+  border: 1px solid #4a4058;
+  color: #d8b4fe;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+}
+
+.pickup-info-box {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #1f1a2b;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid #3d3450;
+  margin: 1.5rem 0;
+}
+
+.pickup-icon {
+  font-size: 1.5rem;
+}
+
+.pickup-title {
+  font-size: 0.8rem;
+  color: #a39cb2;
+  text-transform: uppercase;
   font-weight: 600;
 }
 
-.product-description {
-  opacity: 0.9;
-}
-
-.product-price,
-.product-subtotal {
+.pickup-timing {
+  font-size: 1.05rem;
   font-weight: 700;
+  color: #f3e8ff;
 }
 
-@media (max-width: 768px) {
-  .product-row { grid-template-columns: 2fr 1fr 1fr 1fr; }
-  .hide-sm { display: none; }
+.pricing-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.metric-card {
+  background: #1a1625;
+  border: 1px solid #3d3450;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #a39cb2;
+}
+
+.metric-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* Side Card */
+.side-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+}
+
+.side-description {
+  font-size: 0.85rem;
+  color: #b3acc0;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.success-alert {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #34d399;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b3acc0;
+  margin-bottom: 0.35rem;
+}
+
+.form-input {
+  width: 100%;
+  background: #1a1625;
+  border: 1.5px solid #3d3450;
+  color: #ffffff;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #7c3aed;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 0.85rem;
+  background: #7c3aed;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
