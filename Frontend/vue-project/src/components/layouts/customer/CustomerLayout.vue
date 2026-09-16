@@ -48,13 +48,9 @@ import Logo from '@/components/common/Logo.vue';
 
 <style scoped>
 .customer-cards-box {
-  display: flex;
-  flex-wrap: wrap;
   background-color: var(--color-bg);
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-  height: 100%;
+  min-height: calc(100vh - 4rem);
+  width: 100%;
 }
 
 nav {

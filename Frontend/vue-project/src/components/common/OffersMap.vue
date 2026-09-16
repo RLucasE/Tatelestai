@@ -151,14 +151,16 @@ const POPUP_BTN_STYLES = `
 function groupOffersByLocation(offers) {
   const groups = {}
   for (const offer of offers) {
-    if (offer.establishment_latitude == null || offer.establishment_longitude == null) continue
-    const key = `${offer.establishment_latitude},${offer.establishment_longitude}`
+    const lat = offer.establishment?.latitude ?? offer.establishment_latitude
+    const lng = offer.establishment?.longitude ?? offer.establishment_longitude
+    if (lat == null || lng == null) continue
+    const key = `${lat},${lng}`
     if (!groups[key]) {
       groups[key] = {
-        lat: offer.establishment_latitude,
-        lng: offer.establishment_longitude,
-        name: offer.establishment_name || 'Comercio',
-        address: offer.establishment_address || '',
+        lat,
+        lng,
+        name: offer.establishment?.name || offer.establishment_name || 'Comercio',
+        address: offer.establishment?.address || offer.establishment_address || '',
         offers: [],
       }
     }
@@ -178,7 +180,9 @@ function buildPopupContent(group) {
     }
 
     let priceText = 'Ver detalle'
-    if (offer.products && offer.products.length > 0 && offer.products[0].price != null) {
+    if (offer.price != null) {
+      priceText = `$${Number(offer.price).toLocaleString('es-AR')}`
+    } else if (offer.products && offer.products.length > 0 && offer.products[0].price != null) {
       priceText = `$${Number(offer.products[0].price).toLocaleString('es-AR')}`
     }
 
@@ -265,7 +269,7 @@ async function fetchOffersInViewport() {
       params.search = props.searchQuery.trim()
     }
 
-    const response = await axiosInstance.get('/offers', {
+    const response = await axiosInstance.get('/packs', {
       params,
       signal: abortController.signal,
     })

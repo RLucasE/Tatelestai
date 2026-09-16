@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isVisible" class="modal-overlay" @click="closeModal">
+  <div v-if="isVisible && offer" class="modal-overlay" @click="closeModal">
     <div class="modal-container" @click.stop>
       <!-- Header del modal -->
       <div class="modal-header">
@@ -60,7 +60,7 @@
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            {{ offer.establishment_name }}
+            {{ offer.establishment?.name || offer.establishment_name || 'Comercio adherido' }}
             <svg
               width="16"
               height="16"
@@ -74,7 +74,7 @@
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </h3>
-          <p class="establishment-address" v-if="offer.establishment_address">
+          <p class="establishment-address" v-if="offer.establishment?.address || offer.establishment_address">
             <svg
               width="16"
               height="16"
@@ -84,17 +84,48 @@
             >
               <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
             </svg>
-            {{ offer.establishment_address }}
+            {{ offer.establishment?.address || offer.establishment_address }}
           </p>
         </div>
 
         <!-- Descripción de la oferta -->
-        <div class="offer-description">
+        <div class="offer-description" v-if="offer.description">
           <h4>Descripción</h4>
           <p>{{ offer.description }}</p>
         </div>
 
-        <!-- Lista de productos -->
+        <!-- Detalle del pack cuando no tiene productos individuales -->
+        <div v-if="!offer.products || offer.products.length === 0" class="pack-info-box my-3 p-4 bg-[#221C33] rounded-xl border border-[#3D3450]">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <span v-if="offer.minimum_value && Number(offer.minimum_value) > Number(offer.price || offer.offer_price)" class="text-xs text-[#787596] line-through font-medium mr-2">
+                ${{ formatPrice(offer.minimum_value) }}
+              </span>
+              <span class="text-lg font-extrabold text-white">
+                ${{ formatPrice(offer.price || offer.offer_price) }}
+              </span>
+            </div>
+            <span v-if="discountPercentage > 0" class="bg-[#10B981] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              -{{ discountPercentage }}% OFF
+            </span>
+          </div>
+
+          <div v-if="formattedPickupWindow" class="flex items-center gap-2 text-xs text-[#F59E0B]">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2"/>
+              <polyline points="12 6 12 12 16 14" stroke-width="2"/>
+            </svg>
+            <span>Retiro: <strong class="text-white">{{ formattedPickupWindow }}</strong></span>
+          </div>
+
+          <div v-if="offer.allergens && offer.allergens.length" class="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-[#3D3450]/60">
+            <span v-for="(alg, idx) in offer.allergens" :key="idx" class="text-[10px] bg-[#1F1A2C] text-[#CBD5E1] px-2 py-0.5 rounded">
+              {{ alg }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Lista de productos individuales (si existen) -->
         <div
           class="products-section"
           v-if="offer.products && offer.products.length > 0"
@@ -150,7 +181,7 @@
         </div>
 
         <!-- Información de expiración -->
-        <div class="expiration-section">
+        <div class="expiration-section" v-if="formattedDate">
           <div class="expiration-info">
             <svg
               width="20"
@@ -173,11 +204,11 @@
       <div class="modal-footer">
         <div
           class="offer-availability"
-          v-if="offer.offer_quantity !== undefined"
+          v-if="availableQuantity !== undefined"
         >
           <p class="availability-info">
-            <span class="quantity-label">Cantidad disponible: </span>
-            <span class="quantity-value">{{ offer.offer_quantity }}</span>
+            <span class="quantity-label">Disponibles: </span>
+            <span class="quantity-value">{{ availableQuantity }}</span>
           </p>
         </div>
         <div class="quantity-section">
@@ -186,17 +217,18 @@
             id="quantity"
             type="number"
             min="1"
+            :max="availableQuantity ?? 99"
             placeholder="1"
             v-model.number="quantity"
             @input="validateQuantity"
             @blur="handleBlur"
           />
         </div>
-        <button class="action-button primary" @click="handleOfferAction">
-          Carrito
+        <button class="action-button secondary" @click="handleOfferAction">
+          Agregar al Carrito
         </button>
         <button class="action-button primary" @click="buyOffer">
-          Comprar
+          Comprar Ahora
         </button>
       </div>
     </div>
@@ -234,54 +266,99 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "offerAction","buyOffer"]);
 
+const availableQuantity = computed(() => {
+  return props.offer?.quantity ?? props.offer?.offer_quantity ?? props.offer?.offer_max_quantity;
+});
+
+const discountPercentage = computed(() => {
+  const price = Number(props.offer?.price || props.offer?.offer_price || 0);
+  const minVal = Number(props.offer?.minimum_value || 0);
+  if (!price || !minVal || minVal <= price) return 0;
+  return Math.round(((minVal - price) / minVal) * 100);
+});
+
+const formattedPickupWindow = computed(() => {
+  const start = props.offer?.pickup_start_datetime ? new Date(props.offer.pickup_start_datetime) : null;
+  const end = (props.offer?.expiration_datetime || props.offer?.offer_expiration_datetime)
+    ? new Date(props.offer.expiration_datetime || props.offer.offer_expiration_datetime)
+    : null;
+  if (!start && !end) return '';
+
+  if (start && end) {
+    const isToday = start.toDateString() === new Date().toDateString();
+    const dateLabel = isToday ? 'Hoy' : start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    const startTime = start.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const endTime = end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return `${dateLabel}, ${startTime} - ${endTime} hs`;
+  }
+
+  if (end) {
+    return `Hasta ${end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`;
+  }
+
+  return '';
+});
+
 const validateQuantity = () => {
-  if (quantity.value < 0) {
+  if (quantity.value < 1) {
     quantity.value = 1;
   }
 };
 
 const handleBlur = () => {
-  if (quantity.value <= 0) {
+  if (!quantity.value || quantity.value <= 0) {
     quantity.value = 1;
   }
 
-  if (quantity.value > props.offer.offer_quantity) {
-    quantity.value = props.offer.offer_quantity;
+  const max = availableQuantity.value;
+  if (max !== undefined && quantity.value > max) {
+    quantity.value = max;
   }
 };
 
 const formattedDate = computed(() => {
-  if (!props.offer.expiration_date && !props.offer.expiration_datetime)
+  if (!props.offer?.expiration_date && !props.offer?.expiration_datetime && !props.offer?.offer_expiration_datetime)
     return "";
 
-  const date = props.offer.expiration_datetime || props.offer.expiration_date;
+  const date = props.offer.expiration_datetime || props.offer.offer_expiration_datetime || props.offer.expiration_date;
   return new Date(date).toLocaleDateString("es-ES", {
     year: "numeric",
     month: "long",
     day: "numeric",
-    hour: props.offer.expiration_datetime ? "2-digit" : undefined,
-    minute: props.offer.expiration_datetime ? "2-digit" : undefined,
+    hour: "2-digit",
+    minute: "2-digit",
   });
 });
 
 const totalPrice = computed(() => {
-  if (!props.offer.products) return 0;
+  const unitPrice = props.offer?.price != null
+    ? Number(props.offer.price)
+    : (props.offer?.offer_price != null ? Number(props.offer.offer_price) : 0);
 
-  return props.offer.products.reduce((total, product) => {
-    const price = product.pivot?.price || 0;
-    const quantity = product.pivot?.quantity || 1;
-    return total + price * quantity;
-  }, 0);
+  if (unitPrice > 0) {
+    return unitPrice * (quantity.value || 1);
+  }
+
+  if (Array.isArray(props.offer?.products) && props.offer.products.length > 0) {
+    return props.offer.products.reduce((total, product) => {
+      const price = product.pivot?.price || product.product_price || 0;
+      const q = product.pivot?.quantity || product.product_quantity || 1;
+      return total + Number(price) * Number(q);
+    }, 0) * (quantity.value || 1);
+  }
+
+  return 0;
 });
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat("es-AR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(price);
+  }).format(price || 0);
 };
 
 const formatDate = (date) => {
+  if (!date) return "";
   return new Date(date).toLocaleDateString("es-ES", {
     year: "numeric",
     month: "long",
@@ -294,19 +371,35 @@ const closeModal = () => {
 };
 
 const handleOfferAction = () => {
-  emit("offerAction", { id: props.offer.id, quantity: quantity.value });
+  emit("offerAction", {
+    id: props.offer?.id || props.offer?.offer_id,
+    quantity: quantity.value,
+  });
+  closeModal();
 };
 
 const buyOffer = () => {
-  emit("buyOffer", { id: props.offer.id, quantity: quantity.value , food_establishment_id: props.offer.food_establishment_id });
-}
+  const establishmentId = props.offer?.food_establishment_id
+    || props.offer?.establishment?.id
+    || props.offer?.establishment_id;
+
+  emit("buyOffer", {
+    id: props.offer?.id || props.offer?.offer_id,
+    quantity: quantity.value,
+    food_establishment_id: establishmentId,
+  });
+};
 
 const goToEstablishment = () => {
-  if (props.offer.food_establishment_id) {
+  const establishmentId = props.offer?.food_establishment_id
+    || props.offer?.establishment?.id
+    || props.offer?.establishment_id;
+
+  if (establishmentId) {
     closeModal();
     router.push({
       name: 'establishment-view',
-      params: { id: props.offer.food_establishment_id }
+      params: { id: establishmentId }
     });
   }
 };

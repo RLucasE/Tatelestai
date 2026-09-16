@@ -1,16 +1,20 @@
 <template>
   <div class="seller-section">
-    <div class="seller-header">
+    <div class="seller-header" v-if="offers && offers.length > 0">
       <div class="establishment-info">
-        <h2 class="establishment-name">{{offers[0].establishment_name}}</h2>
-        <h3 class="establishment-address">{{offers[0].establishment_address}}</h3>
+        <h2 class="establishment-name">{{ offers[0]?.establishment_name || 'Comercio adherido' }}</h2>
+        <h3 class="establishment-address" v-if="offers[0]?.establishment_address">{{ offers[0]?.establishment_address }}</h3>
       </div>
       <button
         class="delete-all-offers-btn"
         @click="confirmRemoveAllOffers"
         type="button"
+        title="Vaciar ofertas de este comercio"
       >
-        <i class="fas fa-trash"></i> Eliminar todas las ofertas de este vendedor
+        <svg class="w-4 h-4 mr-1.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        <span>Eliminar todas</span>
       </button>
     </div>
     <div class="offers-container">
@@ -25,7 +29,7 @@
             <span class="offer-badges">
               <span v-if="isSoldOut(offer)" class="offer-badge badge-soldout">Agotada / Comprada</span>
               <span v-if="isExpired(offer)" class="offer-badge badge-expired">Expirada</span>
-              <span v-if="quantityExceedsMax(offer)" class="offer-badge badge-exceeded">Cantidad excede el máximo disponible</span>
+              <span v-if="quantityExceedsMax(offer)" class="offer-badge badge-exceeded">Cantidad excede el stock</span>
             </span>
           </div>
           <div class="offer-actions">
@@ -35,8 +39,9 @@
                 @click="decreaseQuantity(offer)"
                 :disabled="offer.quantity <= 1 || isUnavailable(offer)"
                 type="button"
+                aria-label="Disminuir cantidad"
               >
-                <i class="fas fa-minus">-</i>
+                <span>-</span>
               </button>
               <input
                 type="number"
@@ -50,26 +55,56 @@
                 class="quantity-btn quantity-increase"
                 @click="increaseQuantity(offer)"
                 type="button"
-                :disabled="offer.quantity >= offer.offer_max_quantity || isUnavailable(offer) || quantityExceedsMax(offer)"
+                :disabled="offer.quantity >= (offer.offer_max_quantity ?? 99) || isUnavailable(offer) || quantityExceedsMax(offer)"
+                aria-label="Aumentar cantidad"
               >
-                <i class="fas fa-plus">+</i>
+                <span>+</span>
               </button>
             </div>
             <button
               class="delete-offer-btn"
               @click="removeOffer(offer.offer_id)"
               type="button"
+              aria-label="Eliminar oferta"
             >
-              <i class="fas fa-trash"></i> Eliminar
+              <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span>Eliminar</span>
             </button>
           </div>
         </div>
-        <div class="offer-description">{{ offer.offer_description }}</div>
+        <div class="offer-description" v-if="offer.offer_description">{{ offer.offer_description }}</div>
         <div v-if="isUnavailable(offer)" class="offer-status">
           <span v-if="isSoldOut(offer)">Esta oferta no tiene stock o ya fue comprada.</span>
           <span v-if="isExpired(offer)">Esta oferta ha expirado.</span>
         </div>
-        <div class="products-grid">
+
+        <!-- Detalle de Pack Sorpresa (cuando no tiene lista de productos individuales) -->
+        <div v-if="!offer.products || offer.products.length === 0" class="pack-meta-row flex flex-wrap items-center justify-between gap-2 py-2 my-1 border-t border-b border-[#3D3450]/40">
+          <div class="flex items-baseline gap-2">
+            <span
+              v-if="offer.minimum_value && Number(offer.minimum_value) > calculateOfferPrice(offer)"
+              class="text-xs text-[#787596] line-through font-medium"
+            >
+              ${{ Number(offer.minimum_value).toLocaleString('es-AR') }}
+            </span>
+            <span class="text-sm font-bold text-white">
+              ${{ calculateOfferPrice(offer).toLocaleString('es-AR') }} <span class="text-xs text-[#A5A8C2] font-normal">c/u</span>
+            </span>
+          </div>
+
+          <div v-if="formatPickupWindow(offer)" class="flex items-center gap-1.5 text-xs text-[#F59E0B] bg-[#221C33] px-2.5 py-1 rounded-lg border border-[#3D3450]">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2"/>
+              <polyline points="12 6 12 12 16 14" stroke-width="2"/>
+            </svg>
+            <span>Retiro: <strong>{{ formatPickupWindow(offer) }}</strong></span>
+          </div>
+        </div>
+
+        <!-- Grilla de productos (solo si existen productos individuales) -->
+        <div class="products-grid" v-if="offer.products && offer.products.length > 0">
           <div
             v-for="product in offer.products"
             :key="product.product_id"
@@ -91,18 +126,18 @@
               class="product-expiration"
               v-if="product.product_expiration_date"
             >
-              <i class="fas fa-calendar-alt"></i>
               <span class="expiration-label">Vence:</span>
               <span class="expiration-date">{{ formatExpirationDate(product.product_expiration_date) }}</span>
             </div>
             <div class="product-footer">
-              <span class="product-price">${{ product.product_price }}</span>
+              <span class="product-price">${{ Number(product.product_price).toLocaleString('es-AR') }}</span>
             </div>
           </div>
         </div>
+
         <div class="offer-total">
           <span class="total-label">SubTotal:</span>
-          <span class="total-amount">${{ calculateOfferTotal(offer) * offer.quantity}}</span>
+          <span class="total-amount">${{ Number(calculateOfferPrice(offer) * (offer.quantity || 1)).toLocaleString('es-AR') }}</span>
         </div>
       </div>
     </div>
@@ -114,7 +149,7 @@
       <button
         class="action-button"
         @click="handlePurchase"
-        :disabled="loading || offers.length === 0"
+        :disabled="loading || !offers || offers.length === 0"
       >
         {{ loading ? "Procesando..." : "Comprar" }}
       </button>
@@ -123,13 +158,12 @@
     <!-- Notificación de error -->
     <div v-if="showErrorNotification" class="notification error">
       <div class="notification-content">
-        <i class="fas fa-exclamation-circle"></i>
         <div class="notification-text">
           <h4>Error al preparar la compra</h4>
           <p>{{ errorMessage }}</p>
         </div>
-        <button @click="showErrorNotification = false" class="notification-close">
-          <i class="fas fa-times"></i>
+        <button @click="showErrorNotification = false" class="notification-close" type="button">
+          &times;
         </button>
       </div>
     </div>
@@ -154,35 +188,66 @@ const showErrorNotification = ref(false);
 const errorMessage = ref('');
 const emit = defineEmits(["offerRemoved", "quantityUpdated","removeAllOffers"]);
 
+const calculateOfferPrice = (offer) => {
+  if (offer.offer_price != null) return Number(offer.offer_price);
+  if (offer.price != null) return Number(offer.price);
+  if (Array.isArray(offer.products) && offer.products.length > 0) {
+    return offer.products.reduce((total, product) => {
+      return total + Number(product.product_price || 0) * Number(product.product_quantity || 1);
+    }, 0);
+  }
+  return 0;
+};
+
 const calculateOfferTotal = (offer) => {
-  return offer.products
-    .reduce((total, product) => {
-      return total + product.product_price * product.product_quantity;
-    }, 0)
-    .toFixed(2);
+  return calculateOfferPrice(offer);
 };
 
 const sellerTotal = computed(() => {
-  return props.offers
-    .reduce((total, offer) => {
-      const offerTotal = offer.products.reduce((sum, product) => {
-        return sum + product.product_price * product.product_quantity;
-      }, 0);
-      return total + offerTotal * offer.quantity;
-    }, 0)
-    .toFixed(2);
+  if (!props.offers || !props.offers.length) return '0';
+  const total = props.offers.reduce((sum, offer) => {
+    return sum + calculateOfferPrice(offer) * Number(offer.quantity || 1);
+  }, 0);
+  return total.toLocaleString('es-AR');
 });
 
+const formatPickupWindow = (offer) => {
+  const start = offer.pickup_start_datetime ? new Date(offer.pickup_start_datetime) : null;
+  const end = (offer.offer_expiration_datetime || offer.expiration_datetime)
+    ? new Date(offer.offer_expiration_datetime || offer.expiration_datetime)
+    : null;
+  if (!start && !end) return '';
+
+  if (start && end) {
+    const isToday = start.toDateString() === new Date().toDateString();
+    const dateLabel = isToday ? 'Hoy' : start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    const startTime = start.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const endTime = end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return `${dateLabel}, ${startTime} - ${endTime} hs`;
+  }
+
+  if (end) {
+    return `Hasta ${end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`;
+  }
+
+  return '';
+};
+
 const handlePurchase = async () => {
-  if (loading.value) return;
+  if (loading.value || !props.offers || !props.offers.length) return;
   try {
     loading.value = true;
+    const establishmentId = props.offers[0]?.establishment_id;
+    if (!establishmentId) {
+      throw new Error("No se encontró el identificador del establecimiento");
+    }
+
     const purchaseData = {
       offers: props.offers.map((offer) => ({
         id: offer.offer_id,
         quantity: offer.quantity,
       })),
-      food_establishment_id: props.offers[0].establishment_id,
+      food_establishment_id: establishmentId,
     };
 
     // Llamar a preparePurchase en lugar de comprar directamente
@@ -202,7 +267,7 @@ const handlePurchase = async () => {
 
     // Mostrar notificación de error
     showErrorNotification.value = true;
-    errorMessage.value = error.response?.data?.error || "Error al preparar la compra. Por favor, intente nuevamente.";
+    errorMessage.value = error.response?.data?.message || error.response?.data?.error || "Error al preparar la compra. Por favor, intente nuevamente.";
 
     setTimeout(() => {
       showErrorNotification.value = false;
@@ -213,12 +278,12 @@ const handlePurchase = async () => {
 };
 
 const removeOffer = (index) => {
-  console.log("removeOffer", index);
   emit("offerRemoved", index);
 };
 
 const increaseQuantity = (offer) => {
-  if(offer.quantity < offer.offer_max_quantity) {
+  const max = offer.offer_max_quantity ?? 99;
+  if(offer.quantity < max) {
     emit("quantityUpdated", offer, offer.quantity + 1);
   }
 };
@@ -230,42 +295,47 @@ const decreaseQuantity = (offer) => {
 };
 
 const updateQuantity = (offer, value) => {
+  const max = offer.offer_max_quantity ?? 99;
   const newValue = parseInt(value);
   if (isNaN(newValue) || newValue < 1) {
     emit("quantityUpdated", offer, 1);
-  } else if (newValue > offer.offer_max_quantity) {
-    emit("quantityUpdated", offer, offer.offer_max_quantity);
+  } else if (newValue > max) {
+    emit("quantityUpdated", offer, max);
   } else {
     emit("quantityUpdated", offer, newValue);
   }
 };
 
 const confirmRemoveAllOffers = () => {
+  if (!props.offers || !props.offers.length) return;
+  const establishmentId = props.offers[0]?.establishment_id;
   const confirmed = confirm("¿Estás seguro de que deseas eliminar todas las ofertas de este vendedor?");
-  if (confirmed) {
-    console.log("Removing all offers for establishment", props.offers[0].establishment_id);
-    emit("removeAllOffers", props.offers[0].establishment_id ?? null);
+  if (confirmed && establishmentId) {
+    emit("removeAllOffers", establishmentId);
   }
 };
 
 const isExpired = (offer) => {
-  if (!offer?.offer_expiration_datetime) return false;
+  const exp = offer?.offer_expiration_datetime || offer?.expiration_datetime;
+  if (!exp) return false;
   const now = new Date();
-  const expiration = new Date(offer.offer_expiration_datetime);
+  const expiration = new Date(exp);
   return expiration.getTime() < now.getTime();
 };
 
 const isSoldOut = (offer) => {
-  return offer?.offer_state === 'purchased' || Number(offer?.offer_max_quantity ?? 0) === 0;
+  return offer?.offer_state === 'purchased' || Number(offer?.offer_max_quantity ?? 1) === 0;
 };
 
 const quantityExceedsMax = (offer) => {
+  if (offer.offer_max_quantity == null) return false;
   return offer.quantity > offer.offer_max_quantity;
 };
 
 const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
 
 const formatExpirationDate = (dateString) => {
+  if (!dateString) return '';
   const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
   const date = new Date(dateString);
   return date.toLocaleDateString('es-ES', options);

@@ -11,9 +11,10 @@
       <div class="search-icon">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
+          width="18"
+          height="18"
           viewBox="0 0 24 24"
+          fill="none"
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
@@ -28,12 +29,14 @@
         @click="clearSearch"
         class="clear-button"
         type="button"
+        aria-label="Limpiar búsqueda"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
+          fill="none"
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
@@ -120,98 +123,85 @@ watch(() => isSearching.value, (newValue) => {
 
 <style scoped>
 .search-container {
-  margin-bottom: 20px;
+  width: 100%;
 }
 
 .search-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
-  max-width: 500px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .search-input {
   width: 100%;
-  padding: 12px 45px 12px 45px;
-  border: 2px solid var(--color-primary-light, #e0e0e0);
-  border-radius: 25px;
-  font-size: 16px;
+  height: 44px;
+  padding: 0 42px 0 44px;
+  border: 1px solid #3D3450;
+  border-radius: 9999px;
+  font-size: 0.875rem;
   outline: none;
-  transition: all 0.3s ease;
-  background-color: var(--color-white, #ffffff);
-  color: var(--color-darkest, #333);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: #221C30;
+  color: #E8EAF6;
+  box-sizing: border-box;
+}
+
+.search-input:hover {
+  border-color: #4E4264;
+  background-color: #261F36;
 }
 
 .search-input:focus {
-  border-color: var(--color-primary, #4CAF50);
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  border-color: #7C3AED;
+  background-color: #261F36;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
 }
 
 .search-input::placeholder {
-  color: var(--color-text-light, #999);
+  color: #7E7896;
 }
 
 .search-icon {
   position: absolute;
   left: 15px;
-  color: var(--color-text-light, #999);
+  color: #7E7896;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.search-input:focus ~ .search-icon {
+  color: #A78BFA;
 }
 
 .clear-button {
   position: absolute;
-  right: 15px;
-  background: none;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.08);
   border: none;
   cursor: pointer;
-  color: var(--color-text-light, #999);
-  padding: 4px;
+  color: #9DA1BF;
+  padding: 5px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .clear-button:hover {
-  background-color: var(--color-danger-light, #ffebee);
-  color: var(--color-danger, #f44336);
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
 }
 
-.search-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
-  color: var(--color-text-light, #999);
-  font-size: 14px;
-}
-
-.search-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-primary-light, #e0e0e0);
-  border-top: 2px solid var(--color-primary, #4CAF50);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .search-input-wrapper {
-    max-width: 100%;
-  }
-
   .search-input {
-    font-size: 14px;
-    padding: 10px 40px 10px 40px;
+    font-size: 0.85rem;
+    padding-left: 40px;
+    height: 42px;
   }
 }
 </style>

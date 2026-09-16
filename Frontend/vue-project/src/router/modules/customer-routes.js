@@ -29,12 +29,20 @@ export default [
         name: "cart",
         component: () =>
           import("@/components/layouts/customer/CustomerCart.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
       },
       {
         path: "purchases",
         name: "customer-purchases",
         component: () =>
           import("@/components/layouts/customer/CustomerPurchases.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
       },
       {
         path: "history",

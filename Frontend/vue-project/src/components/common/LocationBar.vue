@@ -188,47 +188,47 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 48px;
+  height: 44px;
   padding: 0 16px;
-  background-color: var(--color-primary);
-  border: 1.5px solid var(--color-secondary);
-  border-radius: 25px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  background-color: #221C30;
+  border: 1px solid #3D3450;
+  border-radius: 9999px;
+  color: #CBD5E1;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
   box-sizing: border-box;
 }
 
 .location-pill-btn:hover {
-  background-color: var(--color-secondary);
-  border-color: var(--color-accent);
-  color: var(--color-text);
+  background-color: #261F36;
+  border-color: #4E4264;
+  color: #FFFFFF;
 }
 
 /* Estado activo con ubicación establecida */
 .pill-active {
-  background-color: rgba(124, 58, 237, 0.14);
-  border-color: var(--color-accent);
-  color: var(--color-text);
+  background-color: rgba(124, 58, 237, 0.16);
+  border-color: #7C3AED;
+  color: #FFFFFF;
 }
 
 .pill-active:hover {
-  background-color: rgba(124, 58, 237, 0.22);
+  background-color: rgba(124, 58, 237, 0.24);
 }
 
 .popover-open {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
 }
 
 .pin-icon-wrap {
   display: flex;
   align-items: center;
-  color: var(--color-accent-light, #a78bfa);
+  color: #A78BFA;
 }
 
 .pill-text {
@@ -237,7 +237,7 @@ onUnmounted(() => {
 }
 
 .chevron-icon {
-  color: var(--color-text-secondary);
+  color: #8E8BA7;
   transition: transform 0.2s ease;
 }
 
@@ -248,13 +248,13 @@ onUnmounted(() => {
 /* Popover flotante */
 .location-popover {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
   width: 305px;
-  background-color: var(--color-primary);
-  border: 1px solid var(--color-secondary);
-  border-radius: 14px;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+  background-color: #221C30;
+  border: 1px solid #3D3450;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
   z-index: 1050;
   overflow: hidden;
 }

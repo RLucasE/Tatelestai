@@ -277,8 +277,8 @@ const fetchOffers = async () => {
   error.value = null;
 
   try {
-    // Obtener todas las ofertas activas
-    const response = await axiosInstance.get('/offers');
+    // Obtener todos los packs activos
+    const response = await axiosInstance.get('/packs');
 
     if (response.data.data) {
       // Filtrar ofertas por el establecimiento específico
@@ -288,16 +288,17 @@ const fetchOffers = async () => {
       );
 
       if (establishmentOffers.length > 0) {
+        const first = establishmentOffers[0];
         // Usar los datos del establecimiento de la primera oferta
         establishment.value = {
-          id: establishmentOffers[0].food_establishment_id,
-          name: establishmentOffers[0].establishment_name,
-          address: establishmentOffers[0].establishment_address,
+          id: first.food_establishment_id,
+          name: first.establishment?.name || first.establishment_name || 'Establecimiento',
+          address: first.establishment?.address || first.establishment_address || '',
           // Agregar más datos si están disponibles en el response
-          establishment_type: establishmentOffers[0].establishment_type,
-          phone_number: establishmentOffers[0].establishment_phone,
-          email: establishmentOffers[0].establishment_email,
-          description: establishmentOffers[0].establishment_description
+          establishment_type: first.establishment?.type || first.establishment_type,
+          phone_number: first.establishment?.phone || first.establishment_phone,
+          email: first.establishment?.email || first.establishment_email,
+          description: first.establishment?.description || first.establishment_description
         };
         offers.value = establishmentOffers;
       } else {

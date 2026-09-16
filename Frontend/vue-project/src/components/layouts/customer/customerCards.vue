@@ -11,8 +11,10 @@ import { useRouter } from 'vue-router';
 import { useLocationStore } from '@/stores/location';
 import { calculateDistance, formatDistance } from '@/lib/helpers/geo';
 
+const router = useRouter();
 const locationStore = useLocationStore();
 
+// Estado de datos
 const offers = ref([]);
 const originalOffers = ref([]);
 const loading = ref(true);
@@ -29,48 +31,106 @@ const searchQuery = ref('');
 const showLocationPicker = ref(false);
 const viewMode = ref('list'); // 'list' | 'map'
 
-// Computed: offers with distance info
+// Filtros interactivos de categoría
+const activeCategory = ref('all');
+const sortBy = ref('distance');
+
+const categories = [
+  { id: 'all', label: 'Todas' },
+  { id: 'surprise', label: 'Bolsas Sorpresa' },
+  { id: 'bakery', label: 'Panaderías' },
+  { id: 'dishes', label: 'Platos del Día' },
+  { id: 'vegan', label: 'Vegano' },
+  { id: 'pastry', label: 'Pastelería' },
+];
+
+// Ofertas con cálculo de distancia
 const offersWithDistance = computed(() => {
   if (!locationStore.isActive) return offers.value;
-  return offers.value.map(offer => ({
-    ...offer,
-    _distance: (offer.establishment_latitude != null && offer.establishment_longitude != null)
-      ? calculateDistance(
-          locationStore.latitude, locationStore.longitude,
-          offer.establishment_latitude, offer.establishment_longitude
-        )
-      : null,
-    _distanceFormatted: (offer.establishment_latitude != null && offer.establishment_longitude != null)
-      ? formatDistance(
-          calculateDistance(
-            locationStore.latitude, locationStore.longitude,
-            offer.establishment_latitude, offer.establishment_longitude
-          )
-        )
-      : null,
-  }));
+  return offers.value.map(offer => {
+    const lat = offer.establishment?.latitude ?? offer.establishment_latitude ?? null;
+    const lng = offer.establishment?.longitude ?? offer.establishment_longitude ?? null;
+    const hasCoords = lat != null && lng != null;
+    const dist = hasCoords
+      ? calculateDistance(locationStore.latitude, locationStore.longitude, lat, lng)
+      : null;
+
+    return {
+      ...offer,
+      _distance: dist,
+      _distanceFormatted: dist != null ? formatDistance(dist) : null,
+    };
+  });
 });
 
-// Sistema de notificaciones
+// Ofertas filtradas por categoría y ordenadas
+const filteredOffers = computed(() => {
+  let list = offersWithDistance.value;
+
+  // Filtrado por categoría activa
+  if (activeCategory.value !== 'all') {
+    list = list.filter((o) => {
+      const cat = (o.category || o.title || '').toLowerCase();
+      switch (activeCategory.value) {
+        case 'surprise':
+          return cat.includes('bolsa') || cat.includes('pack') || cat.includes('sorpresa');
+        case 'bakery':
+          return cat.includes('panad') || cat.includes('pan');
+        case 'dishes':
+          return cat.includes('plato') || cat.includes('almuerzo') || cat.includes('comida') || cat.includes('pizza') || cat.includes('bistr');
+        case 'vegan':
+          return cat.includes('vegan') || cat.includes('vegetar') || cat.includes('saludable') || cat.includes('bowl');
+        case 'pastry':
+          return cat.includes('dulce') || cat.includes('pastel') || cat.includes('repost') || cat.includes('muffin') || cat.includes('cake');
+        default:
+          return true;
+      }
+    });
+  }
+
+  // Ordenamiento dinámico
+  const sorted = [...list];
+  if (sortBy.value === 'distance' && locationStore.isActive) {
+    sorted.sort((a, b) => (a._distance ?? 99999) - (b._distance ?? 99999));
+  } else if (sortBy.value === 'discount') {
+    sorted.sort((a, b) => {
+      const discA = a.minimum_value && a.price ? (a.minimum_value - a.price) / a.minimum_value : 0;
+      const discB = b.minimum_value && b.price ? (b.minimum_value - b.price) / b.minimum_value : 0;
+      return discB - discA;
+    });
+  } else if (sortBy.value === 'price_asc') {
+    sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+  } else if (sortBy.value === 'expiration') {
+    sorted.sort((a, b) => {
+      const timeA = a.expiration_datetime ? new Date(a.expiration_datetime).getTime() : 9999999999999;
+      const timeB = b.expiration_datetime ? new Date(b.expiration_datetime).getTime() : 9999999999999;
+      return timeA - timeB;
+    });
+  }
+
+  return sorted;
+});
+
+// Sistema de notificaciones toast
 const notification = ref({
   show: false,
   message: '',
-  type: 'success' // 'success', 'error', 'info'
+  type: 'success',
 });
 
 const showNotification = (message, type = 'success') => {
   notification.value = {
     show: true,
     message,
-    type
+    type,
   };
 
-  // Auto-ocultar después de 3 segundos
   setTimeout(() => {
     notification.value.show = false;
-  }, 3000);
+  }, 3200);
 };
 
+// Carga de ofertas desde la API
 const getOffers = async (page = 1, isLoadMore = false) => {
   try {
     if (isLoadMore) {
@@ -89,18 +149,14 @@ const getOffers = async (page = 1, isLoadMore = false) => {
       params.radius = locationStore.radiusKm;
     }
 
-    const response = await axiosInstance.get("/offers", { params });
-    console.log(response.data);
-
+    const response = await axiosInstance.get("/packs", { params });
     const fetchedOffers = response.data.data;
     currentPage.value = response.data.current_page;
     hasMorePages.value = response.data.has_more;
 
     if (isLoadMore) {
-      // Agregar nuevas ofertas al final de la lista existente
       offers.value = [...offers.value, ...fetchedOffers];
     } else {
-      // Reemplazar la lista completa
       offers.value = fetchedOffers;
       originalOffers.value = fetchedOffers;
     }
@@ -108,7 +164,7 @@ const getOffers = async (page = 1, isLoadMore = false) => {
     error.value = null;
   } catch (err) {
     console.error("Error fetching offers:", err);
-    error.value = "Error al cargar las ofertas";
+    error.value = "Error al cargar las ofertas gastronómicas";
     if (!isLoadMore) {
       offers.value = [];
     }
@@ -118,13 +174,13 @@ const getOffers = async (page = 1, isLoadMore = false) => {
   }
 };
 
+// Scroll infinito
 const handleScroll = () => {
   const scrollHeight = document.documentElement.scrollHeight;
   const scrollTop = window.scrollY;
   const clientHeight = document.documentElement.clientHeight;
 
-  // Cuando el usuario está cerca del final (200px antes)
-  if (scrollHeight - scrollTop - clientHeight < 200) {
+  if (scrollHeight - scrollTop - clientHeight < 250) {
     if (!loadingMore.value && hasMorePages.value) {
       loadMoreOffers();
     }
@@ -136,6 +192,7 @@ const loadMoreOffers = async () => {
   await getOffers(currentPage.value + 1, true);
 };
 
+// Manejo de búsqueda
 const handleSearchResults = (results) => {
   searchQuery.value = results;
   isSearchActive.value = true;
@@ -154,72 +211,71 @@ const handleSearchClear = () => {
   getOffers(1, false);
 };
 
+// Rescate rápido directo al carrito
+const handleQuickAdd = async (offer) => {
+  await addOfferToCart({ id: offer.id, quantity: 1 });
+};
+
 const addOfferToCart = async ({ id, quantity }) => {
+  const offerId = id || selectedOffer.value?.id;
+  if (!offerId) return;
+
   const offerPayload = {
-    offer_id: id,
+    offer_id: offerId,
     quantity: quantity || 1,
   };
 
   try {
     await axiosInstance.post("/add-to-cart", offerPayload);
-    showNotification('Oferta agregada al carrito', 'success');
+    showNotification('¡Bolsa agregada a tu carrito con éxito!', 'success');
   } catch (error) {
-    console.log(error);
+    console.error("Error al agregar al carrito:", error);
     if (error.status === 400) {
-      if ((error.data = "OfferQuantityExceded")) {
-        alert("Ya no se pueden agregar más unidades de esta oferta");
-      }
+      showNotification('Ya alcanzaste el límite de unidades disponibles para este pack', 'error');
+    } else {
+      showNotification('No se pudo agregar al carrito. Intenta nuevamente', 'error');
     }
   }
 };
 
-const router = useRouter();
-
+// Compra directa / preparación
 const buyOffer = async ({ id, quantity, food_establishment_id }) => {
+  const estId = food_establishment_id || selectedOffer.value?.establishment?.id || selectedOffer.value?.food_establishment_id;
+  const offerId = id || selectedOffer.value?.id;
+  if (!estId || !offerId) {
+    showNotification('No se pudo identificar el comercio para esta reserva', 'error');
+    return;
+  }
+
   const offerPayload = {
-    food_establishment_id: food_establishment_id,
+    food_establishment_id: estId,
     offers: [
       {
-        id: id,
+        id: offerId,
         quantity: quantity || 1,
       },
     ],
   };
 
   try {
-    // Mostrar que está preparando la compra
-    showNotification('Preparando tu compra...', 'info');
-
-    // Primero preparar la compra
+    showNotification('Preparando tu reserva...', 'info');
     const prepareResponse = await axiosInstance.post("/prepare-purchase", offerPayload);
-
-    // Guardar los datos de confirmación en sessionStorage
     sessionStorage.setItem('purchaseConfirmation', JSON.stringify(prepareResponse.data.data));
-
-    // Cerrar el modal
     isVisible.value = false;
 
-    // Redirigir a la página de confirmación con el token
     router.push({
       name: 'purchase-confirmation',
       params: {
-        token: prepareResponse.data.data.purchase_token
-      }
+        token: prepareResponse.data.data.purchase_token,
+      },
     });
-
   } catch (error) {
-    console.log(error);
-    if (error.status === 400) {
-      if (error.data === "OfferQuantityExceded") {
-        showNotification('Ya no se pueden agregar más unidades de esta oferta', 'error');
-      } else {
-        showNotification('Error al procesar la compra. Verifica los datos', 'error');
-      }
-    } else {
-      showNotification('Error de conexión. Intenta nuevamente', 'error');
-    }
+    console.error(error);
+    showNotification('Error al procesar la reserva. Verifica los datos', 'error');
   }
 };
+
+// Apertura y cierre del modal de oferta
 const handleOfferClick = (offer) => {
   selectedOffer.value = offer;
   isVisible.value = true;
@@ -229,7 +285,7 @@ const handleCloseOffer = () => {
   isVisible.value = false;
 };
 
-// Geolocation handlers
+// Geolocalización
 const handleLocationChanged = () => {
   currentPage.value = 1;
   getOffers(1, false);
@@ -246,7 +302,7 @@ const handleMapOfferSelected = (offer) => {
   isVisible.value = true;
 };
 
-// Watch location store for radius changes
+// Escucha reactiva de cambios en el radio
 watch(
   () => locationStore.radiusKm,
   () => {
@@ -266,56 +322,120 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
 });
 
-const changueLoading = (state) => {
+const changeLoading = (state) => {
   loading.value = state;
 };
 </script>
 
 <template>
-  <div class="offers-container">
-    <!-- Fila de Búsqueda y Control Discreto de Ubicación perfectamente centrado -->
-    <div class="search-location-row">
-      <div class="search-spacer-left" aria-hidden="true"></div>
-
-      <div class="search-input-center">
-        <SearchBar
+  <div class="offers-page-wrapper">
+    <!-- Barra Superior Centrada: Búsqueda y Control de Ubicación -->
+    <section class="search-location-bar-section mb-5">
+      <div class="search-location-row flex items-center justify-between gap-2.5 max-w-3xl mx-auto">
+        <!-- Input de Búsqueda -->
+        <div class="flex-1 min-w-0">
+          <SearchBar
             @search-results="handleSearchResults"
             @search-error="handleSearchError"
             @search-clear="handleSearchClear"
-            @search-leading="changueLoading"
-            placeholder="Buscar ofertas por nombre, descripción o establecimiento..."
-        />
+            @search-leading="changeLoading"
+            placeholder="Buscar por comida, establecimiento o tipo de pack..."
+          />
+        </div>
+
+        <!-- Selector de Proximidad / Ubicación -->
+        <div class="shrink-0">
+          <LocationBar
+            @location-changed="handleLocationChanged"
+            @open-picker="showLocationPicker = true"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- Fila Dinámica: Filtros de Categoría y Conmutador de Vista -->
+    <section class="category-filters-section mb-6">
+      <div class="flex items-center justify-between gap-3 flex-wrap border-b border-[#2D2438]/80 pb-3">
+        <!-- Chips de Categoría Minimalistas -->
+        <div class="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none max-w-full">
+          <button
+            v-for="cat in categories"
+            :key="cat.id"
+            type="button"
+            class="filter-chip inline-flex items-center px-3.5 py-1.5 rounded-full text-xs transition-all duration-150 shrink-0 select-none cursor-pointer"
+            :class="[
+              activeCategory === cat.id
+                ? 'bg-[#7C3AED] text-white font-semibold shadow-xs'
+                : 'text-[#9DA1BF] hover:text-white hover:bg-[#241D30] font-medium'
+            ]"
+            @click="activeCategory = cat.id"
+          >
+            <span>{{ cat.label }}</span>
+          </button>
+        </div>
+
+        <!-- Conmutador Segmentado de Vista [ Lista | Mapa ] -->
+        <div class="inline-flex items-center bg-[#181324] border border-[#2D2438] p-1 rounded-full text-xs font-medium shrink-0">
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 cursor-pointer"
+            :class="viewMode === 'list' ? 'bg-[#7C3AED] text-white font-semibold shadow-xs' : 'text-[#8E8BA7] hover:text-white'"
+            @click="viewMode = 'list'"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="8" y1="6" x2="21" y2="6" stroke-width="2"/>
+              <line x1="8" y1="12" x2="21" y2="12" stroke-width="2"/>
+              <line x1="8" y1="18" x2="21" y2="18" stroke-width="2"/>
+              <line x1="3" y1="6" x2="3.01" y2="6" stroke-width="2"/>
+              <line x1="3" y1="12" x2="3.01" y2="12" stroke-width="2"/>
+              <line x1="3" y1="18" x2="3.01" y2="18" stroke-width="2"/>
+            </svg>
+            <span>Lista</span>
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1 rounded-full transition-all duration-150 flex items-center gap-1.5 cursor-pointer"
+            :class="viewMode === 'map' ? 'bg-[#7C3AED] text-white font-semibold shadow-xs' : 'text-[#8E8BA7] hover:text-white'"
+            @click="viewMode = 'map'"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" stroke-width="2"/>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            <span>Mapa</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fila de Resumen de Resultados y Ordenación Rápida -->
+    <section v-if="viewMode === 'list'" class="flex items-center justify-between text-xs text-[#8E8BA7] mb-5 flex-wrap gap-2.5">
+      <div class="flex items-center gap-1.5">
+        <span><strong class="text-white font-semibold">{{ filteredOffers.length }}</strong> packs disponibles</span>
+        <span v-if="locationStore.isActive" class="text-[#A78BFA]">
+          • cerca de ti ({{ locationStore.radiusKm }} km)
+        </span>
       </div>
 
-      <div class="search-location-right">
-        <LocationBar
-          @location-changed="handleLocationChanged"
-          @open-picker="showLocationPicker = true"
-        />
+      <!-- Selector de Ordenación Rápida -->
+      <div class="flex items-center gap-2">
+        <label for="sort-select" class="text-[#8E8BA7]">Ordenar:</label>
+        <select
+          id="sort-select"
+          v-model="sortBy"
+          class="bg-[#201A2C] border border-[#3D3450] text-[#E8EAF6] rounded-full px-3 py-1 text-xs focus:outline-none focus:border-[#7C3AED] cursor-pointer"
+        >
+          <option value="distance" v-if="locationStore.isActive">Más cercanas</option>
+          <option value="discount">Mayor ahorro (%)</option>
+          <option value="expiration">Retiro más próximo</option>
+          <option value="price_asc">Menor precio</option>
+        </select>
       </div>
-    </div>
+    </section>
 
-    <!-- View Toggle (GEO-05) -->
-    <div class="view-toggle">
-      <button
-        class="toggle-btn"
-        :class="{ 'toggle-active': viewMode === 'list' }"
-        @click="viewMode = 'list'"
-        type="button"
-      >
-        Lista
-      </button>
-      <button
-        class="toggle-btn"
-        :class="{ 'toggle-active': viewMode === 'map' }"
-        @click="viewMode = 'map'"
-        type="button"
-      >
-        Mapa
-      </button>
-    </div>
 
-    <!-- Map View -->
+    <!-- Vista de Mapa -->
     <div v-if="viewMode === 'map'" class="map-view-container">
       <OffersMap
         :userLat="locationStore.latitude"
@@ -325,76 +445,145 @@ const changueLoading = (state) => {
       />
     </div>
 
-    <!-- List View -->
+    <!-- Vista de Lista -->
     <div v-else class="list-view-container">
-      <!-- Loading State -->
-      <div v-if="loading && !loadingMore" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Cargando ofertas...</p>
+      <!-- Loading Skeleton Cards (Reemplazo del spinner para mayor fluidez) -->
+      <div v-if="loading && !loadingMore" class="offers-grid">
+        <div
+          v-for="n in 6"
+          :key="n"
+          class="skeleton-card bg-[#2D2438] border border-[#4A4058] rounded-2xl overflow-hidden animate-pulse flex flex-col"
+        >
+          <div class="aspect-video bg-[#3D3450]/60 w-full"></div>
+          <div class="p-5 space-y-4 flex-1 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="h-4 w-28 bg-[#3D3450] rounded"></div>
+                <div class="h-4 w-16 bg-[#3D3450] rounded-full"></div>
+              </div>
+              <div class="h-5 w-3/4 bg-[#3D3450] rounded"></div>
+              <div class="h-3 w-full bg-[#3D3450]/70 rounded"></div>
+              <div class="h-3 w-2/3 bg-[#3D3450]/70 rounded"></div>
+            </div>
+            <div class="space-y-3 pt-2 border-t border-[#3D3450]/40">
+              <div class="h-7 w-full bg-[#3D3450]/50 rounded-xl"></div>
+              <div class="flex items-center justify-between">
+                <div class="h-6 w-24 bg-[#3D3450] rounded"></div>
+                <div class="h-8 w-24 bg-[#7C3AED]/40 rounded-xl"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="error" class="error-container">
-        <p>{{ error }}</p>
-        <button @click="getOffers" class="retry-btn">Reintentar</button>
+      <!-- Estado de Error -->
+      <div v-else-if="error" class="error-container text-center py-12 px-4 bg-[#2D2438] border border-[#EF4444]/40 rounded-2xl max-w-lg mx-auto">
+        <div class="w-12 h-12 mx-auto mb-3 text-[#EF4444] flex items-center justify-center">
+          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="text-white font-semibold mb-4">{{ error }}</p>
+        <button
+          @click="getOffers"
+          class="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold px-5 py-2.5 rounded-xl transition cursor-pointer"
+        >
+          Reintentar carga
+        </button>
       </div>
 
-      <!-- Empty State — con ubicación activa (GEO-06) -->
-      <div v-else-if="offers.length === 0 && locationStore.isActive" class="empty-container empty-geo">
-        <p>No encontramos ofertas dentro de {{ locationStore.radiusKm }} km de tu ubicación.</p>
-        <div class="empty-actions">
+      <!-- Estado Vacío: Con ubicación activa -->
+      <div
+        v-else-if="filteredOffers.length === 0 && locationStore.isActive"
+        class="empty-container text-center py-14 px-6 bg-[#2D2438] border border-[#4A4058] rounded-2xl max-w-xl mx-auto space-y-4"
+      >
+        <div class="w-14 h-14 mx-auto text-[#A78BFA] flex items-center justify-center">
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="3" stroke-width="2"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-white">No encontramos packs dentro de {{ locationStore.radiusKm }} km</h3>
+        <p class="text-xs text-[#94A3B8]">
+          Puedes ampliar tu radio de búsqueda o cambiar tu ubicación para explorar ofertas cercanas.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
-            v-if="locationStore.radiusKm < 10"
-            class="empty-btn"
-            @click="locationStore.setRadius(Math.min(locationStore.radiusKm * 2, 10)); handleLocationChanged()"
+            v-if="locationStore.radiusKm < 15"
+            class="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer"
+            @click="locationStore.setRadius(Math.min(locationStore.radiusKm * 2, 15)); handleLocationChanged()"
           >
-            Ampliar radio
+            Ampliar radio a {{ Math.min(locationStore.radiusKm * 2, 15) }} km
           </button>
-          <button class="empty-btn" @click="showLocationPicker = true">
+          <button
+            class="bg-[#221C33] hover:bg-[#3D3450] border border-[#4A4058] text-[#E8EAF6] text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer"
+            @click="showLocationPicker = true"
+          >
             Cambiar ubicación
           </button>
-          <button class="empty-btn empty-btn-secondary" @click="locationStore.clearLocation(); handleLocationChanged()">
+          <button
+            class="text-[#94A3B8] hover:text-white text-xs underline px-2 py-1 cursor-pointer"
+            @click="locationStore.clearLocation(); handleLocationChanged()"
+          >
             Ver todo el catálogo
           </button>
         </div>
       </div>
 
-      <!-- Empty State — sin ubicación -->
-      <div v-else-if="offers.length === 0 && !isSearchActive" class="empty-container">
-        <p>No hay ofertas disponibles en este momento</p>
+      <!-- Estado Vacío: Sin filtros ni ubicación -->
+      <div
+        v-else-if="filteredOffers.length === 0"
+        class="empty-container text-center py-14 px-6 bg-[#2D2438] border border-[#4A4058] rounded-2xl max-w-xl mx-auto space-y-3"
+      >
+        <div class="w-14 h-14 mx-auto text-[#7C3AED] flex items-center justify-center">
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 6h18" stroke-width="2"/>
+            <path d="M16 10a4 4 0 0 1-8 0" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-white">No hay packs disponibles en esta categoría</h3>
+        <p class="text-xs text-[#94A3B8]">
+          Prueba seleccionando otra categoría o limpiando los filtros de búsqueda.
+        </p>
+        <button
+          v-if="activeCategory !== 'all'"
+          class="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold px-4 py-2 rounded-xl transition mt-2"
+          @click="activeCategory = 'all'"
+        >
+          Ver todas las ofertas
+        </button>
       </div>
 
-      <!-- Search Results Empty State -->
-      <div v-else-if="offers.length === 0 && isSearchActive" class="empty-container">
-        <p>No se encontraron ofertas que coincidan con tu búsqueda</p>
-      </div>
-
-      <!-- Content -->
+      <!-- Cuadrícula de Tarjetas de Ofertas -->
       <div v-else>
         <div class="offers-grid">
           <CustomerCard
-            v-for="offer in offersWithDistance"
+            v-for="offer in filteredOffers"
             :key="offer.id"
             :offer="offer"
             :distance="offer._distanceFormatted"
             @click="handleOfferClick(offer)"
+            @quick-add="handleQuickAdd"
           />
         </div>
 
-        <!-- Loading More Indicator -->
-        <div v-if="loadingMore" class="loading-more">
-          <div class="loading-spinner-small"></div>
-          <p>Cargando más ofertas...</p>
+        <!-- Indicador de Carga Más Ofertas -->
+        <div v-if="loadingMore" class="loading-more flex items-center justify-center gap-2 py-8 text-xs text-[#A78BFA]">
+          <div class="w-4 h-4 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin"></div>
+          <span>Cargando más ofertas gastronómicas...</span>
         </div>
 
-        <!-- End Message -->
-        <div v-else-if="!hasMorePages && offers.length > 0" class="end-message">
-          <p>No hay más ofertas para mostrar</p>
+        <!-- Mensaje de Fin de Catálogo -->
+        <div v-else-if="!hasMorePages && filteredOffers.length > 0" class="end-message text-center py-8 text-xs text-[#787596]">
+          ✨ Has visto todas las ofertas disponibles en tu zona por el momento.
         </div>
       </div>
     </div>
 
-    <!-- Location Picker Modal (GEO-01) -->
+    <!-- Modales -->
     <LocationPickerModal
       :isVisible="showLocationPicker"
       @close="showLocationPicker = false"
@@ -409,414 +598,97 @@ const changueLoading = (state) => {
       @buyOffer="buyOffer"
     />
 
-    <!-- Notification Component -->
-    <Transition name="notification" appear>
-      <div v-if="notification.show" :class="`notification notification-${notification.type}`">
-        <div class="notification-content">
-          <div class="notification-icon">
-            <svg v-if="notification.type === 'success'" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-            </svg>
-            <svg v-else-if="notification.type === 'error'" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-            <svg v-else width="20" height="20" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-            </svg>
-          </div>
-          <div class="notification-message">
-            {{ notification.message }}
-          </div>
-          <button class="notification-close" @click="notification.show = false" aria-label="Cerrar notificación">
-            <svg width="16" height="16" viewBox="0 0 16 16">
-              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="notification-progress"></div>
+    <!-- Componente de Notificación Toast -->
+    <Transition name="toast" appear>
+      <div
+        v-if="notification.show"
+        class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300 max-w-sm"
+        :class="[
+          notification.type === 'error'
+            ? 'bg-[#EF4444]/90 border-[#EF4444] text-white shadow-[#EF4444]/20'
+            : notification.type === 'info'
+            ? 'bg-[#3B82F6]/90 border-[#3B82F6] text-white shadow-[#3B82F6]/20'
+            : 'bg-[#10B981]/90 border-[#10B981] text-white shadow-[#10B981]/20'
+        ]"
+      >
+        <span class="shrink-0 flex items-center justify-center">
+          <svg v-if="notification.type === 'error'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg v-else-if="notification.type === 'info'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="16" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="8" x2="12.01" y2="8" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="22 4 12 14.01 9 11.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <p class="text-xs font-medium flex-1">{{ notification.message }}</p>
+        <button
+          type="button"
+          @click="notification.show = false"
+          class="text-white/70 hover:text-white text-xs ml-1"
+          aria-label="Cerrar notificación"
+        >
+          ✕
+        </button>
       </div>
     </Transition>
   </div>
 </template>
 
 <style scoped>
-.offers-container {
-  padding: 20px;
-  max-width: 1200px;
-  min-width: 70%;
+.offers-page-wrapper {
+  padding: 16px 24px 64px;
+  max-width: 1280px;
   margin: 0 auto;
-  background-color: var(--color-bg);
   min-height: 100vh;
 }
 
 .offers-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
+@media (max-width: 1080px) {
   .offers-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
+  .offers-page-wrapper {
+    padding: 12px 16px 56px;
+  }
+
   .offers-grid {
     grid-template-columns: 1fr;
-    gap: 15px;
-  }
-
-  .offers-container {
-    padding: 15px;
+    gap: 16px;
   }
 }
 
-/* Fila de Búsqueda y Ubicación: Grid de 3 columnas para centrado matemático perfecto del buscador */
-.search-location-row {
-  display: grid;
-  grid-template-columns: 1fr minmax(auto, 500px) 1fr;
-  align-items: center;
-  width: 100%;
-  margin: 0 auto 24px auto;
-}
-
-.search-spacer-left {
-  /* Columna izquierda simétrica a la columna derecha para mantener el buscador en el 50% exacto */
-}
-
-.search-input-center {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.search-input-center :deep(.search-container) {
-  margin-bottom: 0 !important;
-}
-
-.search-input-center :deep(.search-input-wrapper) {
-  max-width: 100%;
-  margin: 0;
-}
-
-.search-location-right {
-  display: flex;
-  align-items: center;
-  padding-left: 14px;
-  justify-self: start;
-}
-
-@media (max-width: 680px) {
-  .search-location-row {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .search-spacer-left {
-    display: none;
-  }
-
-  .search-location-right {
-    padding-left: 0;
-  }
-}
-
-/* View Toggle (GEO-05) */
-.view-toggle {
-  display: flex;
-  gap: 4px;
-  background-color: var(--color-primary);
-  border-radius: 10px;
-  padding: 4px;
-  margin-bottom: 16px;
-  width: fit-content;
-}
-
-.toggle-btn {
-  padding: 7px 16px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.toggle-btn:hover {
-  color: var(--color-text);
-}
-
-.toggle-active {
-  background-color: var(--color-accent);
-  color: #fff;
-}
-
-.toggle-active:hover {
-  background-color: var(--color-accent-hover);
-  color: #fff;
-}
-
-/* Geo Empty State (GEO-06) */
-.empty-geo {
-  flex-direction: column;
-  gap: 16px;
-}
-
-.empty-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.empty-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--color-accent);
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.empty-btn:hover {
-  background-color: var(--color-accent-hover);
-}
-
-.empty-btn-secondary {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
-}
-
-.empty-btn-secondary:hover {
-  background-color: var(--color-focus);
-}
-
-/* Loading State */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-  color: var(--color-text);
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
-  border-top: 4px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Loading More Indicator */
-.loading-more {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 15px;
-  margin-top: 20px;
-  text-align: center;
-}
-
-.loading-spinner-small {
-  width: 25px;
-  height: 25px;
-  border: 3px solid var(--color-secondary);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
-}
-
-/* Error State */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-  color: var(--color-text);
-  background-color: var(--color-darkest);
-  border-radius: 12px;
-  margin: 20px;
-}
-
-.retry-btn {
-  margin-top: 15px;
-  padding: 10px 20px;
-  background-color: var(--color-primary);
-  color: var(--color-text);
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  font-weight: 500;
-}
-
-.retry-btn:hover {
-  background-color: var(--color-focus);
-}
-
-/* Empty State */
-.empty-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-  color: var(--color-text);
-  font-size: 18px;
-  background-color: var(--color-secondary);
-  border-radius: 12px;
-  margin: 20px;
-}
-
-/* End Message */
-.end-message {
-  text-align: center;
-  padding: 20px;
-  margin-top: 10px;
-  color: var(--color-text);
-  font-style: italic;
-}
-
-/* Notification - Estilos mejorados */
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  min-width: 320px;
-  max-width: 400px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(34, 32, 31, 0.4);
-  z-index: 1000;
+.map-view-container {
+  height: 600px;
+  border-radius: 16px;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(175, 173, 171, 0.2);
+  border: 1px solid #4A4058;
 }
 
-.notification-success {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  color: var(--color-text);
-  border-left: 4px solid #10b981;
+/* Transición para el toast */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.notification-error {
-  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-focus) 100%);
-  color: var(--color-text);
-  border-left: 4px solid #ef4444;
-}
-
-.notification-info {
-  background: linear-gradient(135deg, var(--color-focus) 0%, var(--color-darkest) 100%);
-  color: var(--color-text);
-  border-left: 4px solid #3b82f6;
-}
-
-.notification-content {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  position: relative;
-}
-
-.notification-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  padding: 8px;
-  border-radius: 50%;
-  background: rgba(175, 173, 171, 0.2);
-  flex-shrink: 0;
-}
-
-.notification-success .notification-icon {
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-}
-
-.notification-error .notification-icon {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-}
-
-.notification-info .notification-icon {
-  background: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
-}
-
-.notification-message {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--color-text);
-}
-
-.notification-close {
-  background: none;
-  border: none;
-  color: var(--color-text);
-  cursor: pointer;
-  padding: 4px;
-  margin-left: 12px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-.notification-close:hover {
-  opacity: 1;
-  background: var(--color-focus);
-  transform: scale(1.1);
-}
-
-.notification-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  background: rgba(175, 173, 171, 0.3);
-  animation: progress 3s linear forwards;
-}
-
-.notification-success .notification-progress {
-  background: rgba(16, 185, 129, 0.4);
-}
-
-.notification-error .notification-progress {
-  background: rgba(239, 68, 68, 0.4);
-}
-
-.notification-info .notification-progress {
-  background: rgba(59, 130, 246, 0.4);
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(16px) scale(0.95);
 }
 </style>
