@@ -108,6 +108,7 @@ class AdmOfferController extends Controller
                         'count' => $group->count(),
                     ];
                 })
+                ->sortBy('establishment_type')
                 ->values();
 
             return response()->json([
@@ -138,6 +139,7 @@ class AdmOfferController extends Controller
                         'count' => $group->count(),
                     ];
                 })
+                ->sortBy('establishment_type')
                 ->values();
 
             return response()->json([
