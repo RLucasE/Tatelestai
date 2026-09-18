@@ -358,4 +358,3 @@ class PackSellerControllerTest extends TestCase
             ->assertJsonValidationErrors(['title', 'description']);
     }
 }
-

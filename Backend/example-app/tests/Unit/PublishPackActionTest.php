@@ -143,4 +143,3 @@ class PublishPackActionTest extends TestCase
         $this->assertEquals(1.25, (float) $template->estimated_weight_kg);
     }
 }
-
