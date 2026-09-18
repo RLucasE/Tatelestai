@@ -1,0 +1,63 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Backend/**'
+      - 'docker-composes/tatelestai/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Backend/**'
+      - 'docker-composes/tatelestai/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  backend-tests:
+    name: Pint & Pest Tests (Docker)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docker-composes/tatelestai
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Preparar variables de entorno (.env)
+        run: |
+          cp .env.example .env
+          cp ../../Backend/example-app/.env.example ../../Backend/example-app/.env
+          # Desactivar compilación de Xdebug en CI para acelerar la construcción de la imagen
+          sed -i 's/XDEBUG_ENABLED=true/XDEBUG_ENABLED=false/' .env
+
+      - name: Iniciar servicios de Backend (PostgreSQL, Typesense, PHP-FPM)
+        run: |
+          docker compose up -d --build --wait postgres typesense php-fpm
+
+      - name: Instalar dependencias de Composer
+        run: |
+          docker compose exec -T php-fpm composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Generar App Key y preparar base de datos
+        run: |
+          docker compose exec -T php-fpm php artisan key:generate
+          docker compose exec -T php-fpm php artisan migrate --force
+
+      - name: Verificar estándar de código (Laravel Pint)
+        run: |
+          docker compose exec -T php-fpm ./vendor/bin/pint --test
+
+      - name: Ejecutar suite de pruebas automatizadas (Pest PHP)
+        run: |
+          docker compose exec -T php-fpm php artisan test
+
+      - name: Limpiar contenedores y volúmenes
+        if: always()
+        run: |
+          docker compose down -v

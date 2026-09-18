@@ -1,0 +1,44 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  frontend-build:
+    name: Build & Verification (Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend/vue-project
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: Frontend/vue-project/package-lock.json
+
+      - name: Preparar variables de entorno (.env)
+        run: |
+          cp .env.example .env
+
+      - name: Instalar dependencias con npm ci
+        run: |
+          npm ci
+
+      - name: Compilar aplicación para producción (Vite Build)
+        run: |
+          npm run build
