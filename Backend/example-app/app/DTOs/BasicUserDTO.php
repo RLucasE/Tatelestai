@@ -13,10 +13,7 @@ class BasicUserDTO
         public readonly string $email,
         /** @var string[] */
         public readonly array $roles,
-    ) {
-
-    
-    }
+    ) {}
 
     public static function fromModel(User $user): self
     {
