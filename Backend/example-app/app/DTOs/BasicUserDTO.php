@@ -4,6 +4,7 @@ namespace App\DTOs;
 
 use App\Models\User;
 
+// test
 class BasicUserDTO
 {
     public function __construct(
@@ -29,6 +30,7 @@ class BasicUserDTO
     public function toArray(): array
     {
         return [
+
             'id' => $this->id,
             'name' => $this->name,
             'last_name' => $this->last_name,
