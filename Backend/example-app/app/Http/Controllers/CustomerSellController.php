@@ -92,7 +92,7 @@ class CustomerSellController extends Controller
                 }
             });
             $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
-                ->find($sellResult['sell_id']);
+                ->findOrFail($sellResult['sell_id']);
 
             if ($sell) {
                 PurchaseCompleted::dispatch($sell);
