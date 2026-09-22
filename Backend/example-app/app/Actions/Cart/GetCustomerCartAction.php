@@ -62,4 +62,3 @@ class GetCustomerCartAction
         return $offers->groupBy('establishment_id')->values();
     }
 }
-

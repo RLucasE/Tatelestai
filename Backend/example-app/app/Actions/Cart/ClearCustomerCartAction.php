@@ -14,7 +14,6 @@ class ClearCustomerCartAction
      * Elimina todos los OfferCart del usuario para el/los food_establishments dados
      * y elimina los user_carts correspondientes.
      *
-     * @param  int|string  $userId
      * @param  int|string|array  $foodEstablishmentIds  Puede ser uno o varios IDs
      * @param  bool  $hardDelete  forceDelete si el modelo usa SoftDeletes
      * @return int Cantidad de ítems eliminados
@@ -57,4 +56,3 @@ class ClearCustomerCartAction
         });
     }
 }
-
