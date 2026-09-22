@@ -520,4 +520,3 @@ test('customer cannot clear another customer cart by establishment', function ()
         'quantity' => 2,
     ]);
 });
-
