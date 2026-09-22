@@ -357,3 +357,167 @@ test('cannot buy offer when requested quantity exceeds available stock', functio
     // No se debe haber creado ninguna venta
     expect(Sell::count())->toBe(0);
 });
+
+test('customer cannot remove an offer from another customer cart when having no active cart', function () {
+    $otherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
+        'state' => UserState::ACTIVE->value,
+    ]);
+
+    // 1. Otro cliente agrega una oferta a su carrito
+    $this->actingAs($otherCustomer);
+    $this->postJson('/api/add-to-cart', [
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 2,
+    ])->assertStatus(200);
+
+    $otherCartItem = OfferCart::where('offer_id', $this->offerA1->id)->first();
+    expect($otherCartItem)->not->toBeNull();
+
+    // 2. El cliente actual (sin carrito activo) intenta borrar esa oferta
+    $this->actingAs($this->customer);
+    $response = $this->deleteJson("/api/customer-cart/{$this->offerA1->id}");
+
+    $response->assertStatus(404)
+        ->assertJson([
+            'message' => 'No active cart found.',
+        ]);
+
+    // 3. Verificar que la oferta del otro cliente sigue existiendo intacta
+    $this->assertDatabaseHas('offer_carts', [
+        'id' => $otherCartItem->id,
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 2,
+    ]);
+});
+
+test('customer cannot remove an offer from another customer cart when it is not in their own cart', function () {
+    $otherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
+        'state' => UserState::ACTIVE->value,
+    ]);
+
+    // 1. El otro cliente tiene la oferta A1
+    $this->actingAs($otherCustomer);
+    $this->postJson('/api/add-to-cart', [
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 1,
+    ])->assertStatus(200);
+
+    $otherCartItem = OfferCart::where('offer_id', $this->offerA1->id)->first();
+
+    // 2. El cliente actual tiene una oferta diferente (B1)
+    $this->actingAs($this->customer);
+    $this->postJson('/api/add-to-cart', [
+        'offer_id' => $this->offerB1->id,
+        'quantity' => 1,
+    ])->assertStatus(200);
+
+    // 3. El cliente actual intenta borrar la oferta A1 (que pertenece al otro cliente)
+    $response = $this->deleteJson("/api/customer-cart/{$this->offerA1->id}");
+
+    $response->assertStatus(404)
+        ->assertJson([
+            'message' => 'Offer not found in cart.',
+        ]);
+
+    // 4. La oferta del otro cliente no fue borrada
+    $this->assertDatabaseHas('offer_carts', [
+        'id' => $otherCartItem->id,
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 1,
+    ]);
+
+    // La oferta propia sigue existiendo
+    $this->assertDatabaseHas('offer_carts', [
+        'offer_id' => $this->offerB1->id,
+    ]);
+});
+
+test('deleting an offer only removes it from the authenticated customer cart and preserves it in other customer carts', function () {
+    $otherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
+        'state' => UserState::ACTIVE->value,
+    ]);
+
+    // 1. Ambos clientes agregan la misma oferta A1 a sus respectivos carritos
+    $this->actingAs($otherCustomer);
+    $this->postJson('/api/add-to-cart', [
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 2,
+    ])->assertStatus(200);
+
+    $this->actingAs($this->customer);
+    $this->postJson('/api/add-to-cart', [
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 1,
+    ])->assertStatus(200);
+
+    $customerCart = UserCart::where('user_id', $this->customer->id)->first();
+    $otherCustomerCart = UserCart::where('user_id', $otherCustomer->id)->first();
+
+    $customerItem = OfferCart::where('user_cart_id', $customerCart->id)->first();
+    $otherItem = OfferCart::where('user_cart_id', $otherCustomerCart->id)->first();
+
+    // 2. El cliente actual borra la oferta de su carrito
+    $response = $this->deleteJson("/api/customer-cart/{$this->offerA1->id}");
+    $response->assertStatus(200);
+
+    // 3. El item del cliente autenticado fue eliminado (soft delete)
+    $this->assertSoftDeleted('offer_carts', [
+        'id' => $customerItem->id,
+    ]);
+
+    // 4. El item del otro cliente permanece intacto en su carrito
+    $this->assertNotSoftDeleted('offer_carts', [
+        'id' => $otherItem->id,
+    ]);
+    $this->assertDatabaseHas('offer_carts', [
+        'id' => $otherItem->id,
+        'quantity' => 2,
+    ]);
+
+    // 5. El otro cliente aún puede ver su carrito con la oferta
+    $this->actingAs($otherCustomer);
+    $cartResponse = $this->getJson('/api/customer-cart');
+    $cartResponse->assertStatus(200);
+    $items = collect($cartResponse->json())->flatten(1);
+    expect($items->firstWhere('offer_id', $this->offerA1->id))->not->toBeNull();
+});
+
+test('customer cannot clear another customer cart by establishment', function () {
+    $otherCustomer = User::factory()->withRole(UserRole::CUSTOMER->value)->create([
+        'state' => UserState::ACTIVE->value,
+    ]);
+
+    // 1. El otro cliente tiene items en el establecimiento A
+    $this->actingAs($otherCustomer);
+    $this->postJson('/api/add-to-cart', [
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 2,
+    ])->assertStatus(200);
+
+    $otherCart = UserCart::where('user_id', $otherCustomer->id)
+        ->where('food_establishment_id', $this->establishmentA->id)
+        ->first();
+    expect($otherCart)->not->toBeNull();
+
+    // 2. El cliente actual intenta vaciar el carrito del establecimiento A (sin tener items)
+    $this->actingAs($this->customer);
+    $response = $this->deleteJson("/api/customer-cart/establishment/{$this->establishmentA->id}");
+    $response->assertStatus(200)
+        ->assertJson([
+            'deleted' => 0,
+        ]);
+
+    // 3. El carrito y la oferta del otro cliente siguen intactos
+    $this->assertDatabaseHas('user_carts', [
+        'id' => $otherCart->id,
+        'user_id' => $otherCustomer->id,
+        'state' => CartState::ACTIVE->value,
+    ]);
+
+    $this->assertDatabaseHas('offer_carts', [
+        'user_cart_id' => $otherCart->id,
+        'offer_id' => $this->offerA1->id,
+        'quantity' => 2,
+    ]);
+});
+
