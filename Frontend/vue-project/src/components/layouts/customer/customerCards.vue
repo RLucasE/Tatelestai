@@ -452,25 +452,28 @@ const changeLoading = (state) => {
         <div
           v-for="n in 6"
           :key="n"
-          class="skeleton-card bg-[#2D2438] border border-[#4A4058] rounded-2xl overflow-hidden animate-pulse flex flex-col"
+          class="skeleton-card bg-[#2D2438] border border-[#3D3450] rounded-2xl p-4 animate-pulse flex flex-col gap-2.5"
         >
-          <div class="aspect-video bg-[#3D3450]/60 w-full"></div>
-          <div class="p-5 space-y-4 flex-1 flex flex-col justify-between">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <div class="h-4 w-28 bg-[#3D3450] rounded"></div>
-                <div class="h-4 w-16 bg-[#3D3450] rounded-full"></div>
-              </div>
-              <div class="h-5 w-3/4 bg-[#3D3450] rounded"></div>
-              <div class="h-3 w-full bg-[#3D3450]/70 rounded"></div>
-              <div class="h-3 w-2/3 bg-[#3D3450]/70 rounded"></div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-[#3D3450]"></div>
+              <div class="h-3.5 w-24 bg-[#3D3450] rounded"></div>
             </div>
-            <div class="space-y-3 pt-2 border-t border-[#3D3450]/40">
-              <div class="h-7 w-full bg-[#3D3450]/50 rounded-xl"></div>
-              <div class="flex items-center justify-between">
-                <div class="h-6 w-24 bg-[#3D3450] rounded"></div>
-                <div class="h-8 w-24 bg-[#7C3AED]/40 rounded-xl"></div>
-              </div>
+            <div class="h-3.5 w-14 bg-[#3D3450] rounded-full"></div>
+          </div>
+          <div class="space-y-1.5">
+            <div class="h-4 w-3/4 bg-[#3D3450] rounded"></div>
+            <div class="h-3 w-full bg-[#3D3450]/70 rounded"></div>
+          </div>
+          <div class="flex gap-1.5">
+            <div class="h-3.5 w-12 bg-[#3D3450]/60 rounded"></div>
+            <div class="h-3.5 w-12 bg-[#3D3450]/60 rounded"></div>
+          </div>
+          <div class="space-y-2 pt-2 border-t border-[#3D3450]/40 mt-auto">
+            <div class="h-5 w-40 bg-[#3D3450]/50 rounded"></div>
+            <div class="flex items-center justify-between pt-1">
+              <div class="h-6 w-20 bg-[#3D3450] rounded"></div>
+              <div class="h-7 w-20 bg-[#7C3AED]/40 rounded-xl"></div>
             </div>
           </div>
         </div>
@@ -652,13 +655,13 @@ const changeLoading = (state) => {
 .offers-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 18px;
 }
 
 @media (max-width: 1080px) {
   .offers-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    gap: 16px;
   }
 }
 
@@ -669,7 +672,7 @@ const changeLoading = (state) => {
 
   .offers-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
 }
 

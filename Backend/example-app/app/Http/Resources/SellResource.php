@@ -23,6 +23,9 @@ class SellResource extends JsonResource
                 'name' => $this->foodEstablishment?->name,
                 'address' => $this->foodEstablishment?->address,
             ],
+            'total_price' => $this->sellDetails?->reduce(function ($total, $detail) {
+                return $total + ((int) $detail->offer_quantity * (int) $detail->pack_price);
+            }, 0) ?? 0,
             'offers' => $this->sellDetails?->map(function ($detail) {
                 return [
                     'offer_id' => $detail->offer_id,

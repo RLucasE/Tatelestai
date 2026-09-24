@@ -20,14 +20,13 @@
       <div class="purchase-details">
         <div v-for="(offer, index) in purchase.offers" :key="index" class="detail-row">
           <div class="detail-main">
-            <span class="product-name">{{ offer.product_name }}</span>
-            <span class="product-description">{{ offer.product_description }}</span>
+            <span class="product-name">{{ offer.pack_name }}</span>
+            <span class="product-description">{{ offer.pack_description }}</span>
           </div>
           <div class="detail-info">
             <span class="offer-multiplier">x{{ offer.offer_quantity }}</span>
-            <span class="product-quantity">Cantidad: {{ offer.product_quantity }}</span>
-            <span class="product-price">Precio: ${{ offer.product_price }}</span>
-            <span class="subtotal">Subtotal: ${{ (offer.offer_quantity * offer.product_quantity * offer.product_price).toFixed(2) }}</span>
+            <span class="product-price">Precio: ${{ Number(offer.pack_price).toLocaleString('es-AR') }}</span>
+            <span class="subtotal">Subtotal: ${{ (Number(offer.offer_quantity) * Number(offer.pack_price)).toFixed(2) }}</span>
           </div>
         </div>
       </div>
@@ -63,9 +62,9 @@ export default {
       });
     },
     calculateTotal() {
-      if (!this.purchase.offers) return 0;
+      if (!this.purchase.offers) return '0.00';
       return this.purchase.offers.reduce((total, offer) => {
-        return total + (offer.offer_quantity * offer.product_quantity * offer.product_price);
+        return total + (Number(offer.offer_quantity || 0) * Number(offer.pack_price || 0));
       }, 0).toFixed(2);
     },
   },

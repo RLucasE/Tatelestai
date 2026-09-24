@@ -9,7 +9,7 @@
     <table class="details-table">
       <thead>
         <tr>
-          <th>Producto</th>
+          <th>Bolsa Sorpresa</th>
           <th>Cant.</th>
           <th>Precio</th>
           <th>Subtotal</th>
@@ -18,12 +18,11 @@
       <tbody>
         <tr v-for="detail in sell.sell_details" :key="detail.id">
           <td>
-            <span class="product-name">{{ detail.product_name }}</span>
-            <span v-if="detail.offer_quantity > 1" class="offer-mult">×{{ detail.offer_quantity }}</span>
+            <span class="product-name">{{ detail.pack_name }}</span>
           </td>
-          <td class="quantity">{{ detail.product_quantity }}</td>
-          <td class="price">${{ detail.product_price }}</td>
-          <td class="subtotal">${{ (detail.offer_quantity * detail.product_quantity * detail.product_price).toFixed(2) }}</td>
+          <td class="quantity">{{ detail.offer_quantity }}</td>
+          <td class="price">${{ Number(detail.pack_price).toLocaleString('es-AR') }}</td>
+          <td class="subtotal">${{ (Number(detail.offer_quantity) * Number(detail.pack_price)).toFixed(2) }}</td>
         </tr>
       </tbody>
       <tfoot>
@@ -57,8 +56,9 @@ export default {
       });
     },
     calculateTotal() {
+      if (!this.sell?.sell_details) return '0.00';
       return this.sell.sell_details.reduce((total, detail) => {
-        return total + (detail.offer_quantity * detail.product_quantity * detail.product_price);
+        return total + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
       }, 0).toFixed(2);
     },
   },

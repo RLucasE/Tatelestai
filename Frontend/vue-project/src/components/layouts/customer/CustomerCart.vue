@@ -29,7 +29,7 @@ const getCart = async () => {
       establishments.value = [];
     } else {
       console.error("Error al cargar carrito:", err);
-      error.value = "No se pudieron cargar los productos de tu carrito. Intenta nuevamente.";
+      error.value = "No se pudieron cargar las bolsas de tu carrito. Intenta nuevamente.";
     }
   } finally {
     loading.value = false;
@@ -78,7 +78,7 @@ const handleQuantityChange = async (offer, quantity) => {
     updateOfferQuantity(offer, quantity);
     debounceUpdateQuantity(offer, quantity);
   } catch (err) {
-    alert("Hubo un error al actualizar la cantidad");
+    console.error("Error updating quantity:", err);
     updateOfferQuantity(offer, oldQuantity);
   }
 };
@@ -99,20 +99,20 @@ onMounted(() => {
 
 <template>
   <div class="cart-page-wrapper">
-    <div class="cart-container">
+    <div class="cart-container max-w-4xl mx-auto">
       <!-- Navegación y Cabecera -->
       <header class="cart-header-section mb-6">
         <RouterLink
           to="/customer/offers"
-          class="inline-flex items-center gap-2 text-sm text-[#A5A8C2] hover:text-white transition-colors mb-3 group"
+          class="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-[#A5A8C2] hover:text-white transition-colors mb-3 group"
         >
           <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span>Volver a Ofertas</span>
+          <span>Volver al Catálogo</span>
         </RouterLink>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#3D3450]/60 pb-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#3D3450]/60 pb-4">
           <div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
               <span>Mi Carrito</span>
@@ -131,64 +131,97 @@ onMounted(() => {
           <RouterLink
             v-if="establishments.length > 0"
             to="/customer/offers"
-            class="text-xs font-semibold text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+            class="text-xs font-bold text-[#A78BFA] hover:text-[#C4B5FD] transition-colors flex items-center gap-1.5 bg-[#7C3AED]/15 border border-[#7C3AED]/30 px-3 py-1.5 rounded-xl hover:bg-[#7C3AED]/25"
           >
-            + Agregar más bolsas
+            <span>+ Agregar más bolsas</span>
           </RouterLink>
         </div>
       </header>
 
-      <!-- Estado de Carga -->
-      <div v-if="loading" class="space-y-4 py-8">
+      <!-- Estado de Carga (Skeletons armónicos) -->
+      <div v-if="loading" class="space-y-6 py-4">
         <div
           v-for="i in 2"
           :key="i"
-          class="bg-[#2D2438] border border-[#4A4058]/50 rounded-2xl p-6 animate-pulse space-y-4"
+          class="bg-[#221C33] border border-[#3D3450] rounded-2xl p-5 animate-pulse space-y-4"
         >
-          <div class="h-6 bg-[#3D3450] rounded-md w-1/3"></div>
-          <div class="h-20 bg-[#1F1A2C] rounded-xl"></div>
-          <div class="h-10 bg-[#3D3450] rounded-xl w-1/4 ml-auto"></div>
+          <!-- Cabecera skeleton -->
+          <div class="flex items-center justify-between pb-3 border-b border-[#3D3450]/60">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-[#3D3450]"></div>
+              <div class="space-y-1.5">
+                <div class="h-4 bg-[#3D3450] rounded w-36"></div>
+                <div class="h-3 bg-[#3D3450]/60 rounded w-24"></div>
+              </div>
+            </div>
+            <div class="h-4 bg-[#3D3450]/40 rounded w-20"></div>
+          </div>
+
+          <!-- Item skeleton -->
+          <div class="bg-[#2D2438] border border-[#3D3450]/60 rounded-xl p-4 space-y-3">
+            <div class="h-4 bg-[#3D3450] rounded w-1/2"></div>
+            <div class="h-3 bg-[#3D3450]/60 rounded w-3/4"></div>
+            <div class="flex items-center justify-between pt-2">
+              <div class="h-8 bg-[#3D3450]/80 rounded-xl w-24"></div>
+              <div class="h-6 bg-[#3D3450] rounded w-20"></div>
+            </div>
+          </div>
+
+          <!-- Footer skeleton -->
+          <div class="flex items-center justify-between pt-3 border-t border-[#3D3450]/60">
+            <div class="h-6 bg-[#3D3450] rounded w-28"></div>
+            <div class="h-10 bg-[#7C3AED]/40 rounded-xl w-44"></div>
+          </div>
         </div>
       </div>
 
       <!-- Estado de Error -->
       <div
         v-else-if="error"
-        class="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-6 text-center text-white my-6"
+        class="bg-[#2D2438] border border-[#EF4444]/40 rounded-2xl p-6 text-center text-white my-6 max-w-lg mx-auto space-y-3"
       >
-        <p class="text-sm font-medium mb-3">{{ error }}</p>
+        <div class="w-10 h-10 mx-auto text-[#EF4444] flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="text-sm font-semibold">{{ error }}</p>
         <button
           type="button"
-          class="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+          class="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold px-5 py-2.5 rounded-xl transition cursor-pointer"
           @click="getCart"
         >
-          Reintentar
+          Reintentar carga
         </button>
       </div>
 
       <!-- Estado Vacío -->
       <div
         v-else-if="establishments.length === 0"
-        class="bg-[#2D2438] border border-[#4A4058] rounded-2xl p-10 text-center my-6 max-w-lg mx-auto shadow-lg"
+        class="bg-[#2D2438] border border-[#3D3450] rounded-2xl p-8 sm:p-12 text-center my-6 max-w-lg mx-auto shadow-xl space-y-4"
       >
-        <div class="w-16 h-16 mx-auto mb-4 text-[#7C3AED]/70 flex items-center justify-center">
-          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M3 6h18" stroke-width="1.8"/>
-            <path d="M16 10a4 4 0 0 1-8 0" stroke-width="1.8" stroke-linecap="round"/>
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 text-[#A78BFA] flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         </div>
-        <h2 class="text-xl font-bold text-white mb-2">Tu carrito está vacío</h2>
-        <p class="text-sm text-[#A5A8C2] mb-6 leading-relaxed">
-          Todavía no agregaste ninguna bolsa sorpresa gastronómica. ¡Explora los comercios de tu zona y rescata comida deliciosa!
-        </p>
-        <RouterLink
-          to="/customer/offers"
-          class="inline-flex items-center justify-center gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg shadow-[#7C3AED]/25 transition-all active:scale-95"
-        >
-          <span>Explorar Ofertas</span>
-          <span class="text-base leading-none">→</span>
-        </RouterLink>
+        <div class="space-y-1">
+          <h2 class="text-lg sm:text-xl font-bold text-white">Tu carrito está vacío</h2>
+          <p class="text-xs sm:text-sm text-[#A5A8C2] leading-relaxed max-w-sm mx-auto">
+            Todavía no agregaste ninguna bolsa sorpresa. ¡Explora los comercios de tu zona y rescata comida exquisita a precio reducido!
+          </p>
+        </div>
+        <div class="pt-2">
+          <RouterLink
+            to="/customer/offers"
+            class="inline-flex items-center justify-center gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs sm:text-sm font-bold px-6 py-3 rounded-xl shadow-lg shadow-[#7C3AED]/25 transition-all duration-200 active:scale-95 cursor-pointer"
+          >
+            <span>Explorar Ofertas</span>
+            <span class="text-base leading-none">→</span>
+          </RouterLink>
+        </div>
       </div>
 
       <!-- Grupos por Establecimiento -->
@@ -213,10 +246,5 @@ onMounted(() => {
   color: #E8EAF6;
   padding: 1.5rem 1rem 3rem 1rem;
   width: 100%;
-}
-
-.cart-container {
-  max-width: 1200px;
-  margin: 0 auto;
 }
 </style>

@@ -61,8 +61,8 @@ const getSells = async () => {
 
 const calculateTotalRevenue = () => {
   return sells.value.reduce((total, sell) => {
-    const sellTotal = sell.sell_details.reduce((sellSum, detail) => {
-      return sellSum + (detail.offer_quantity * detail.product_quantity * detail.product_price);
+    const sellTotal = (sell.sell_details || []).reduce((sellSum, detail) => {
+      return sellSum + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
     }, 0);
     return total + sellTotal;
   }, 0).toFixed(2);

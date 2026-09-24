@@ -22,16 +22,16 @@
         </div>
 
         <div class="venta-details">
-          <h4>Productos vendidos:</h4>
+          <h4>Bolsas sorpresa vendidas:</h4>
           <ul class="product-list">
             <li v-for="detalle in venta.sell_details" :key="detalle.id" class="product-item">
               <div class="product-info">
-                <span class="product-name">{{ detalle.product_name }}</span>
-                <span class="product-quantity">x{{ detalle.product_quantity * detalle.offer_quantity}}</span>
-                <span class="product-price">${{ detalle.product_price }}</span>
+                <span class="product-name">{{ detalle.pack_name }}</span>
+                <span class="product-quantity">x{{ detalle.offer_quantity }}</span>
+                <span class="product-price">${{ Number(detalle.pack_price).toLocaleString('es-AR') }}</span>
               </div>
-              <p v-if="detalle.product_description" class="product-description">
-                {{ detalle.product_description }}
+              <p v-if="detalle.pack_description" class="product-description">
+                {{ detalle.pack_description }}
               </p>
             </li>
           </ul>
@@ -40,7 +40,7 @@
         <div class="venta-footer">
           <div class="venta-total">
             <span>Total:</span>
-            <span class="total-amount">${{ totalAmount(venta.sell_details,venta.offer_quantity)}}</span>
+            <span class="total-amount">${{ totalAmount(venta.sell_details) }}</span>
           </div>
         </div>
       </div>
@@ -57,23 +57,15 @@ const loading = ref(true);
 const error = ref(null);
 
 const formatDate = (dateStr) => {
-  return new Date(dateStr).toLocaleString();
+  return new Date(dateStr).toLocaleString('es-AR');
 };
 
-const totalAmount = (sellDetails, offerQuantity = null) => {
-  if (!sellDetails || sellDetails.length === 0) return 0;
-
-  // Si no hay offerQuantity proporcionado y hay al menos un elemento en sell_details
-  // intentamos obtenerlo del primer elemento
-  if (offerQuantity === null && sellDetails.length > 0 && sellDetails[0].offer_quantity) {
-    offerQuantity = sellDetails[0].offer_quantity;
-  }
+const totalAmount = (sellDetails) => {
+  if (!sellDetails || sellDetails.length === 0) return '0.00';
 
   return sellDetails.reduce((total, detalle) => {
-    // Multiplicamos por offer_quantity solo si existe
-    const quantity = detalle.product_quantity * (detalle.offer_quantity || offerQuantity || 1);
-    return total + (quantity * detalle.product_price);
-  }, 0);
+    return total + (Number(detalle.offer_quantity || 0) * Number(detalle.pack_price || 0));
+  }, 0).toFixed(2);
 };
 
 const fetchVentas = async () => {

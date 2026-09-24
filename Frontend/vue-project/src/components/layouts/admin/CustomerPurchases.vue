@@ -30,8 +30,8 @@ const getPurchases = async () => {
 
 const calculateTotalSpent = () => {
   return purchases.value.reduce((total, purchase) => {
-    const purchaseTotal = purchase.sell_details.reduce((purchaseSum, detail) => {
-      return purchaseSum + (detail.offer_quantity * detail.product_quantity * detail.product_price);
+    const purchaseTotal = (purchase.sell_details || []).reduce((purchaseSum, detail) => {
+      return purchaseSum + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
     }, 0);
     return total + purchaseTotal;
   }, 0).toFixed(2);

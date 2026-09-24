@@ -32,21 +32,8 @@
             </div>
             <p class="offer-description">{{ offer.description }}</p>
 
-            <div class="products-grid">
-              <div
-                v-for="product in offer.products"
-                :key="product.name"
-                class="product-item"
-              >
-                <div class="product-info">
-                  <span class="product-name">{{ product.name }}</span>
-                  <span class="product-quantity">x{{ product.quantity }}</span>
-                  <span class="product-price">${{ product.price }}</span>
-                </div>
-                <p v-if="product.description" class="product-description">
-                  {{ product.description }}
-                </p>
-              </div>
+            <div class="offer-pricing-row">
+              <span class="unit-price">Precio unitario: ${{ Number(offer.price).toLocaleString('es-AR') }}</span>
             </div>
 
             <div class="offer-total">
@@ -170,20 +157,14 @@ onMounted(async () => {
 });
 
 const calculateOfferTotal = (offer) => {
-  const total = offer.products.reduce((sum, product) => {
-    return sum + (product.price * product.quantity);
-  }, 0);
-  return (total * offer.quantity).toFixed(2);
+  return (Number(offer.price || 0) * Number(offer.quantity || 1)).toFixed(2);
 };
 
 const calculateGrandTotal = () => {
   if (!purchaseData.value?.offers?.offers) return '0.00';
 
   return purchaseData.value.offers.offers.reduce((total, offer) => {
-    const offerTotal = offer.products.reduce((sum, product) => {
-      return sum + (product.price * product.quantity);
-    }, 0);
-    return total + (offerTotal * offer.quantity);
+    return total + (Number(offer.price || 0) * Number(offer.quantity || 1));
   }, 0).toFixed(2);
 };
 
@@ -376,45 +357,18 @@ const goBack = () => {
   opacity: 0.9;
 }
 
-.products-grid {
-  margin-bottom: 1rem;
-}
-
-.product-item {
-  background: var(--color-focus);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 0.8rem;
-}
-
-.product-info {
+.offer-pricing-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  padding: 0.5rem 0;
   margin-bottom: 0.5rem;
 }
 
-.product-name {
+.unit-price {
   color: var(--color-text);
   font-weight: 600;
-}
-
-.product-quantity {
-  color: var(--color-text);
-  opacity: 0.8;
-}
-
-.product-price {
-  color: var(--color-text);
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.product-description {
-  color: var(--color-text);
-  opacity: 0.7;
-  font-size: 0.9rem;
-  margin: 0;
+  font-size: 1rem;
 }
 
 .offer-total {
@@ -625,12 +579,6 @@ const goBack = () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
-  }
-
-  .product-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.3rem;
   }
 
   .notification {
