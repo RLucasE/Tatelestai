@@ -25,8 +25,9 @@ class PackCustomerController extends Controller
 
         $hasSearch = $request->filled('search');
         $hasGeo = $request->filled('lat') && $request->filled('lng');
+        $hasEstablishment = $request->filled('food_establishment_id');
 
-        if ($hasSearch || $hasGeo) {
+        if (($hasSearch || $hasGeo) && ! $hasEstablishment) {
             $searchQueryDTO = new SearchQueryDTO(
                 query: $hasSearch ? trim($request->get('search')) : '',
                 page: $page,
@@ -46,10 +47,15 @@ class PackCustomerController extends Controller
             ]);
         }
 
-        $packs = Offer::where('state', OfferState::ACTIVE->value)
+        $query = Offer::where('state', OfferState::ACTIVE->value)
             ->where('expiration_datetime', '>=', now())
-            ->with('foodEstablishment:id,name,address,latitude,longitude')
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->with('foodEstablishment:id,name,address,latitude,longitude');
+
+        if ($hasEstablishment) {
+            $query->where('food_establishment_id', (int) $request->get('food_establishment_id'));
+        }
+
+        $packs = $query->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'data' => PackOfferResource::collection($packs->getCollection())->resolve(),

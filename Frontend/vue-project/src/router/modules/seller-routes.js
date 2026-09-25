@@ -31,16 +31,6 @@ export default [
         component: () => import("@/components/layouts/seller/VerifyCode.vue"),
       },
       {
-        name: "create-product",
-        path: "create-product",
-        component: () => import("@/components/layouts/seller/CreateProduct.vue"),
-      },
-      {
-        name: "my-products",
-        path: "my-products",
-        component: () => import("@/components/layouts/seller/MyProducts.vue"),
-      },
-      {
         name: "establishment",
         path: "establishment",
         component: () => import("@/components/layouts/seller/Establishment.vue"),

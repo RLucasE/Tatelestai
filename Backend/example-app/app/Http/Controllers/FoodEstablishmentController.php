@@ -3,12 +3,39 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserState;
+use App\Models\FoodEstablishment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class FoodEstablishmentController extends Controller
 {
+    public function show(int $id): JsonResponse
+    {
+        $establishment = FoodEstablishment::with(['establishmentType', 'user:id,email'])->find($id);
+
+        if (! $establishment) {
+            return response()->json([
+                'message' => 'Establecimiento no encontrado',
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $establishment->id,
+                'name' => $establishment->name,
+                'address' => $establishment->address,
+                'latitude' => $establishment->latitude !== null ? (float) $establishment->latitude : null,
+                'longitude' => $establishment->longitude !== null ? (float) $establishment->longitude : null,
+                'establishment_type' => $establishment->establishmentType?->name,
+                'phone' => $establishment->phone,
+                'phone_number' => $establishment->phone,
+                'email' => $establishment->user?->email,
+                'description' => $establishment->description,
+            ],
+        ]);
+    }
+
     public function getMyEstablishment(): JsonResponse
     {
         $user = Auth::user();

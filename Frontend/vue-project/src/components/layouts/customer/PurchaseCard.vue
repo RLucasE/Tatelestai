@@ -30,9 +30,9 @@
       <table class="details-table">
         <thead>
           <tr>
-            <th>Producto</th>
+            <th>Bolsa Sorpresa</th>
             <th>Cantidad</th>
-            <th>Precio</th>
+            <th>Precio Unitario</th>
             <th>Subtotal</th>
           </tr>
         </thead>
@@ -40,14 +40,13 @@
           <tr v-for="detail in purchase.sell_details" :key="detail.id">
             <td>
               <div class="product-info">
-                <span class="product-name">{{ detail.product_name }}</span>
-                <span class="product-description">{{ detail.product_description }}</span>
-                <span class="offer-badge">x{{ detail.offer_quantity }}</span>
+                <span class="product-name">{{ detail.pack_name }}</span>
+                <span class="product-description">{{ detail.pack_description }}</span>
               </div>
             </td>
-            <td class="quantity">{{ detail.product_quantity }}</td>
-            <td class="price">${{ detail.product_price }}</td>
-            <td class="subtotal">${{ (detail.offer_quantity * detail.product_quantity * detail.product_price).toFixed(2) }}</td>
+            <td class="quantity">{{ detail.offer_quantity }}</td>
+            <td class="price">${{ Number(detail.pack_price).toLocaleString('es-AR') }}</td>
+            <td class="subtotal">${{ (Number(detail.offer_quantity) * Number(detail.pack_price)).toFixed(2) }}</td>
           </tr>
         </tbody>
       </table>
@@ -145,8 +144,9 @@ export default {
       return `status-${state}`;
     },
     calculateTotal() {
+      if (!this.purchase?.sell_details) return '0.00';
       return this.purchase.sell_details.reduce((total, detail) => {
-        return total + (detail.offer_quantity * detail.product_quantity * detail.product_price);
+        return total + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
       }, 0).toFixed(2);
     },
     toggleCodeVisibility() {

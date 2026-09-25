@@ -45,24 +45,6 @@
           </span>
           <span>Código</span>
         </RouterLink>
-
-        <RouterLink :to="{ name: 'create-product' }" class="nav-link">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM5 9.2 12 13l7-3.8V16l-7 4-7-4V9.2z"></path>
-            </svg>
-          </span>
-          <span>Agregar Productos</span>
-        </RouterLink>
-
-        <RouterLink :to="{ name: 'my-products' }" class="nav-link">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path d="M16 16H8V8h8v8zm-6-6v4h4v-4H10zM3 3h6v2H5v4H3V3zm16 0v6h-2V5h-4V3h6zm0 18h-6v-2h4v-4h2v6zM3 21v-6h2v4h4v2H3z"></path>
-            </svg>
-          </span>
-          <span>Mis Productos</span>
-        </RouterLink>
         <RouterLink :to="{ name: 'establishment' }" class="nav-link">
           <span class="icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="18" height="18">

@@ -1,175 +1,3 @@
-<template>
-  <div class="seller-section">
-    <div class="seller-header" v-if="offers && offers.length > 0">
-      <div class="establishment-info">
-        <h2 class="establishment-name">{{ offers[0]?.establishment_name || 'Comercio adherido' }}</h2>
-        <h3 class="establishment-address" v-if="offers[0]?.establishment_address">{{ offers[0]?.establishment_address }}</h3>
-      </div>
-      <button
-        class="delete-all-offers-btn"
-        @click="confirmRemoveAllOffers"
-        type="button"
-        title="Vaciar ofertas de este comercio"
-      >
-        <svg class="w-4 h-4 mr-1.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-        <span>Eliminar todas</span>
-      </button>
-    </div>
-    <div class="offers-container">
-      <div
-        v-for="offer in offers"
-        :key="offer.offer_id"
-        class="offer-container"
-      >
-        <div class="offer-header">
-          <div class="offer-title">
-            {{ offer.offer_title }}
-            <span class="offer-badges">
-              <span v-if="isSoldOut(offer)" class="offer-badge badge-soldout">Agotada / Comprada</span>
-              <span v-if="isExpired(offer)" class="offer-badge badge-expired">Expirada</span>
-              <span v-if="quantityExceedsMax(offer)" class="offer-badge badge-exceeded">Cantidad excede el stock</span>
-            </span>
-          </div>
-          <div class="offer-actions">
-            <div class="offer-quantity-control">
-              <button
-                class="quantity-btn quantity-decrease"
-                @click="decreaseQuantity(offer)"
-                :disabled="offer.quantity <= 1 || isUnavailable(offer)"
-                type="button"
-                aria-label="Disminuir cantidad"
-              >
-                <span>-</span>
-              </button>
-              <input
-                type="number"
-                :value="offer.quantity"
-                min="1"
-                @input="updateQuantity(offer, $event.target.value)"
-                :disabled="isUnavailable(offer)"
-                class="quantity-input"
-              />
-              <button
-                class="quantity-btn quantity-increase"
-                @click="increaseQuantity(offer)"
-                type="button"
-                :disabled="offer.quantity >= (offer.offer_max_quantity ?? 99) || isUnavailable(offer) || quantityExceedsMax(offer)"
-                aria-label="Aumentar cantidad"
-              >
-                <span>+</span>
-              </button>
-            </div>
-            <button
-              class="delete-offer-btn"
-              @click="removeOffer(offer.offer_id)"
-              type="button"
-              aria-label="Eliminar oferta"
-            >
-              <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              <span>Eliminar</span>
-            </button>
-          </div>
-        </div>
-        <div class="offer-description" v-if="offer.offer_description">{{ offer.offer_description }}</div>
-        <div v-if="isUnavailable(offer)" class="offer-status">
-          <span v-if="isSoldOut(offer)">Esta oferta no tiene stock o ya fue comprada.</span>
-          <span v-if="isExpired(offer)">Esta oferta ha expirado.</span>
-        </div>
-
-        <!-- Detalle de Pack Sorpresa (cuando no tiene lista de productos individuales) -->
-        <div v-if="!offer.products || offer.products.length === 0" class="pack-meta-row flex flex-wrap items-center justify-between gap-2 py-2 my-1 border-t border-b border-[#3D3450]/40">
-          <div class="flex items-baseline gap-2">
-            <span
-              v-if="offer.minimum_value && Number(offer.minimum_value) > calculateOfferPrice(offer)"
-              class="text-xs text-[#787596] line-through font-medium"
-            >
-              ${{ Number(offer.minimum_value).toLocaleString('es-AR') }}
-            </span>
-            <span class="text-sm font-bold text-white">
-              ${{ calculateOfferPrice(offer).toLocaleString('es-AR') }} <span class="text-xs text-[#A5A8C2] font-normal">c/u</span>
-            </span>
-          </div>
-
-          <div v-if="formatPickupWindow(offer)" class="flex items-center gap-1.5 text-xs text-[#F59E0B] bg-[#221C33] px-2.5 py-1 rounded-lg border border-[#3D3450]">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke-width="2"/>
-              <polyline points="12 6 12 12 16 14" stroke-width="2"/>
-            </svg>
-            <span>Retiro: <strong>{{ formatPickupWindow(offer) }}</strong></span>
-          </div>
-        </div>
-
-        <!-- Grilla de productos (solo si existen productos individuales) -->
-        <div class="products-grid" v-if="offer.products && offer.products.length > 0">
-          <div
-            v-for="product in offer.products"
-            :key="product.product_id"
-            class="product-card"
-          >
-            <div class="product-header">
-              <h5 class="product-name">{{ product.product_name }}</h5>
-              <span class="product-quantity"
-                >x{{ product.product_quantity }}</span
-              >
-            </div>
-            <div
-              class="product-description"
-              v-if="product.product_description"
-            >
-              {{ product.product_description }}
-            </div>
-            <div
-              class="product-expiration"
-              v-if="product.product_expiration_date"
-            >
-              <span class="expiration-label">Vence:</span>
-              <span class="expiration-date">{{ formatExpirationDate(product.product_expiration_date) }}</span>
-            </div>
-            <div class="product-footer">
-              <span class="product-price">${{ Number(product.product_price).toLocaleString('es-AR') }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="offer-total">
-          <span class="total-label">SubTotal:</span>
-          <span class="total-amount">${{ Number(calculateOfferPrice(offer) * (offer.quantity || 1)).toLocaleString('es-AR') }}</span>
-        </div>
-      </div>
-    </div>
-    <div class="action-footer">
-      <div class="cart-total">
-        <span class="total-label">Total:</span>
-        <span class="total-amount">${{ sellerTotal }}</span>
-      </div>
-      <button
-        class="action-button"
-        @click="handlePurchase"
-        :disabled="loading || !offers || offers.length === 0"
-      >
-        {{ loading ? "Procesando..." : "Comprar" }}
-      </button>
-    </div>
-
-    <!-- Notificación de error -->
-    <div v-if="showErrorNotification" class="notification error">
-      <div class="notification-content">
-        <div class="notification-text">
-          <h4>Error al preparar la compra</h4>
-          <p>{{ errorMessage }}</p>
-        </div>
-        <button @click="showErrorNotification = false" class="notification-close" type="button">
-          &times;
-        </button>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -182,35 +10,55 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(["offerRemoved", "quantityUpdated", "removeAllOffers"]);
+
 const loading = ref(false);
 const router = useRouter();
 const showErrorNotification = ref(false);
 const errorMessage = ref('');
-const emit = defineEmits(["offerRemoved", "quantityUpdated","removeAllOffers"]);
 
+// Nombre e iniciales del establecimiento
+const establishmentName = computed(() => {
+  return props.offers[0]?.establishment_name || 'Comercio adherido';
+});
+
+const establishmentAddress = computed(() => {
+  return props.offers[0]?.establishment_address || null;
+});
+
+const establishmentInitials = computed(() => {
+  const name = establishmentName.value.trim();
+  const words = name.split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase() || 'TA';
+});
+
+// Precios y totales
 const calculateOfferPrice = (offer) => {
   if (offer.offer_price != null) return Number(offer.offer_price);
   if (offer.price != null) return Number(offer.price);
-  if (Array.isArray(offer.products) && offer.products.length > 0) {
-    return offer.products.reduce((total, product) => {
-      return total + Number(product.product_price || 0) * Number(product.product_quantity || 1);
-    }, 0);
-  }
   return 0;
 };
 
-const calculateOfferTotal = (offer) => {
-  return calculateOfferPrice(offer);
-};
-
-const sellerTotal = computed(() => {
-  if (!props.offers || !props.offers.length) return '0';
-  const total = props.offers.reduce((sum, offer) => {
-    return sum + calculateOfferPrice(offer) * Number(offer.quantity || 1);
-  }, 0);
-  return total.toLocaleString('es-AR');
+const totalPacksCount = computed(() => {
+  if (!props.offers || !props.offers.length) return 0;
+  return props.offers.reduce((sum, offer) => sum + Number(offer.quantity || 1), 0);
 });
 
+const sellerTotalNumber = computed(() => {
+  if (!props.offers || !props.offers.length) return 0;
+  return props.offers.reduce((sum, offer) => {
+    return sum + calculateOfferPrice(offer) * Number(offer.quantity || 1);
+  }, 0);
+});
+
+const sellerTotal = computed(() => {
+  return sellerTotalNumber.value.toLocaleString('es-AR');
+});
+
+// Ventana horaria de retiro formateada
 const formatPickupWindow = (offer) => {
   const start = offer.pickup_start_datetime ? new Date(offer.pickup_start_datetime) : null;
   const end = (offer.offer_expiration_datetime || offer.expiration_datetime)
@@ -233,88 +81,7 @@ const formatPickupWindow = (offer) => {
   return '';
 };
 
-const handlePurchase = async () => {
-  if (loading.value || !props.offers || !props.offers.length) return;
-  try {
-    loading.value = true;
-    const establishmentId = props.offers[0]?.establishment_id;
-    if (!establishmentId) {
-      throw new Error("No se encontró el identificador del establecimiento");
-    }
-
-    const purchaseData = {
-      offers: props.offers.map((offer) => ({
-        id: offer.offer_id,
-        quantity: offer.quantity,
-      })),
-      food_establishment_id: establishmentId,
-    };
-
-    // Llamar a preparePurchase en lugar de comprar directamente
-    const response = await axiosInstance.post("/prepare-purchase", purchaseData);
-
-    // Guardar los datos de confirmación en sessionStorage
-    sessionStorage.setItem('purchaseConfirmation', JSON.stringify(response.data.data));
-
-    // Redirigir a la vista de confirmación con el token
-    router.push({
-      name: 'purchase-confirmation',
-      params: { token: response.data.data.purchase_token }
-    });
-
-  } catch (error) {
-    console.error("Error al preparar la compra:", error);
-
-    // Mostrar notificación de error
-    showErrorNotification.value = true;
-    errorMessage.value = error.response?.data?.message || error.response?.data?.error || "Error al preparar la compra. Por favor, intente nuevamente.";
-
-    setTimeout(() => {
-      showErrorNotification.value = false;
-    }, 5000);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const removeOffer = (index) => {
-  emit("offerRemoved", index);
-};
-
-const increaseQuantity = (offer) => {
-  const max = offer.offer_max_quantity ?? 99;
-  if(offer.quantity < max) {
-    emit("quantityUpdated", offer, offer.quantity + 1);
-  }
-};
-
-const decreaseQuantity = (offer) => {
-  if (offer.quantity > 1) {
-    emit("quantityUpdated", offer, offer.quantity - 1);
-  }
-};
-
-const updateQuantity = (offer, value) => {
-  const max = offer.offer_max_quantity ?? 99;
-  const newValue = parseInt(value);
-  if (isNaN(newValue) || newValue < 1) {
-    emit("quantityUpdated", offer, 1);
-  } else if (newValue > max) {
-    emit("quantityUpdated", offer, max);
-  } else {
-    emit("quantityUpdated", offer, newValue);
-  }
-};
-
-const confirmRemoveAllOffers = () => {
-  if (!props.offers || !props.offers.length) return;
-  const establishmentId = props.offers[0]?.establishment_id;
-  const confirmed = confirm("¿Estás seguro de que deseas eliminar todas las ofertas de este vendedor?");
-  if (confirmed && establishmentId) {
-    emit("removeAllOffers", establishmentId);
-  }
-};
-
+// Validaciones de estado
 const isExpired = (offer) => {
   const exp = offer?.offer_expiration_datetime || offer?.expiration_datetime;
   if (!exp) return false;
@@ -334,528 +101,361 @@ const quantityExceedsMax = (offer) => {
 
 const isUnavailable = (offer) => isExpired(offer) || isSoldOut(offer);
 
-const formatExpirationDate = (dateString) => {
-  if (!dateString) return '';
-  const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', options);
+const hasUnavailableOffers = computed(() => {
+  if (!props.offers || !props.offers.length) return false;
+  return props.offers.some(offer => isUnavailable(offer) || quantityExceedsMax(offer));
+});
+
+// Acciones de cantidad y eliminación
+const removeOffer = (offerId) => {
+  emit("offerRemoved", offerId);
+};
+
+const increaseQuantity = (offer) => {
+  const max = offer.offer_max_quantity ?? 99;
+  if (offer.quantity < max) {
+    emit("quantityUpdated", offer, Number(offer.quantity) + 1);
+  }
+};
+
+const decreaseQuantity = (offer) => {
+  if (offer.quantity > 1) {
+    emit("quantityUpdated", offer, Number(offer.quantity) - 1);
+  }
+};
+
+const updateQuantity = (offer, value) => {
+  const max = offer.offer_max_quantity ?? 99;
+  const newValue = parseInt(value, 10);
+  if (isNaN(newValue) || newValue < 1) {
+    emit("quantityUpdated", offer, 1);
+  } else if (newValue > max) {
+    emit("quantityUpdated", offer, max);
+  } else {
+    emit("quantityUpdated", offer, newValue);
+  }
+};
+
+const confirmRemoveAllOffers = () => {
+  if (!props.offers || !props.offers.length) return;
+  const establishmentId = props.offers[0]?.establishment_id;
+  const confirmed = window.confirm(`¿Deseas eliminar todas las bolsas de "${establishmentName.value}"?`);
+  if (confirmed && establishmentId) {
+    emit("removeAllOffers", establishmentId);
+  }
+};
+
+// Proceso de compra
+const handlePurchase = async () => {
+  if (loading.value || !props.offers || !props.offers.length || hasUnavailableOffers.value) return;
+  try {
+    loading.value = true;
+    const establishmentId = props.offers[0]?.establishment_id;
+    if (!establishmentId) {
+      throw new Error("No se encontró el identificador del establecimiento");
+    }
+
+    const purchaseData = {
+      offers: props.offers.map((offer) => ({
+        id: offer.offer_id,
+        quantity: offer.quantity,
+      })),
+      food_establishment_id: establishmentId,
+    };
+
+    const response = await axiosInstance.post("/prepare-purchase", purchaseData);
+
+    sessionStorage.setItem('purchaseConfirmation', JSON.stringify(response.data.data));
+
+    router.push({
+      name: 'purchase-confirmation',
+      params: { token: response.data.data.purchase_token },
+    });
+  } catch (error) {
+    console.error("Error al preparar la compra:", error);
+    showErrorNotification.value = true;
+    errorMessage.value = error.response?.data?.message || error.response?.data?.error || "Error al preparar la compra. Por favor, intente nuevamente.";
+
+    setTimeout(() => {
+      showErrorNotification.value = false;
+    }, 5000);
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
-<style scoped>
-.seller-section {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-primary);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  margin-bottom: 2rem;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-  width: 100%;
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.seller-section:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-}
-
-.seller-header {
-  padding: 1.5rem 2.5rem;
-  background: var(--color-secondary);
-  border-bottom: 2px solid var(--color-focus);
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.establishment-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.establishment-name {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.establishment-address {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: var(--color-text);
-  opacity: 0.8;
-}
-
-.delete-all-offers-btn {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 0.95rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  font-weight: 600;
-}
-
-.delete-all-offers-btn:hover {
-  background: var(--color-focus);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-}
-
-.delete-all-offers-btn i {
-  margin-right: 0.5rem;
-}
-
-.offers-container {
-  padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
-  width: 100%;
-}
-
-.offer-container {
-  background: var(--color-secondary);
-  border-radius: 12px;
-  padding: 1.5rem 2rem; /* Aumentado el padding */
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--color-focus);
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.offer-container:hover {
-  border-color: var(--color-text);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.offer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 1rem;
-}
-
-.offer-title {
-  font-size: 1.4rem; /* Aumentado el tamaño */
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-}
-
-.offer-badges {
-  margin-left: 0.75rem;
-  display: inline-flex;
-  gap: 0.5rem;
-}
-
-.offer-badge {
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-
-.badge-exceeded {
-  background: var(--color-darkest);
-  border-color: var(--color-focus);
-  color: var(--color-text);
-}
-
-.badge-expired {
-  background: var(--color-secondary);
-  border-color: var(--color-focus);
-  color: var(--color-text);
-}
-
-.badge-expired {
-  background: var(--color-secondary);
-  border-color: var(--color-focus);
-  color: var(--color-text);
-}
-
-.offer-actions {
-  display: flex;
-  align-items: center;
-}
-
-.offer-quantity-control {
-  display: flex;
-  align-items: center;
-  margin-right: 1rem;
-}
-
-.quantity-btn {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-}
-
-.quantity-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quantity-decrease {
-  margin-right: 0.5rem;
-}
-
-.quantity-input {
-  width: 60px;
-  text-align: center;
-  font-size: 0.9rem;
-  padding: 0.3rem;
-  border: 1px solid var(--color-focus);
-  border-radius: 6px;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  margin-right: 0.5rem;
-  appearance: textfield; /* estándar */
-  -moz-appearance: textfield; /* Firefox */
-}
-
-.quantity-input::-webkit-outer-spin-button,
-.quantity-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.delete-offer-btn {
-  background: transparent;
-  color: var(--color-darkest);
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-left: 1rem;
-  display: flex;
-  align-items: center;
-}
-
-.delete-offer-btn i {
-  margin-right: 0.3rem;
-}
-
-.offer-description {
-  font-size: 1.1rem; /* Aumentado el tamaño */
-  line-height: 1.5;
-  color: var(--color-text);
-  opacity: 0.9;
-  margin-bottom: 1.25rem;
-}
-
-.offer-status {
-  margin: 0.5rem 0 1rem;
-  color: var(--color-text);
-  font-size: 0.95rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  border-left: 3px solid var(--color-focus);
-  padding-left: 0.5rem;
-}
-
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(300px, 1fr)
-  ); /* Aumentado el ancho mínimo de las columnas */
-  gap: 1.25rem; /* Aumentado el espacio entre elementos */
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
-
-.product-card {
-  background: var(--color-focus);
-  border-radius: 10px;
-  padding: 1.25rem; /* Aumentado el padding */
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-  width: 100%;
-}
-
-.product-card:hover {
-  background: var(--color-darkest);
-  border-color: var(--color-text);
-  transform: translateY(-3px);
-}
-
-.product-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  width: 100%;
-}
-
-.product-name {
-  margin: 0;
-  font-size: 1.1rem; /* Aumentado el tamaño */
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.product-quantity {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  padding: 0.3rem 0.6rem; /* Aumentado el padding */
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.product-description {
-  font-size: 0.9rem;
-  color: var(--color-text);
-}
-
-.product-expiration {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--color-text);
-  margin-top: 0.5rem;
-}
-
-.product-expiration i {
-  font-size: 1rem;
-  color: var(--color-focus);
-}
-
-.expiration-label {
-  font-weight: 600;
-}
-
-.product-footer {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.product-price {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  padding: 0.6rem 1rem; /* Aumentado el padding */
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1.1rem; /* Aumentado el tamaño */
-}
-
-.offer-total {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-focus);
-}
-
-.total-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-right: 1rem;
-}
-
-.total-amount {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1.2rem;
-  border: 2px solid var(--color-focus);
-}
-
-.action-footer {
-  padding: 1.5rem 2.5rem; /* Aumentado el padding horizontal */
-  background: var(--color-secondary);
-  border-top: 2px solid var(--color-focus);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.cart-total {
-  display: flex;
-  align-items: center;
-}
-
-.action-button {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  padding: 0.9rem 2rem; /* Aumentado el padding */
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 1.1rem; /* Aumentado el tamaño */
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid var(--color-focus);
-  min-width: 150px; /* Asegura un ancho mínimo para el botón */
-}
-
-.action-button:hover:not(:disabled) {
-  background: var(--color-focus);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-}
-
-.action-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  background: var(--color-focus);
-}
-
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  max-width: 400px;
-  border-radius: 12px;
-  padding: 1rem;
-  animation: slideIn 0.5s ease;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.notification.error {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: 2px solid var(--color-focus);
-}
-
-.notification-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.notification-content i {
-  font-size: 1.5rem;
-  color: var(--color-text);
-  margin-top: 0.2rem;
-}
-
-.notification-text {
-  flex: 1;
-}
-
-.notification-text h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: var(--color-text);
-  font-weight: 700;
-}
-
-.notification-text p {
-  margin: 0;
-  color: var(--color-text);
-  opacity: 0.9;
-  font-size: 0.9rem;
-}
-
-.notification-close {
-  background: transparent;
-  border: none;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 0.2rem;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-}
-
-.notification-close:hover {
-  background: var(--color-focus);
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@media (max-width: 992px) {
-  /* Ajustado el breakpoint */
-  .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .seller-header,
-  .offers-container,
-  .action-footer {
-    padding: 1.25rem 1.5rem;
-  }
-
-  .seller-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .establishment-name {
-    font-size: 1.4rem;
-  }
-
-  .establishment-address {
-    font-size: 1rem;
-  }
-
-  .offer-title {
-    font-size: 1.2rem;
-  }
-
-  .products-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .action-footer {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .cart-total {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .action-button {
-    width: 100%;
-    padding: 0.75rem 1.25rem;
-  }
-}
-</style>
+<template>
+  <section class="seller-cart-group bg-[#221C33] border border-[#3D3450] rounded-2xl overflow-hidden shadow-lg transition-all duration-200">
+    <!-- Cabecera del Establecimiento -->
+    <header class="p-4 sm:p-5 bg-[#2D2438]/80 border-b border-[#3D3450] flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- Avatar circular con iniciales -->
+        <span class="w-8 h-8 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#A78BFA] text-xs font-bold flex items-center justify-center shrink-0">
+          {{ establishmentInitials }}
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-base sm:text-lg font-bold text-white tracking-tight truncate">
+            {{ establishmentName }}
+          </h2>
+          <p v-if="establishmentAddress" class="text-xs text-[#A5A8C2] flex items-center gap-1 truncate mt-0.5">
+            <svg class="w-3.5 h-3.5 text-[#A5A8C2]/70 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="truncate">{{ establishmentAddress }}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Botón de Vaciar Local -->
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 text-xs font-medium text-[#A5A8C2] hover:text-[#EF4444] hover:bg-[#EF4444]/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+        @click="confirmRemoveAllOffers"
+        title="Vaciar las bolsas de este comercio"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        <span>Vaciar comercio</span>
+      </button>
+    </header>
+
+    <!-- Lista de Bolsas Sorpresa (patrón CustomerCard) -->
+    <div class="p-4 sm:p-5 space-y-3">
+      <article
+        v-for="offer in offers"
+        :key="offer.offer_id"
+        class="bg-[#2D2438] border border-[#3D3450] hover:border-[#7C3AED]/50 rounded-xl p-3.5 sm:p-4 transition-all duration-200 shadow-sm flex flex-col gap-2.5"
+      >
+        <!-- Fila Superior: Título, Badges de Estado y Botón Eliminar -->
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-sm sm:text-base font-bold text-white tracking-tight leading-snug">
+                {{ offer.offer_title }}
+              </h3>
+
+              <!-- Badges de Advertencia de Estado -->
+              <span
+                v-if="isSoldOut(offer)"
+                class="bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#FCA5A5] text-[10px] font-bold px-2 py-0.5 rounded-md"
+              >
+                Agotada / Sin stock
+              </span>
+              <span
+                v-else-if="isExpired(offer)"
+                class="bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#FCA5A5] text-[10px] font-bold px-2 py-0.5 rounded-md"
+              >
+                Ventana cerrada
+              </span>
+              <span
+                v-else-if="quantityExceedsMax(offer)"
+                class="bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[#FDE68A] text-[10px] font-bold px-2 py-0.5 rounded-md"
+              >
+                Excede stock (máx. {{ offer.offer_max_quantity }})
+              </span>
+            </div>
+
+            <!-- Descripción Breve -->
+            <p v-if="offer.offer_description" class="text-xs text-[#94A3B8] line-clamp-1 sm:line-clamp-2 mt-1 leading-relaxed">
+              {{ offer.offer_description }}
+            </p>
+          </div>
+
+          <!-- Botón de Eliminar Bolsa -->
+          <button
+            type="button"
+            class="text-[#A5A8C2] hover:text-[#EF4444] hover:bg-[#EF4444]/15 p-1.5 rounded-lg transition-colors shrink-0 cursor-pointer"
+            @click="removeOffer(offer.offer_id)"
+            aria-label="Eliminar bolsa del carrito"
+            title="Eliminar bolsa"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Metadatos: Horario de Retiro y Etiquetas -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#3D3450]/40">
+          <!-- Horario de Retiro con Icono Reloj -->
+          <div
+            v-if="formatPickupWindow(offer)"
+            class="flex items-center gap-1.5 text-xs text-[#A5A8C2]"
+          >
+            <svg class="w-3.5 h-3.5 text-[#A5A8C2]/70 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2"/>
+              <polyline points="12 6 12 12 16 14" stroke-width="2"/>
+            </svg>
+            <span class="truncate">
+              Retiro: <strong class="text-white font-medium">{{ formatPickupWindow(offer) }}</strong>
+            </span>
+          </div>
+
+          <!-- Etiquetas Minimalistas (Categoría / Alérgenos) -->
+          <div v-if="offer.allergens?.length || offer.category" class="flex flex-wrap items-center gap-1">
+            <span
+              v-if="offer.category"
+              class="bg-white/[0.04] border border-white/[0.08] text-[#CBD5E1] text-[10px] font-medium px-1.5 py-0.5 rounded"
+            >
+              {{ offer.category }}
+            </span>
+            <span
+              v-for="(alg, idx) in (offer.allergens || []).slice(0, 3)"
+              :key="idx"
+              class="bg-white/[0.03] text-[#A5A8C2] text-[10px] font-medium px-1.5 py-0.5 rounded"
+            >
+              {{ alg }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Fila Inferior: Selector de Cantidad y Precio Subtotal -->
+        <div class="flex items-center justify-between gap-3 pt-2 border-t border-[#3D3450]/40">
+          <!-- Selector de Cantidad Compacto -->
+          <div class="flex items-center gap-2">
+            <div class="inline-flex items-center bg-[#1F1A2C] border border-[#3D3450] rounded-xl p-0.5 shadow-inner">
+              <button
+                type="button"
+                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white hover:bg-[#3D3450] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer"
+                :disabled="offer.quantity <= 1 || isUnavailable(offer)"
+                @click="decreaseQuantity(offer)"
+                aria-label="Disminuir cantidad"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                class="w-8 sm:w-10 text-center bg-transparent text-white font-bold text-xs sm:text-sm focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                :value="offer.quantity"
+                min="1"
+                :max="offer.offer_max_quantity ?? 99"
+                :disabled="isUnavailable(offer)"
+                @change="updateQuantity(offer, $event.target.value)"
+              />
+              <button
+                type="button"
+                class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white hover:bg-[#3D3450] transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer"
+                :disabled="offer.quantity >= (offer.offer_max_quantity ?? 99) || isUnavailable(offer) || quantityExceedsMax(offer)"
+                @click="increaseQuantity(offer)"
+                aria-label="Aumentar cantidad"
+              >
+                +
+              </button>
+            </div>
+            <span v-if="offer.offer_max_quantity" class="text-[11px] text-[#787596]">
+              (disp: {{ offer.offer_max_quantity }})
+            </span>
+          </div>
+
+          <!-- Precios y Subtotal -->
+          <div class="flex flex-col items-end">
+            <div class="flex items-center gap-1.5 leading-none">
+              <span
+                v-if="offer.minimum_value && Number(offer.minimum_value) > calculateOfferPrice(offer)"
+                class="text-[10px] text-[#787596] line-through font-medium"
+              >
+                ${{ Number(offer.minimum_value * (offer.quantity || 1)).toLocaleString('es-AR') }}
+              </span>
+              <span class="text-[11px] text-[#A5A8C2]">
+                ${{ calculateOfferPrice(offer).toLocaleString('es-AR') }} c/u
+              </span>
+            </div>
+            <div class="flex items-baseline gap-1 mt-1">
+              <span class="text-xs text-[#A5A8C2] font-medium">Subtotal:</span>
+              <span class="text-base sm:text-lg font-extrabold text-white tracking-tight">
+                ${{ Number(calculateOfferPrice(offer) * (offer.quantity || 1)).toLocaleString('es-AR') }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Advertencia de Stock o Disponibilidad -->
+    <div
+      v-if="hasUnavailableOffers"
+      class="mx-4 sm:mx-5 mb-3 p-3 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-xs text-[#FCA5A5] flex items-center gap-2"
+    >
+      <svg class="w-4 h-4 shrink-0 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <span>Hay packs agotados, expirados o con cantidad superior al stock. Ajusta tu pedido para continuar.</span>
+    </div>
+
+    <!-- Pie de Resumen y Checkout del Establecimiento -->
+    <footer class="p-4 sm:p-5 bg-[#1F1A2C] border-t border-[#3D3450] flex flex-wrap items-center justify-between gap-4">
+      <div class="space-y-1">
+        <div class="text-xs text-[#A5A8C2]">
+          {{ totalPacksCount }} {{ totalPacksCount === 1 ? 'pack' : 'packs' }} a retirar
+        </div>
+
+        <div class="flex items-baseline gap-2">
+          <span class="text-xs text-[#A5A8C2] font-medium">Total:</span>
+          <span class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            ${{ sellerTotal }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Botón Principal de Compra por Local -->
+      <button
+        type="button"
+        class="bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-[#7C3AED]/25 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer select-none"
+        @click="handlePurchase"
+        :disabled="loading || !offers || offers.length === 0 || hasUnavailableOffers"
+        :aria-label="`Comprar en ${establishmentName}`"
+      >
+        <template v-if="loading">
+          <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span>Preparando pedido...</span>
+        </template>
+        <template v-else>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <span>Comprar en este local</span>
+        </template>
+      </button>
+    </footer>
+
+    <!-- Notificación Flotante de Error -->
+    <transition
+      enter-active-class="transition ease-out duration-300 transform"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-200 transform"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-2"
+    >
+      <div
+        v-if="showErrorNotification"
+        class="fixed bottom-6 right-6 z-50 max-w-md bg-[#2D2438] border border-[#EF4444] rounded-2xl p-4 shadow-2xl flex items-start gap-3"
+      >
+        <div class="w-8 h-8 rounded-full bg-[#EF4444]/20 text-[#EF4444] flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-sm font-bold text-white">Error al preparar la compra</h4>
+          <p class="text-xs text-[#CBD5E1] mt-0.5">{{ errorMessage }}</p>
+        </div>
+        <button
+          type="button"
+          class="text-[#A5A8C2] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+          @click="showErrorNotification = false"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
+  </section>
+</template>

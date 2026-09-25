@@ -437,4 +437,52 @@ class PackCustomerControllerTest extends TestCase
         $responseInactive = $this->getJson("/api/packs/{$inactivePack->id}");
         $responseInactive->assertStatus(404);
     }
+
+    #[Test]
+    public function it_can_filter_packs_by_food_establishment_id(): void
+    {
+        $seller2 = User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::ACTIVE->value,
+        ]);
+        $establishment2 = FoodEstablishment::factory()->create([
+            'user_id' => $seller2->id,
+            'establishment_type_id' => $this->establishment->establishment_type_id,
+        ]);
+
+        $pack1 = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(1),
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pack de Comercio 1',
+        ]);
+
+        $pack2 = Offer::factory()->create([
+            'state' => OfferState::ACTIVE->value,
+            'expiration_datetime' => now()->addDays(1),
+            'food_establishment_id' => $establishment2->id,
+            'title' => 'Pack de Comercio 2',
+        ]);
+
+        $response = $this->getJson("/api/packs?food_establishment_id={$this->establishment->id}");
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+        $this->assertTrue(collect($data)->every(fn ($item) => $item['food_establishment_id'] === $this->establishment->id));
+    }
+
+    #[Test]
+    public function it_can_get_establishment_details_by_id(): void
+    {
+        $response = $this->getJson("/api/establishments/{$this->establishment->id}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'id' => $this->establishment->id,
+                    'name' => $this->establishment->name,
+                    'address' => $this->establishment->address,
+                ],
+            ]);
+    }
 }

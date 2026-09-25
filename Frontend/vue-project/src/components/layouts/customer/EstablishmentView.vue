@@ -1,239 +1,6 @@
-<template>
-  <div class="establishment-view">
-    <!-- Header del establecimiento -->
-    <div class="establishment-header" v-if="establishment">
-      <div class="establishment-title-row">
-        <div class="establishment-title-main">
-          <div class="title-with-badge">
-            <h1 class="establishment-name">{{ establishment.name }}</h1>
-            <span v-if="establishment.establishment_type" class="establishment-type">
-              {{ establishment.establishment_type }}
-            </span>
-          </div>
-
-          <div class="establishment-stats" v-if="offers.length > 0">
-            <span class="stat-value">{{ offers.length }}</span>
-            <span class="stat-label">
-              {{ offers.length === 1 ? 'oferta activa' : 'ofertas activas' }}
-            </span>
-          </div>
-        </div>
-
-        <div class="header-actions">
-          <button
-            class="report-button-header"
-            @click="openReportModal"
-            title="Reportar establecimiento"
-            type="button"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </button>
-
-          <button class="back-button" @click="goBack">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            <span>Volver</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="establishment-info-section">
-        <div class="establishment-details">
-          <p class="establishment-detail" v-if="establishment.address">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-            >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            <span>{{ establishment.address }}</span>
-          </p>
-
-          <p class="establishment-detail" v-if="establishment.phone_number">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-            >
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-            </svg>
-            <span>{{ establishment.phone_number }}</span>
-          </p>
-
-          <p class="establishment-detail" v-if="establishment.email">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-              fill="none"
-            >
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-            <span>{{ establishment.email }}</span>
-          </p>
-        </div>
-
-        <p class="establishment-description" v-if="establishment.description">
-          {{ establishment.description }}
-        </p>
-      </div>
-    </div>
-
-    <!-- Estado de carga -->
-    <div v-if="loading" class="loading-container">
-      <div class="spinner"></div>
-      <p>Cargando ofertas...</p>
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="error-container">
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-        fill="none"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <p>{{ error }}</p>
-      <button @click="fetchOffers" class="retry-button">Reintentar</button>
-    </div>
-
-    <!-- Lista de ofertas -->
-    <div v-else-if="offers.length > 0" class="offers-section">
-      <h2 class="section-title">Ofertas Activas</h2>
-      <div class="offers-grid">
-        <CustomerCard
-          v-for="offer in offers"
-          :key="offer.id"
-          :offer="offer"
-          @click="openOfferModal(offer)"
-        />
-      </div>
-    </div>
-
-    <!-- Sin ofertas -->
-    <div v-else class="empty-state">
-      <svg
-        width="64"
-        height="64"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-        fill="none"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <h3>No hay ofertas activas</h3>
-      <p>Este establecimiento no tiene ofertas disponibles en este momento.</p>
-    </div>
-
-    <!-- Modal de oferta -->
-    <OfferModal
-      :offer="selectedOffer"
-      :is-visible="showOfferModal"
-      @close="closeOfferModal"
-      @offerAction="handleOfferAction"
-      @buyOffer="handleBuyOffer"
-    />
-
-    <!-- Modal de reporte -->
-    <ReportModal
-      :is-visible="showReportModal"
-      reportable-type="establishment"
-      :reportable-id="establishment?.id"
-      @close="closeReportModal"
-      @success="handleReportSuccess"
-    />
-
-    <!-- Sistema de notificaciones -->
-    <div v-if="notification.show" class="notification-container" :class="notification.type">
-      <div class="notification-content">
-        <svg
-          v-if="notification.type === 'success'"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-        <svg
-          v-else-if="notification.type === 'error'"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="15" y1="9" x2="9" y2="15"></line>
-          <line x1="9" y1="9" x2="15" y2="15"></line>
-        </svg>
-        <svg
-          v-else
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <span>{{ notification.message }}</span>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
 import axiosInstance from '@/lib/axios';
 import OfferModal from '@/components/common/OfferModal.vue';
 import CustomerCard from './CustomerCard.vue';
@@ -250,68 +17,84 @@ const selectedOffer = ref(null);
 const showOfferModal = ref(false);
 const showReportModal = ref(false);
 
+const establishmentId = computed(() => route.params.id);
+
+// Iniciales del establecimiento para el avatar
+const establishmentInitials = computed(() => {
+  const name = establishment.value?.name?.trim() || '';
+  const words = name.split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase() || 'CA';
+});
+
 // Sistema de notificaciones
 const notification = ref({
   show: false,
   message: '',
-  type: 'success' // 'success', 'error', 'info'
+  type: 'success', // 'success', 'error', 'info'
 });
 
 const showNotification = (message, type = 'success') => {
   notification.value = {
     show: true,
     message,
-    type
+    type,
   };
 
-  // Auto-ocultar después de 3 segundos
   setTimeout(() => {
     notification.value.show = false;
-  }, 3000);
+  }, 3500);
 };
 
-const establishmentId = computed(() => route.params.id);
-
-const fetchOffers = async () => {
+// Carga de datos del establecimiento y sus ofertas
+const fetchEstablishmentData = async () => {
   loading.value = true;
   error.value = null;
 
   try {
-    // Obtener todos los packs activos
-    const response = await axiosInstance.get('/packs');
-
-    if (response.data.data) {
-      // Filtrar ofertas por el establecimiento específico
-      const allOffers = response.data.data;
-      const establishmentOffers = allOffers.filter(
-        offer => offer.food_establishment_id === parseInt(establishmentId.value)
-      );
-
-      if (establishmentOffers.length > 0) {
-        const first = establishmentOffers[0];
-        // Usar los datos del establecimiento de la primera oferta
-        establishment.value = {
-          id: first.food_establishment_id,
-          name: first.establishment?.name || first.establishment_name || 'Establecimiento',
-          address: first.establishment?.address || first.establishment_address || '',
-          // Agregar más datos si están disponibles en el response
-          establishment_type: first.establishment?.type || first.establishment_type,
-          phone_number: first.establishment?.phone || first.establishment_phone,
-          email: first.establishment?.email || first.establishment_email,
-          description: first.establishment?.description || first.establishment_description
-        };
-        offers.value = establishmentOffers;
-      } else {
-        // Si no hay ofertas, intentar obtener info del establecimiento de alguna manera
-        establishment.value = {
-          id: parseInt(establishmentId.value),
-          name: 'Establecimiento'
-        };
-        offers.value = [];
+    // 1. Obtener información del establecimiento
+    try {
+      const estResponse = await axiosInstance.get(`/establishments/${establishmentId.value}`);
+      if (estResponse.data?.data) {
+        establishment.value = estResponse.data.data;
       }
+    } catch (estErr) {
+      console.warn('No se pudo obtener detalle directo del comercio:', estErr);
+    }
+
+    // 2. Obtener packs activos de este establecimiento específico
+    const packsResponse = await axiosInstance.get('/packs', {
+      params: {
+        food_establishment_id: establishmentId.value,
+        per_page: 50,
+      },
+    });
+
+    const activePacks = packsResponse.data?.data || [];
+    offers.value = activePacks;
+
+    // Si establishment no cargó por la ruta directa y hay packs, obtener datos del primer pack
+    if (!establishment.value && activePacks.length > 0) {
+      const first = activePacks[0];
+      establishment.value = {
+        id: first.food_establishment_id,
+        name: first.establishment?.name || first.establishment_name || 'Comercio adherido',
+        address: first.establishment?.address || first.establishment_address || '',
+        establishment_type: first.establishment?.type || first.establishment_type,
+        phone_number: first.establishment?.phone || first.establishment_phone,
+        email: first.establishment?.email || first.establishment_email,
+        description: first.establishment?.description || first.establishment_description,
+      };
+    } else if (!establishment.value) {
+      establishment.value = {
+        id: parseInt(establishmentId.value, 10),
+        name: 'Comercio adherido',
+      };
     }
   } catch (err) {
-    console.error('Error al cargar ofertas:', err);
+    console.error('Error al cargar datos del establecimiento:', err);
     error.value = 'No se pudieron cargar las ofertas del establecimiento.';
   } finally {
     loading.value = false;
@@ -328,22 +111,36 @@ const closeOfferModal = () => {
   selectedOffer.value = null;
 };
 
-const handleOfferAction = async ({ id, quantity }) => {
-  const offerPayload = {
-    offer_id: id,
-    quantity: quantity || 1,
-  };
-
+// Agregar al carrito desde el botón comprar de CustomerCard
+const handleQuickAdd = async (offer) => {
   try {
-    await axiosInstance.post("/add-to-cart", offerPayload);
-    showNotification('Oferta agregada al carrito', 'success');
+    await axiosInstance.post('/add-to-cart', {
+      offer_id: offer.id,
+      quantity: 1,
+    });
+    showNotification(`¡${offer.title} agregada al carrito!`, 'success');
+  } catch (err) {
+    console.error('Error al agregar al carrito:', err);
+    if (err.response?.status === 400 && err.response?.data?.message) {
+      showNotification(err.response.data.message, 'error');
+    } else {
+      showNotification('No se pudo agregar al carrito. Verifica el stock.', 'error');
+    }
+  }
+};
+
+const handleOfferAction = async ({ id, quantity }) => {
+  try {
+    await axiosInstance.post('/add-to-cart', {
+      offer_id: id,
+      quantity: quantity || 1,
+    });
+    showNotification('Oferta agregada al carrito con éxito', 'success');
     closeOfferModal();
-  } catch (error) {
-    console.log(error);
-    if (error.status === 400) {
-      if (error.data === "OfferQuantityExceded") {
-        showNotification('Ya no se pueden agregar más unidades de esta oferta', 'error');
-      }
+  } catch (err) {
+    console.error(err);
+    if (err.response?.status === 400 && err.response?.data?.message) {
+      showNotification(err.response.data.message, 'error');
     } else {
       showNotification('Error al agregar al carrito', 'error');
     }
@@ -351,53 +148,41 @@ const handleOfferAction = async ({ id, quantity }) => {
 };
 
 const handleBuyOffer = async ({ id, quantity, food_establishment_id }) => {
-  const offerPayload = {
-    food_establishment_id: food_establishment_id,
-    offers: [
-      {
-        id: id,
-        quantity: quantity || 1,
-      },
-    ],
-  };
-
   try {
-    // Mostrar que está preparando la compra
     showNotification('Preparando tu compra...', 'info');
 
-    // Primero preparar la compra
-    const prepareResponse = await axiosInstance.post("/prepare-purchase", offerPayload);
+    const offerPayload = {
+      food_establishment_id: food_establishment_id,
+      offers: [
+        {
+          id: id,
+          quantity: quantity || 1,
+        },
+      ],
+    };
 
-    // Guardar los datos de confirmación en sessionStorage
+    const prepareResponse = await axiosInstance.post('/prepare-purchase', offerPayload);
     sessionStorage.setItem('purchaseConfirmation', JSON.stringify(prepareResponse.data.data));
 
-    // Cerrar el modal
     closeOfferModal();
-
-    // Redirigir a la página de confirmación con el token
     router.push({
       name: 'purchase-confirmation',
       params: {
-        token: prepareResponse.data.data.purchase_token
-      }
+        token: prepareResponse.data.data.purchase_token,
+      },
     });
-
-  } catch (error) {
-    console.log(error);
-    if (error.status === 400) {
-      if (error.data === "OfferQuantityExceded") {
-        showNotification('Ya no se pueden agregar más unidades de esta oferta', 'error');
-      } else {
-        showNotification('Error al procesar la compra. Verifica los datos', 'error');
-      }
-    } else {
-      showNotification('Error de conexión. Intenta nuevamente', 'error');
-    }
+  } catch (err) {
+    console.error('Error al procesar la compra:', err);
+    showNotification(err.response?.data?.message || 'Error al preparar la compra', 'error');
   }
 };
 
 const goBack = () => {
-  router.back();
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push('/customer/offers');
+  }
 };
 
 const openReportModal = () => {
@@ -414,495 +199,260 @@ const handleReportSuccess = () => {
 };
 
 onMounted(() => {
-  fetchOffers();
+  fetchEstablishmentData();
 });
 </script>
 
+<template>
+  <div class="establishment-page-wrapper">
+    <div class="establishment-container max-w-6xl mx-auto px-4 py-6">
+      <!-- Navegación Superior -->
+      <nav class="mb-4">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-[#A5A8C2] hover:text-white transition-colors cursor-pointer group"
+          @click="goBack"
+        >
+          <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Volver al Catálogo</span>
+        </button>
+      </nav>
+
+      <!-- Panel de Información del Establecimiento -->
+      <header
+        v-if="establishment"
+        class="bg-[#221C33] border border-[#3D3450] rounded-2xl p-5 sm:p-6 mb-8 shadow-lg relative overflow-hidden"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <!-- Datos del comercio con avatar -->
+          <div class="flex items-start gap-4 min-w-0 flex-1">
+            <span class="w-12 h-12 rounded-2xl bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#A78BFA] font-bold text-lg flex items-center justify-center shrink-0 shadow-inner">
+              {{ establishmentInitials }}
+            </span>
+
+            <div class="space-y-1.5 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                  {{ establishment.name }}
+                </h1>
+                <span
+                  v-if="establishment.establishment_type"
+                  class="bg-white/[0.05] border border-white/[0.1] text-xs text-[#CBD5E1] px-2.5 py-0.5 rounded-full font-medium"
+                >
+                  {{ establishment.establishment_type }}
+                </span>
+                <span
+                  v-if="offers.length > 0"
+                  class="bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#A78BFA] text-xs font-semibold px-2 py-0.5 rounded-md"
+                >
+                  {{ offers.length }} {{ offers.length === 1 ? 'pack activo' : 'packs activos' }}
+                </span>
+              </div>
+
+              <!-- Dirección física -->
+              <p v-if="establishment.address" class="text-xs sm:text-sm text-[#A5A8C2] flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#A5A8C2]/70 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{{ establishment.address }}</span>
+              </p>
+
+              <!-- Teléfono o Email si existen -->
+              <div v-if="establishment.phone_number || establishment.phone || establishment.email" class="flex flex-wrap items-center gap-3 text-xs text-[#787596] pt-0.5">
+                <span v-if="establishment.phone_number || establishment.phone" class="flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                  </svg>
+                  <span>{{ establishment.phone_number || establishment.phone }}</span>
+                </span>
+                <span v-if="establishment.email" class="flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <span>{{ establishment.email }}</span>
+                </span>
+              </div>
+
+              <!-- Descripción -->
+              <p v-if="establishment.description" class="text-xs text-[#94A3B8] pt-1 leading-relaxed max-w-2xl">
+                {{ establishment.description }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Acciones de cabecera -->
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              class="border border-[#F59E0B]/30 hover:bg-[#F59E0B]/15 text-[#F59E0B] p-2 rounded-xl transition-colors cursor-pointer"
+              @click="openReportModal"
+              title="Reportar este establecimiento"
+              aria-label="Reportar establecimiento"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Estado de Carga -->
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5">
+        <div
+          v-for="i in 3"
+          :key="i"
+          class="bg-[#2D2438] border border-[#3D3450] rounded-xl p-4 animate-pulse space-y-3"
+        >
+          <div class="h-4 bg-[#3D3450] rounded w-2/3"></div>
+          <div class="h-3 bg-[#3D3450]/60 rounded w-full"></div>
+          <div class="h-6 bg-[#3D3450]/40 rounded w-1/3"></div>
+          <div class="flex items-center justify-between pt-2 border-t border-[#3D3450]/40">
+            <div class="h-5 bg-[#3D3450] rounded w-16"></div>
+            <div class="h-7 bg-[#7C3AED]/30 rounded-xl w-20"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado de Error -->
+      <div
+        v-else-if="error"
+        class="bg-[#2D2438] border border-[#EF4444]/40 rounded-2xl p-8 text-center text-white my-6 max-w-lg mx-auto space-y-3"
+      >
+        <div class="w-10 h-10 mx-auto text-[#EF4444] flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <p class="text-sm font-semibold">{{ error }}</p>
+        <button
+          type="button"
+          class="bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold px-5 py-2.5 rounded-xl transition cursor-pointer"
+          @click="fetchEstablishmentData"
+        >
+          Reintentar
+        </button>
+      </div>
+
+      <!-- Lista de Ofertas Activas -->
+      <section v-else-if="offers.length > 0" class="space-y-4">
+        <h2 class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+          <span>Bolsas Sorpresa Disponibles</span>
+          <span class="text-xs font-normal text-[#A5A8C2]">({{ offers.length }})</span>
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5">
+          <CustomerCard
+            v-for="offer in offers"
+            :key="offer.id"
+            :offer="offer"
+            @click="openOfferModal(offer)"
+            @quick-add="handleQuickAdd"
+          />
+        </div>
+      </section>
+
+      <!-- Estado Sin Ofertas -->
+      <div
+        v-else
+        class="bg-[#2D2438] border border-[#3D3450] rounded-2xl p-8 sm:p-12 text-center my-6 max-w-lg mx-auto shadow-xl space-y-4"
+      >
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 text-[#A78BFA] flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="space-y-1">
+          <h2 class="text-lg sm:text-xl font-bold text-white">No hay bolsas activas en este momento</h2>
+          <p class="text-xs sm:text-sm text-[#A5A8C2] leading-relaxed max-w-sm mx-auto">
+            Este local actualmente no tiene excedentes disponibles para rescatar hoy. Te recomendamos explorar otros comercios cercanos.
+          </p>
+        </div>
+        <div class="pt-2">
+          <RouterLink
+            to="/customer/offers"
+            class="inline-flex items-center justify-center gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs sm:text-sm font-bold px-6 py-3 rounded-xl shadow-lg shadow-[#7C3AED]/25 transition-all duration-200 active:scale-95 cursor-pointer"
+          >
+            <span>Explorar otros comercios</span>
+            <span class="text-base leading-none">→</span>
+          </RouterLink>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Oferta -->
+    <OfferModal
+      :offer="selectedOffer"
+      :is-visible="showOfferModal"
+      @close="closeOfferModal"
+      @offerAction="handleOfferAction"
+      @buyOffer="handleBuyOffer"
+      @quick-add="handleQuickAdd"
+    />
+
+    <!-- Modal de Reporte -->
+    <ReportModal
+      :is-visible="showReportModal"
+      reportable-type="establishment"
+      :reportable-id="establishment?.id"
+      @close="closeReportModal"
+      @success="handleReportSuccess"
+    />
+
+    <!-- Notificación Flotante -->
+    <transition
+      enter-active-class="transition ease-out duration-300 transform"
+      enter-from-class="opacity-0 translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-200 transform"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-2"
+    >
+      <div
+        v-if="notification.show"
+        class="fixed bottom-6 right-6 z-50 max-w-md bg-[#2D2438] border rounded-2xl p-4 shadow-2xl flex items-start gap-3"
+        :class="notification.type === 'error' ? 'border-[#EF4444]' : 'border-[#10B981]'"
+      >
+        <div
+          class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+          :class="notification.type === 'error' ? 'bg-[#EF4444]/20 text-[#EF4444]' : 'bg-[#10B981]/20 text-[#10B981]'"
+        >
+          <svg v-if="notification.type === 'error'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs sm:text-sm font-semibold text-white">{{ notification.message }}</p>
+        </div>
+        <button
+          type="button"
+          class="text-[#A5A8C2] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+          @click="notification.show = false"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
+  </div>
+</template>
+
 <style scoped>
-.establishment-view {
-  min-height: 100vh;
-  padding: 32px 48px;
-  color: var(--color-text);
-}
-
-/* Header */
-.establishment-header {
-  margin-bottom: 48px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.establishment-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-  gap: 24px;
-}
-
-.establishment-title-main {
-  flex: 1;
-}
-
-.title-with-badge {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.establishment-name {
-  margin: 0;
-  font-size: 2.8rem;
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 1.1;
-}
-
-.establishment-type {
-  display: inline-block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  opacity: 0.8;
-}
-
-.establishment-stats {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-focus);
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  opacity: 0.7;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.report-button-header {
-  background: transparent;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-}
-
-.report-button-header:hover {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.6);
-  transform: translateY(-1px);
-}
-
-.report-button-header:active {
-  transform: translateY(0);
-}
-
-.back-button {
-  background: transparent;
-  color: var(--color-text);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.15s ease;
-}
-
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.establishment-info-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.establishment-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-}
-
-.establishment-detail {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 0.95rem;
-  opacity: 0.75;
-}
-
-.establishment-detail svg {
-  flex-shrink: 0;
-  opacity: 0.6;
-}
-
-.establishment-description {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.7;
-  opacity: 0.8;
-  max-width: 800px;
-}
-
-/* Loading */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 96px 24px;
-  gap: 20px;
-}
-
-.spinner {
-  width: 64px;
-  height: 64px;
-  border: 5px solid var(--color-focus);
-  border-top-color: var(--color-text);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-container p {
-  font-size: 1.1em;
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-/* Error */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 96px 24px;
-  gap: 20px;
-  text-align: center;
-}
-
-.error-container svg {
-  color: #ef4444;
-}
-
-.error-container p {
-  font-size: 1.1em;
-  max-width: 500px;
-}
-
-.retry-button {
-  background: var(--color-focus);
-  color: var(--color-text);
-  border: none;
-  padding: 14px 32px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 1.05em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.retry-button:hover {
-  background: var(--color-darkest);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 96px 24px;
-  gap: 20px;
-  text-align: center;
-}
-
-.empty-state svg {
-  color: var(--color-focus);
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  margin: 0;
-  font-size: 1.8em;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 1.1em;
-  color: var(--color-text);
-  opacity: 0.7;
-  max-width: 500px;
-}
-
-/* Offers Section */
-.offers-section {
-  margin-top: 48px;
-}
-
-.section-title {
-  margin: 0 0 28px 0;
-  font-size: 2em;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: -0.5px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--color-focus);
-  position: relative;
-}
-
-.section-title::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 80px;
-  height: 2px;
-  background: var(--color-text);
-  opacity: 0.6;
-}
-
-.offers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-}
-
-/* Para pantallas extra grandes (4K y superiores) */
-@media (min-width: 2560px) {
-  .offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 24px;
-  }
-
-  .establishment-view {
-    padding: 48px 100px;
-  }
-}
-
-/* Para pantallas extra grandes */
-@media (min-width: 1920px) and (max-width: 2559px) {
-  .offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 22px;
-  }
-
-  .establishment-view {
-    padding: 48px 80px;
-  }
-
-  .establishment-header {
-    padding: 64px;
-  }
-
-  .section-title {
-    font-size: 2.5em;
-  }
-}
-
-/* Para pantallas medianas-grandes */
-@media (min-width: 1440px) and (max-width: 1919px) {
-  .offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 20px;
-  }
-
-  .establishment-view {
-    padding: 40px 64px;
-  }
-}
-
-/* Para laptops grandes */
-@media (min-width: 1280px) and (max-width: 1439px) {
-  .offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
-  }
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .establishment-view {
-    padding: 24px 32px;
-  }
-
-  .establishment-name {
-    font-size: 2.2rem;
-  }
-
-  .section-title {
-    font-size: 1.8em;
-  }
-
-  .offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
-  }
-}
-
-@media (max-width: 768px) {
-  .establishment-view {
-    padding: 16px 20px;
-  }
-
-  .establishment-title-row {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .establishment-name {
-    font-size: 2rem;
-  }
-
-  .stat-value {
-    font-size: 1.6rem;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .back-button {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .section-title {
-    font-size: 1.5em;
-  }
-
-  .offers-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-  }
-}
-
-@media (max-width: 600px) {
-  .offers-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .establishment-view {
-    padding: 12px 16px;
-  }
-
-  .establishment-name {
-    font-size: 1.6rem;
-  }
-
-  .title-with-badge {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .section-title {
-    font-size: 1.3em;
-  }
-
-  .establishment-stats {
-    margin-top: 8px;
-  }
-}
-
-/* Sistema de notificaciones */
-.notification-container {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 9999;
-  padding: 16px 24px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  animation: slideIn 0.3s ease-out;
-  max-width: 400px;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.notification-container.success {
-  background: #10b981;
-  color: white;
-}
-
-.notification-container.error {
-  background: #ef4444;
-  color: white;
-}
-
-.notification-container.info {
-  background: #3b82f6;
-  color: white;
-}
-
-.notification-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-}
-
-.notification-content svg {
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .notification-container {
-    top: 12px;
-    right: 12px;
-    left: 12px;
-    max-width: none;
-  }
+.establishment-page-wrapper {
+  min-height: calc(100vh - 4rem);
+  background-color: #1A1625;
+  color: #E8EAF6;
+  width: 100%;
 }
 </style>

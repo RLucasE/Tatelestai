@@ -91,6 +91,10 @@ class SellerSellController extends Controller
                 ];
             });
 
+            $totalPrice = $sell->sellDetails->reduce(function ($total, $detail) {
+                return $total + ((int) $detail->offer_quantity * (int) $detail->pack_price);
+            }, 0);
+
             return response()->json([
                 'message' => 'Código válido',
                 'data' => [
@@ -102,6 +106,7 @@ class SellerSellController extends Controller
                         'email' => $sell->customer->email,
                     ],
                     'offers' => $offers,
+                    'total_price' => $totalPrice,
                     'created_at' => $sell->created_at,
                 ],
             ], 200);

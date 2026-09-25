@@ -54,22 +54,20 @@
           </div>
         </div>
 
-        <!-- Ofertas del pedido -->
+        <!-- Bolsas sorpresa del pedido -->
         <div class="offers-section">
-          <h3 class="section-title">Ofertas</h3>
+          <h3 class="section-title">Bolsas Sorpresa</h3>
           <div v-for="(offer, index) in orderData.offers" :key="index" class="offer-card">
             <div class="offer-header">
-              <span class="offer-title">{{ offer.offer_title }}</span>
+              <span class="offer-title">{{ offer.pack_name || offer.offer_title }}</span>
               <span class="offer-quantity">x{{ offer.offer_quantity }}</span>
             </div>
             <div class="product-details">
               <div class="product-info">
-                <span class="product-name">{{ offer.product_name }}</span>
-                <span class="product-description">{{ offer.product_description }}</span>
+                <span v-if="offer.pack_description" class="product-description">{{ offer.pack_description }}</span>
               </div>
               <div class="product-meta">
-                <span class="product-quantity">Cantidad: {{ offer.product_quantity }}</span>
-                <span class="product-price">${{ offer.product_price }}</span>
+                <span class="product-price">${{ Number(offer.pack_price).toLocaleString('es-AR') }}</span>
               </div>
             </div>
           </div>
@@ -78,7 +76,7 @@
         <!-- Total -->
         <div class="order-total">
           <span class="total-label">Total:</span>
-          <span class="total-amount">${{ orderData.total_price }}</span>
+          <span class="total-amount">${{ calculateOrderTotal(orderData) }}</span>
         </div>
 
         <!-- Fecha -->
@@ -113,6 +111,15 @@ const loading = ref(false);
 const error = ref('');
 const confirmingDelivery = ref(false);
 const successMessage = ref('');
+
+const calculateOrderTotal = (data) => {
+  if (!data) return '0.00';
+  if (data.total_price != null) return Number(data.total_price).toFixed(2);
+  if (!data.offers) return '0.00';
+  return data.offers.reduce((total, offer) => {
+    return total + (Number(offer.offer_quantity || 0) * Number(offer.pack_price || 0));
+  }, 0).toFixed(2);
+};
 
 const formatCode = (event) => {
   // Formatear el código mientras se escribe (agregar guiones automáticamente)
