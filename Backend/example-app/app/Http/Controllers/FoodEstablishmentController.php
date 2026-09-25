@@ -35,6 +35,7 @@ class FoodEstablishmentController extends Controller
             ],
         ]);
     }
+
     public function getMyEstablishment(): JsonResponse
     {
         $user = Auth::user();
