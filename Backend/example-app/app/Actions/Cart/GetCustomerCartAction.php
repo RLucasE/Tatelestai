@@ -2,9 +2,11 @@
 
 namespace App\Actions\Cart;
 
+use App\Enums\CartState;
 use App\Http\Controllers\CartController;
 use App\Models\OfferCart;
 use App\Models\User;
+use App\Models\UserCart;
 use Illuminate\Support\Facades\Auth;
 
 class GetCustomerCartAction
@@ -16,19 +18,27 @@ class GetCustomerCartAction
         $this->cartController = $cartController;
     }
 
-    public function handle(User $user)
+    public function handle(?User $user = null)
     {
         $user = $user ?? Auth::user();
-        $cart = $this->cartController->getLastActiveCart($user);
 
-        if (! $cart) {
+        if (! $user) {
+            return null;
+        }
+
+        $activeCarts = UserCart::where('user_id', $user->id)
+            ->where('state', CartState::ACTIVE->value)
+            ->get();
+
+        if ($activeCarts->isEmpty()) {
             return null;
         }
 
         $offers = OfferCart::with(['offer', 'offer.foodEstablishment'])
-            ->where('user_cart_id', $cart->id)
+            ->whereIn('user_cart_id', $activeCarts->pluck('id'))
             ->orderByDesc('created_at')
             ->get()
+            ->filter(fn ($offerCart) => $offerCart->offer !== null)
             ->map(function ($offerCart) {
                 return [
                     'offer_id' => $offerCart->offer->id,

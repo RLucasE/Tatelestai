@@ -9,8 +9,10 @@ use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\VerifyPurchaseDataFreshnessAction;
 use App\DTOs\PreparePurchaseDTO;
+use App\Enums\CartState;
 use App\Events\PurchaseCompleted;
 use App\Http\Resources\SellResource;
+use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -81,9 +83,16 @@ class CustomerSellController extends Controller
                     $preparePurchaseDTO->food_establishment_id
                 );
 
+                $activeCart = app(CartController::class)->getActiveCartByEstablishment(
+                    Auth::id(),
+                    $preparePurchaseDTO->food_establishment_id
+                );
+                if ($activeCart) {
+                    $activeCart->update(['state' => CartState::PURCHASED->value]);
+                }
             });
             $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
-                ->find($sellResult['sell_id']);
+                ->findOrFail($sellResult['sell_id']);
 
             if ($sell) {
                 PurchaseCompleted::dispatch($sell);
@@ -91,7 +100,18 @@ class CustomerSellController extends Controller
 
             return response()->json([
                 'message' => 'Compra realizada con éxito',
-                'data' => $preparePurchaseDTO,
+                'data' => [
+                    'sell_id' => $sell->id,
+                    'pickup_code' => $sell->pickup_code,
+                    'max_pickup_datetime' => $sell->max_pickup_datetime,
+                    'food_establishment_id' => $preparePurchaseDTO->food_establishment_id,
+                    'establishment' => [
+                        'id' => $sell->foodEstablishment?->id,
+                        'name' => $sell->foodEstablishment?->name,
+                        'address' => $sell->foodEstablishment?->address,
+                    ],
+                    'offers' => $preparePurchaseDTO->offers,
+                ],
             ], 200);
 
         } catch (Exception $exception) {
@@ -124,6 +144,8 @@ class CustomerSellController extends Controller
                 $preparePurchaseDTO->food_establishment_id
             );
 
+            $establishment = FoodEstablishment::find($preparePurchaseDTO->food_establishment_id);
+
             $purchaseToken = md5(uniqid(Auth::id(), true));
 
             session()->put('purchase_'.$purchaseToken, [
@@ -138,6 +160,11 @@ class CustomerSellController extends Controller
                     'offers' => $preparePurchaseDTO,
                     'total_offers' => count($preparePurchaseDTO->offers),
                     'food_establishment_id' => $preparePurchaseDTO->food_establishment_id,
+                    'establishment' => [
+                        'id' => $establishment?->id,
+                        'name' => $establishment?->name,
+                        'address' => $establishment?->address,
+                    ],
                     'expires_at' => now()->addMinutes(5)->toDateTimeString(),
                 ],
             ], 200);

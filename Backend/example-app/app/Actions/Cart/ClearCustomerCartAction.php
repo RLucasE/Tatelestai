@@ -2,16 +2,17 @@
 
 namespace App\Actions\Cart;
 
-use App\Http\Controllers\CustomerCartController;
+use App\Enums\CartState;
 use App\Models\OfferCart;
+use App\Models\UserCart;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class ClearCustomerCartAction
 {
     /**
-     * Elimina todos los OfferCart del usuario para el/los food_establishments dados.
-     * Si OfferCart no tiene food_establishment_id, filtra por la relación offer.food_establishment_id.
+     * Elimina todos los OfferCart del usuario para el/los food_establishments dados
+     * y elimina los user_carts correspondientes.
      *
      * @param  int|string|array  $foodEstablishmentIds  Puede ser uno o varios IDs
      * @param  bool  $hardDelete  forceDelete si el modelo usa SoftDeletes
@@ -31,12 +32,27 @@ class ClearCustomerCartAction
         }
 
         return DB::transaction(function () use ($userId, $ids, $hardDelete): int {
-            $userCart = app(CustomerCartController::class)->getLastActiveCart($userId);
+            $userCarts = UserCart::where('user_id', $userId)
+                ->where('state', CartState::ACTIVE->value)
+                ->where(function ($q) use ($ids) {
+                    $q->whereIn('food_establishment_id', $ids)
+                        ->orWhereNull('food_establishment_id');
+                })
+                ->pluck('id');
+
+            if ($userCarts->isEmpty()) {
+                return 0;
+            }
+
             $query = OfferCart::query()
-                ->where('user_cart_id', $userCart->id);
+                ->whereIn('user_cart_id', $userCarts);
             $query->whereHas('offer', fn ($q) => $q->whereIn('food_establishment_id', $ids));
 
-            return $hardDelete ? $query->forceDelete() : $query->delete();
+            $deleted = $hardDelete ? $query->forceDelete() : $query->delete();
+
+            UserCart::whereIn('id', $userCarts)->delete();
+
+            return $deleted;
         });
     }
 }

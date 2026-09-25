@@ -33,10 +33,12 @@ class AddToCartAction
         }
         try {
             $this->validateOfferState->execute($offerId, OfferState::ACTIVE->value);
-            if ($this->offerIsInCart($offerId)) {
-                return $this->updateOfferQuantity($offerId, $quantity);
-            }
             $offer = $this->getOfferAction->execute($offerId);
+
+            if ($this->offerIsInCart($offerId, $offer->food_establishment_id)) {
+                return $this->updateOfferQuantity($offerId, $quantity, $offer->food_establishment_id);
+            }
+
             $this->validQuantity($offer->quantity, 0, $quantity);
         } catch (OfferQuantityExceededException $exception) {
             $exception->setOfferId($offerId);
@@ -48,15 +50,16 @@ class AddToCartAction
         return $this->cartController->addOfferToCart($offer, $quantity);
     }
 
-    protected function offerIsInCart(int $offerId)
+    protected function offerIsInCart(int $offerId, ?int $establishmentId = null): bool
     {
-        $activeCart = $this->cartController->getLastActiveCart(Auth::id());
+        $activeCart = $establishmentId
+            ? $this->cartController->getActiveCartByEstablishment(Auth::id(), $establishmentId)
+            : $this->cartController->getLastActiveCart(Auth::id());
 
         if (! $activeCart) {
             return false;
         }
 
-        // Verificar si existe un registro con el offerId en el carrito activo
         return OfferCart::where('offer_id', $offerId)
             ->where('user_cart_id', $activeCart->id)
             ->exists();
@@ -65,10 +68,11 @@ class AddToCartAction
     /**
      * @throws OfferQuantityExceededException
      */
-    protected function updateOfferQuantity(int $offerId, int $quantity)
+    protected function updateOfferQuantity(int $offerId, int $quantity, ?int $establishmentId = null): ?OfferCart
     {
-        $activeCart = $this->cartController->getLastActiveCart(Auth::id());
         $offer = ($this->resolveOfferAction)($offerId);
+        $establishmentId = $establishmentId ?? $offer->food_establishment_id;
+        $activeCart = $this->cartController->getActiveCartByEstablishment(Auth::id(), $establishmentId);
 
         if (! $activeCart) {
             return null;
