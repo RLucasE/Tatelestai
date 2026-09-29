@@ -349,5 +349,3 @@ test('sending cancel request twice rapidly only cancels once and does not duplic
     expect($offer->fresh()->quantity)->toBe($initialStock + $boughtQuantity);
     expect($sell->fresh()->state)->toBe(SellState::CANCELLED);
 });
-
-
