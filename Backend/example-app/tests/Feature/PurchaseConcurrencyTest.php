@@ -2,15 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Sell\CancelPurchaseAction;
 use App\Actions\Sell\makeSellAction;
 use App\DTOs\PrepareOfferDTO;
 use App\DTOs\PreparePurchaseDTO;
+use App\Enums\SellState;
 use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\Sell;
+use App\Models\SellDetail;
 use App\Models\User;
 use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
@@ -164,7 +167,7 @@ class PurchaseConcurrencyTest extends TestCase
 
     /**
      * TEST 2 (Nivel Endpoint HTTP):
-     * Dos peticiones HTTP concurrentes reales envían el mismo purchase_token a /api/buy-offers
+     * Dos peticiones HTTP concurrentes reales envían el mismo purchase_token a /api/customer/pack-reservations/confirm
      * en paralelo mediante Concurrency::run().
      *
      * Con el código actual:
@@ -184,7 +187,7 @@ class PurchaseConcurrencyTest extends TestCase
 
         $this->actingAs($this->customer1);
 
-        $prepareResponse = $this->postJson('/api/prepare-purchase', [
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
             'food_establishment_id' => $this->establishment->id,
             'offers' => [
                 ['id' => $this->offer->id, 'quantity' => 1],
@@ -221,7 +224,7 @@ class PurchaseConcurrencyTest extends TestCase
                 $session->setId($sessionId);
                 $session->start();
 
-                $request = Request::create('/api/buy-offers', 'POST', [
+                $request = Request::create('/api/customer/pack-reservations/confirm', 'POST', [
                     'purchase_token' => $purchaseToken,
                 ]);
                 $request->headers->set('Accept', 'application/json');
@@ -253,7 +256,7 @@ class PurchaseConcurrencyTest extends TestCase
                 $session->setId($sessionId);
                 $session->start();
 
-                $request = Request::create('/api/buy-offers', 'POST', [
+                $request = Request::create('/api/customer/pack-reservations/confirm', 'POST', [
                     'purchase_token' => $purchaseToken,
                 ]);
                 $request->headers->set('Accept', 'application/json');
@@ -291,5 +294,111 @@ class PurchaseConcurrencyTest extends TestCase
             Sell::where('bought_by', $this->customer1->id)->count(),
             'FAIL: Se crearon 2 ventas con el mismo token debido a la falta de consumo atómico (session()->pull).'
         );
+    }
+
+    /**
+     * TEST 3 (Cancelación Concurrente):
+     * Dos procesos concurrentes reales intentan cancelar la misma compra simultáneamente
+     * llamando a CancelPurchaseAction::execute en paralelo mediante Concurrency::run().
+     *
+     * Gracias a la actualización condicional atómica en la tabla sells:
+     * - Solo una cancelación tiene éxito (affectedRows = 1).
+     * - La otra cancelación es rechazada con CancellationNotAllowedException (affectedRows = 0).
+     * - El stock de la oferta se incrementa exactamente una sola vez (no se duplica).
+     */
+    public function test_cancellation_prevents_duplicate_cancellation_under_real_concurrency(): void
+    {
+        $initialOfferStock = 4;
+        $this->offer->update(['quantity' => $initialOfferStock]);
+
+        $sell = Sell::factory()->create([
+            'bought_by' => $this->customer1->id,
+            'sold_by' => $this->establishment->id,
+            'state' => SellState::CONFIRMED->value,
+            'is_picked_up' => false,
+            'max_pickup_datetime' => now()->addHours(4),
+            'created_at' => now(),
+        ]);
+
+        SellDetail::factory()->create([
+            'sell_id' => $sell->id,
+            'offer_id' => $this->offer->id,
+            'offer_quantity' => 2,
+            'pack_name' => $this->offer->title,
+            'pack_description' => $this->offer->description,
+            'pack_price' => $this->offer->price,
+        ]);
+
+        // Persistir datos para que sean visibles por los procesos hijos
+        DB::commit();
+
+        $sellId = $sell->id;
+        $customerId = $this->customer1->id;
+
+        $results = Concurrency::run([
+            function () use ($sellId, $customerId) {
+                $app = require base_path('bootstrap/app.php');
+                $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+                $action = $app->make(CancelPurchaseAction::class);
+                $sellModel = Sell::find($sellId);
+                $user = User::find($customerId);
+
+                try {
+                    $res = $action->execute($sellModel, $user);
+
+                    return ['success' => true, 'data' => $res];
+                } catch (\Throwable $e) {
+                    return ['success' => false, 'error' => $e->getMessage()];
+                }
+            },
+            function () use ($sellId, $customerId) {
+                $app = require base_path('bootstrap/app.php');
+                $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+                $action = $app->make(CancelPurchaseAction::class);
+                $sellModel = Sell::find($sellId);
+                $user = User::find($customerId);
+
+                try {
+                    $res = $action->execute($sellModel, $user);
+
+                    return ['success' => true, 'data' => $res];
+                } catch (\Throwable $e) {
+                    return ['success' => false, 'error' => $e->getMessage()];
+                }
+            },
+        ]);
+
+        $successCount = collect($results)->where('success', true)->count();
+        $failureCount = collect($results)->where('success', false)->count();
+
+        // Exactamente UNA cancelación debe tener éxito; la otra debe fallar
+        $this->assertEquals(
+            1,
+            $successCount,
+            'FAIL: Ambas cancelaciones concurrentes tuvieron éxito. Se procesó la cancelación dos veces.'
+        );
+
+        $this->assertEquals(
+            1,
+            $failureCount,
+            'FAIL: Ninguna cancelación falló. Una cancelación debió ser rechazada por ya estar cancelada.'
+        );
+
+        // El error de la petición rechazada debe ser descriptivo
+        $failedResult = collect($results)->firstWhere('success', false);
+        $this->assertStringContainsString('ya se encuentra cancelada', $failedResult['error']);
+
+        // El stock final debe incrementarse ÚNICAMENTE por 2 unidades (4 + 2 = 6, no 4 + 2 + 2 = 8)
+        $this->offer->refresh();
+        $this->assertEquals(
+            $initialOfferStock + 2,
+            $this->offer->quantity,
+            'FAIL: El stock se incrementó de forma duplicada ('.$this->offer->quantity.').'
+        );
+
+        // El estado final de la compra debe ser CANCELLED
+        $this->assertEquals(SellState::CANCELLED, $sell->fresh()->state);
     }
 }

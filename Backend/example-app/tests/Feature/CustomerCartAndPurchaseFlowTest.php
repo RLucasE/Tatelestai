@@ -161,7 +161,7 @@ test('customer can prepare and buy a single offer from an establishment', functi
     ])->assertStatus(200);
 
     // Preparar compra
-    $prepareResponse = $this->postJson('/api/prepare-purchase', [
+    $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
         'food_establishment_id' => $this->establishmentA->id,
         'offers' => [
             ['id' => $this->offerA1->id, 'quantity' => 2],
@@ -184,7 +184,7 @@ test('customer can prepare and buy a single offer from an establishment', functi
     $purchaseToken = $prepareResponse->json('data.purchase_token');
 
     // Confirmar compra
-    $buyResponse = $this->postJson('/api/buy-offers', [
+    $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
         'purchase_token' => $purchaseToken,
     ]);
 
@@ -236,7 +236,7 @@ test('customer can prepare and buy multiple offers from the same establishment i
     $this->postJson('/api/add-to-cart', ['offer_id' => $this->offerA2->id, 'quantity' => 2])->assertStatus(200);
 
     // Preparar compra atómica
-    $prepareResponse = $this->postJson('/api/prepare-purchase', [
+    $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
         'food_establishment_id' => $this->establishmentA->id,
         'offers' => [
             ['id' => $this->offerA1->id, 'quantity' => 1],
@@ -247,7 +247,7 @@ test('customer can prepare and buy multiple offers from the same establishment i
     $purchaseToken = $prepareResponse->json('data.purchase_token');
 
     // Confirmar compra
-    $buyResponse = $this->postJson('/api/buy-offers', [
+    $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
         'purchase_token' => $purchaseToken,
     ]);
     $buyResponse->assertStatus(200);
@@ -278,7 +278,7 @@ test('buying a cart from one establishment leaves carts from other establishment
     $this->postJson('/api/add-to-cart', ['offer_id' => $this->offerB1->id, 'quantity' => 1])->assertStatus(200);
 
     // 2. Preparar y comprar ÚNICAMENTE el carrito de Panadería San José
-    $prep = $this->postJson('/api/prepare-purchase', [
+    $prep = $this->postJson('/api/customer/pack-reservations/prepare', [
         'food_establishment_id' => $this->establishmentA->id,
         'offers' => [
             ['id' => $this->offerA1->id, 'quantity' => 2],
@@ -286,7 +286,7 @@ test('buying a cart from one establishment leaves carts from other establishment
     ]);
     $token = $prep->json('data.purchase_token');
 
-    $buy = $this->postJson('/api/buy-offers', ['purchase_token' => $token]);
+    $buy = $this->postJson('/api/customer/pack-reservations/confirm', ['purchase_token' => $token]);
     $buy->assertStatus(200);
 
     // 3. Verificar estados de ambos carritos en BD
@@ -314,7 +314,7 @@ test('cannot prepare purchase mixing offers from different establishments', func
     $this->actingAs($this->customer);
 
     // Intentar preparar una compra mezclando ofertas de Comercios A y B
-    $response = $this->postJson('/api/prepare-purchase', [
+    $response = $this->postJson('/api/customer/pack-reservations/prepare', [
         'food_establishment_id' => $this->establishmentA->id,
         'offers' => [
             ['id' => $this->offerA1->id, 'quantity' => 1],
@@ -336,7 +336,7 @@ test('cannot prepare purchase mixing offers from different establishments', func
 test('cannot buy offer when requested quantity exceeds available stock', function () {
     $this->actingAs($this->customer);
 
-    $prep = $this->postJson('/api/prepare-purchase', [
+    $prep = $this->postJson('/api/customer/pack-reservations/prepare', [
         'food_establishment_id' => $this->establishmentA->id,
         'offers' => [
             ['id' => $this->offerA2->id, 'quantity' => 3], // Pide los 3 disponibles
@@ -349,7 +349,7 @@ test('cannot buy offer when requested quantity exceeds available stock', functio
     $this->offerA2->update(['quantity' => 1]);
 
     // Intentar comprar los 3
-    $buy = $this->postJson('/api/buy-offers', ['purchase_token' => $token]);
+    $buy = $this->postJson('/api/customer/pack-reservations/confirm', ['purchase_token' => $token]);
 
     $buy->assertStatus(400);
     expect($buy->json('error'))->toContain('No hay suficiente stock');

@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Actions\Offers\OfferIsFromFoodEstablishmentAction;
 use App\Actions\Offers\ValidateOfferExpirationFromDTOAction;
 use App\Actions\Offers\ValidateOfferIsActiveAction;
+use App\Actions\Sell\CancelPurchaseAction;
 use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\makeSellAction;
+use App\Actions\Sell\ValidateCustomerOwnershipAction;
 use App\Actions\Sell\VerifyPurchaseDataFreshnessAction;
 use App\DTOs\PreparePurchaseDTO;
 use App\Enums\CartState;
+use App\Enums\SellState;
 use App\Events\PurchaseCompleted;
+use App\Exceptions\CancellationNotAllowedException;
 use App\Http\Resources\SellResource;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
@@ -30,7 +34,8 @@ class CustomerSellController extends Controller
         private readonly getCustomerSellsAction $getCustomerSellsAction,
         private readonly makeSellAction $makeSellAction,
         private readonly VerifyPurchaseDataFreshnessAction $verifyPurchaseDataFreshnessAction,
-        private readonly \App\Actions\Sell\ValidateCustomerOwnershipAction $validateCustomerOwnershipAction,
+        private readonly ValidateCustomerOwnershipAction $validateCustomerOwnershipAction,
+        private readonly CancelPurchaseAction $cancelPurchaseAction,
     ) {}
 
     public function buyOffers(Request $request)
@@ -242,6 +247,44 @@ class CustomerSellController extends Controller
 
         } catch (Exception $exception) {
             $statusCode = $exception->getCode() ?: 500;
+
+            return response()->json([
+                'error' => $exception->getMessage(),
+            ], $statusCode);
+        }
+    }
+
+    /**
+     * Cancela una compra y emite el reembolso correspondiente si cumple la política.
+     */
+    public function cancelPurchase(Request $request, string $sellNumber): JsonResponse
+    {
+        try {
+            $customerId = Auth::id();
+
+            // Valida pertenencia de la compra al cliente autenticado
+            $sell = $this->validateCustomerOwnershipAction->execute($sellNumber, $customerId);
+
+            // Ejecuta la cancelación bajo la supervisión de la política
+            $result = $this->cancelPurchaseAction->execute($sell, Auth::user());
+
+            return response()->json([
+                'message' => $result['message'],
+                'data' => [
+                    'sell_id' => $sell->id,
+                    'state' => SellState::CANCELLED->value,
+                ],
+            ], 200);
+
+        } catch (CancellationNotAllowedException $exception) {
+            return response()->json([
+                'error' => $exception->getMessage(),
+            ], $exception->getCode() ?: 422);
+
+        } catch (Exception $exception) {
+            $statusCode = ($exception->getCode() >= 400 && $exception->getCode() < 600)
+                ? $exception->getCode()
+                : 422;
 
             return response()->json([
                 'error' => $exception->getMessage(),

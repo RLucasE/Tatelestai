@@ -164,8 +164,11 @@ flowchart TD
 
 * **Cancelación por el Comercio**: Reembolso automático total (100%) al comprador. Las cancelaciones reiteradas activan revisiones de moderación en el módulo de administración.
 * **No-Show (Incomparecencia del Comprador)**: El comprador no se presenta dentro de la franja horaria. **No hay reembolso**, dado que el comercio reservó y armó el producto impidiendo su venta a terceros. El comercio percibe su liquidación correspondiente.
-* **Cancelación voluntaria del Comprador**: Permitida únicamente hasta una ventana de corte previa (ej. hasta 2 horas antes del inicio del retiro).
-* **Reclamos bromatológicos o discrepancia de valor**: El cliente puede adjuntar fotografías del pack recibido. Si no se cumplió el valor mínimo o se omitieron alérgenos declarados, la plataforma interviene aplicando sanciones y devoluciones.
+* **Cancelación voluntaria del Comprador**: Sujeta a las ventanas de anticipación (2 hs) y períodos de gracia (15 min / 5 min).
+* **Reclamos bromatológicos o discrepancia de valor**: El cliente puede adjuntar fotografías del pack recibido dentro de las 24 horas posteriores.
+
+> [!NOTE]
+> Para el diagrama de flujo detallado, los árboles de decisión y las reglas técnicas exhaustivas, consultar el documento específico: [Política de Cancelación y Reembolsos](./politica-cancelacion-y-reembolsos.md).
 
 ---
 

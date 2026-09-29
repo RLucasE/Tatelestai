@@ -4,6 +4,7 @@ namespace App\Actions\Sell;
 
 use App\Actions\Offers\GetOfferAction;
 use App\DTOs\PreparePurchaseDTO;
+use App\Enums\OfferState;
 use App\Models\Offer;
 use App\Models\Sell;
 use App\Models\SellDetail;
@@ -44,12 +45,14 @@ class makeSellAction
             foreach ($preparePurchaseDTO->offers as $offerDTO) {
                 $updatedRows = Offer::query()
                     ->where('id', $offerDTO->id)
+                    ->where('state', OfferState::ACTIVE->value)
                     ->where('quantity', '>=', $offerDTO->quantity)
                     ->decrement('quantity', $offerDTO->quantity);
 
                 if ($updatedRows === 0) {
                     $currentOffer = $this->getOfferAction->execute($offerDTO->id);
-                    throw new \Exception("No hay suficiente stock disponible para la oferta: {$currentOffer->title}");
+                    $title = $currentOffer ? $currentOffer->title : "ID {$offerDTO->id}";
+                    throw new \Exception("No hay suficiente stock disponible para la oferta: {$title}");
                 }
 
                 $offer = $this->getOfferAction->execute($offerDTO->id);
@@ -64,7 +67,7 @@ class makeSellAction
                 ]);
 
                 if ($offer->quantity <= 0) {
-                    $offer->update(['state' => 'purchased']);
+                    $offer->update(['state' => OfferState::PURCHASED->value]);
                 }
             }
 

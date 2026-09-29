@@ -19,3 +19,7 @@ Esta sección recopila los documentos de gestión, delimitación de alcance, esp
 
 4. **[Especificación Funcional: Módulo de Administración](./especificacion-funcional-admin.md)**
    * Casos de uso y reglas de negocio del rol administrador: moderación de ofertas, habilitación/suspensión de vendedores y auditoría de transacciones.
+
+5. **[Plan de Sprints: Customer y Seller](./plan-sprints-customer-seller.md)**
+   * Planificación detallada en 4 sprints: Visibilidad de ofertas, plantillas, dashboard seller con validación QR integrada, retiro con reseñas y checkout con Mercado Pago.
+

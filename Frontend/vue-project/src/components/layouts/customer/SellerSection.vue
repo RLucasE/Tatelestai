@@ -163,7 +163,7 @@ const handlePurchase = async () => {
       food_establishment_id: establishmentId,
     };
 
-    const response = await axiosInstance.post("/prepare-purchase", purchaseData);
+    const response = await axiosInstance.post("/customer/pack-reservations/prepare", purchaseData);
 
     sessionStorage.setItem('purchaseConfirmation', JSON.stringify(response.data.data));
 
