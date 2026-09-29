@@ -43,7 +43,7 @@ class Sell extends Model
         $this->loadMissing('sellDetails.offer');
 
         $dates = $this->sellDetails
-            ->map(fn($detail) => $detail->offer?->pickup_start_datetime)
+            ->map(fn ($detail) => $detail->offer?->pickup_start_datetime)
             ->filter();
 
         if ($dates->isNotEmpty()) {

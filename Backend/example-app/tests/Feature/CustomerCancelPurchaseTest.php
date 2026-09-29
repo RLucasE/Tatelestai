@@ -45,33 +45,33 @@ if (! function_exists('createTestPurchase')) {
     function createTestPurchase(User $customer, FoodEstablishment $establishment, array $offerOverrides = [], array $sellOverrides = []): array
     {
         $offer = Offer::factory()->active()->create(array_merge([
-        'food_establishment_id' => $establishment->id,
-        'quantity' => 5,
-        'price' => 2000,
-        'pickup_start_datetime' => now()->addHours(3),
-        'expiration_datetime' => now()->addHours(4),
-    ], $offerOverrides));
+            'food_establishment_id' => $establishment->id,
+            'quantity' => 5,
+            'price' => 2000,
+            'pickup_start_datetime' => now()->addHours(3),
+            'expiration_datetime' => now()->addHours(4),
+        ], $offerOverrides));
 
-    $sell = Sell::factory()->create(array_merge([
-        'bought_by' => $customer->id,
-        'sold_by' => $establishment->id,
-        'state' => SellState::CONFIRMED->value,
-        'is_picked_up' => false,
-        'pickup_code' => 'TESTCODE123',
-        'max_pickup_datetime' => $offer->expiration_datetime,
-        'created_at' => now(),
-    ], $sellOverrides));
+        $sell = Sell::factory()->create(array_merge([
+            'bought_by' => $customer->id,
+            'sold_by' => $establishment->id,
+            'state' => SellState::CONFIRMED->value,
+            'is_picked_up' => false,
+            'pickup_code' => 'TESTCODE123',
+            'max_pickup_datetime' => $offer->expiration_datetime,
+            'created_at' => now(),
+        ], $sellOverrides));
 
-    $detail = SellDetail::factory()->create([
-        'sell_id' => $sell->id,
-        'offer_id' => $offer->id,
-        'offer_quantity' => 2,
-        'pack_name' => $offer->title,
-        'pack_description' => $offer->description,
-        'pack_price' => $offer->price,
-    ]);
+        $detail = SellDetail::factory()->create([
+            'sell_id' => $sell->id,
+            'offer_id' => $offer->id,
+            'offer_quantity' => 2,
+            'pack_name' => $offer->title,
+            'pack_description' => $offer->description,
+            'pack_price' => $offer->price,
+        ]);
 
-    return [$sell, $offer, $detail];
+        return [$sell, $offer, $detail];
     }
 }
 

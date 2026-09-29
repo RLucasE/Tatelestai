@@ -7,7 +7,6 @@ use App\Enums\OfferState;
 use App\Enums\SellState;
 use App\Enums\UserRole;
 use App\Enums\UserState;
-use App\Exceptions\CancellationNotAllowedException;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
