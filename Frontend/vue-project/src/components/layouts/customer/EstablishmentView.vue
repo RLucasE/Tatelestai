@@ -161,7 +161,7 @@ const handleBuyOffer = async ({ id, quantity, food_establishment_id }) => {
       ],
     };
 
-    const prepareResponse = await axiosInstance.post('/prepare-purchase', offerPayload);
+    const prepareResponse = await axiosInstance.post('/customer/pack-reservations/prepare', offerPayload);
     sessionStorage.setItem('purchaseConfirmation', JSON.stringify(prepareResponse.data.data));
 
     closeOfferModal();

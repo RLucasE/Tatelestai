@@ -83,7 +83,7 @@ class SellControllerTest extends TestCase
             ],
         ];
 
-        $response = $this->postJson('/api/prepare-purchase', $requestData);
+        $response = $this->postJson('/api/customer/pack-reservations/prepare', $requestData);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -131,11 +131,11 @@ class SellControllerTest extends TestCase
             ],
         ];
 
-        $prepareResponse = $this->postJson('/api/prepare-purchase', $requestData);
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', $requestData);
         $purchaseToken = $prepareResponse->json('data.purchase_token');
 
         // Ahora realizar la compra
-        $buyResponse = $this->postJson('/api/buy-offers', [
+        $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
             'purchase_token' => $purchaseToken,
         ]);
 
@@ -168,7 +168,7 @@ class SellControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->postJson('/api/buy-offers', [
+        $response = $this->postJson('/api/customer/pack-reservations/confirm', [
             'purchase_token' => 'invalid_token_123',
         ]);
 
@@ -188,7 +188,7 @@ class SellControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->postJson('/api/buy-offers', []);
+        $response = $this->postJson('/api/customer/pack-reservations/confirm', []);
 
         $response->assertStatus(400)
             ->assertJson([
@@ -212,7 +212,7 @@ class SellControllerTest extends TestCase
             ],
         ];
 
-        $prepareResponse = $this->postJson('/api/prepare-purchase', $requestData);
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', $requestData);
         $purchaseToken = $prepareResponse->json('data.purchase_token');
 
         // Modificar manualmente la sesión para que expire
@@ -221,7 +221,7 @@ class SellControllerTest extends TestCase
         session()->put('purchase_'.$purchaseToken, $sessionData);
 
         // Intentar comprar con token expirado
-        $buyResponse = $this->postJson('/api/buy-offers', [
+        $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
             'purchase_token' => $purchaseToken,
         ]);
 
@@ -390,7 +390,7 @@ class SellControllerTest extends TestCase
         ]);
 
         // Obtener el código de retiro
-        $response = $this->getJson("/api/purchase-code/{$sell->id}");
+        $response = $this->getJson("/api/customer/pack-reservations/{$sell->id}/pickup-code");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -415,7 +415,7 @@ class SellControllerTest extends TestCase
     {
         $this->actingAs($this->customer);
 
-        $response = $this->getJson('/api/purchase-code/99999');
+        $response = $this->getJson('/api/customer/pack-reservations/99999/pickup-code');
 
         $response->assertStatus(404)
             ->assertJson([
@@ -442,7 +442,7 @@ class SellControllerTest extends TestCase
         ]);
 
         // Intentar obtener el código con el customer original
-        $response = $this->getJson("/api/purchase-code/{$sell->id}");
+        $response = $this->getJson("/api/customer/pack-reservations/{$sell->id}/pickup-code");
 
         $response->assertStatus(403)
             ->assertJson([
@@ -459,7 +459,7 @@ class SellControllerTest extends TestCase
             'pickup_code' => 'TEST-CODE-123',
         ]);
 
-        $response = $this->getJson("/api/purchase-code/{$sell->id}");
+        $response = $this->getJson("/api/customer/pack-reservations/{$sell->id}/pickup-code");
 
         $response->assertStatus(401);
     }

@@ -93,7 +93,7 @@ class SendPurchaseConfirmationEmailTest extends TestCase
 
         $this->actingAs($this->customer);
 
-        $prepareResponse = $this->postJson('/api/prepare-purchase', [
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
             'food_establishment_id' => $this->establishment->id,
             'offers' => [
                 [
@@ -106,7 +106,7 @@ class SendPurchaseConfirmationEmailTest extends TestCase
         $prepareResponse->assertStatus(200);
         $purchaseToken = $prepareResponse->json('data.purchase_token');
 
-        $buyResponse = $this->postJson('/api/buy-offers', [
+        $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
             'purchase_token' => $purchaseToken,
         ]);
 

@@ -85,7 +85,7 @@ test('customer can retrieve their purchases successfully and includes pickup dea
         'pack_description' => 'Pack sorpresa con opciones de hamburguesa',
     ]);
 
-    $response = $this->actingAs($customer)->getJson('/api/customer/purchases');
+    $response = $this->actingAs($customer)->getJson('/api/customer/pack-reservations');
 
     $response->assertStatus(200);
     $response->assertJsonStructure([

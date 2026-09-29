@@ -259,7 +259,7 @@ const buyOffer = async ({ id, quantity, food_establishment_id }) => {
 
   try {
     showNotification('Preparando tu reserva...', 'info');
-    const prepareResponse = await axiosInstance.post("/prepare-purchase", offerPayload);
+    const prepareResponse = await axiosInstance.post("/customer/pack-reservations/prepare", offerPayload);
     sessionStorage.setItem('purchaseConfirmation', JSON.stringify(prepareResponse.data.data));
     isVisible.value = false;
 

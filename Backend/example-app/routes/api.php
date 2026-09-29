@@ -29,14 +29,17 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
         Route::get('/establishments/{id}', [FoodEstablishmentController::class, 'show']);
         Route::get('/customer-cart', [CustomerCartController::class, 'customerCart']);
         Route::post('/add-to-cart', [CustomerCartController::class, 'addToCart']);
-        Route::post('/prepare-purchase', [CustomerSellController::class, 'prepareBuyOffers']);
-        Route::post('/buy-offers', [CustomerSellController::class, 'buyOffers']);
-        Route::get('/customer/purchases', [CustomerSellController::class, 'customerPurchases']);
+        Route::prefix('customer/pack-reservations')->group(function () {
+            Route::post('/prepare', [CustomerSellController::class, 'prepareBuyOffers']);
+            Route::post('/confirm', [CustomerSellController::class, 'buyOffers']);
+            Route::get('/', [CustomerSellController::class, 'customerPurchases']);
+            Route::get('/history', [CustomerSellController::class, 'historySell']);
+            Route::get('/{sellNumber}/pickup-code', [CustomerSellController::class, 'getPurchaseCode']);
+            Route::post('/{sellNumber}/cancel', [CustomerSellController::class, 'cancelPurchase']);
+        });
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);
         Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
-        Route::get('/purchase-code/{sellNumber}', [CustomerSellController::class, 'getPurchaseCode']);
-        Route::get('/customerHistorySell', [CustomerSellController::class, 'historySell']);
         Route::post('/customer/reports', [CustomerReportController::class, 'store']);
         Route::get('/my-reports', [CustomerReportController::class, 'myReports']);
     });

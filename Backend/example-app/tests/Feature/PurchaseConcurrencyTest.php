@@ -164,7 +164,7 @@ class PurchaseConcurrencyTest extends TestCase
 
     /**
      * TEST 2 (Nivel Endpoint HTTP):
-     * Dos peticiones HTTP concurrentes reales envían el mismo purchase_token a /api/buy-offers
+     * Dos peticiones HTTP concurrentes reales envían el mismo purchase_token a /api/customer/pack-reservations/confirm
      * en paralelo mediante Concurrency::run().
      *
      * Con el código actual:
@@ -184,7 +184,7 @@ class PurchaseConcurrencyTest extends TestCase
 
         $this->actingAs($this->customer1);
 
-        $prepareResponse = $this->postJson('/api/prepare-purchase', [
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
             'food_establishment_id' => $this->establishment->id,
             'offers' => [
                 ['id' => $this->offer->id, 'quantity' => 1],
@@ -221,7 +221,7 @@ class PurchaseConcurrencyTest extends TestCase
                 $session->setId($sessionId);
                 $session->start();
 
-                $request = Request::create('/api/buy-offers', 'POST', [
+                $request = Request::create('/api/customer/pack-reservations/confirm', 'POST', [
                     'purchase_token' => $purchaseToken,
                 ]);
                 $request->headers->set('Accept', 'application/json');
@@ -253,7 +253,7 @@ class PurchaseConcurrencyTest extends TestCase
                 $session->setId($sessionId);
                 $session->start();
 
-                $request = Request::create('/api/buy-offers', 'POST', [
+                $request = Request::create('/api/customer/pack-reservations/confirm', 'POST', [
                     'purchase_token' => $purchaseToken,
                 ]);
                 $request->headers->set('Accept', 'application/json');

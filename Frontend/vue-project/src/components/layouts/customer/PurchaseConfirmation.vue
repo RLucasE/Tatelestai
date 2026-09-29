@@ -198,7 +198,7 @@ const startPurchase = async () => {
   }, 200);
 
   try {
-    await axiosInstance.post('/buy-offers', {
+    await axiosInstance.post('/customer/pack-reservations/confirm', {
       purchase_token: purchaseToken
     });
 

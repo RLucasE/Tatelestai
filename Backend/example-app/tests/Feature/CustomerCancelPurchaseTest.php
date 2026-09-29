@@ -41,9 +41,10 @@ beforeEach(function () {
 /**
  * Helper para crear una venta con ofertas y detalles configurando franjas horarias específicas.
  */
-function createTestPurchase(User $customer, FoodEstablishment $establishment, array $offerOverrides = [], array $sellOverrides = []): array
-{
-    $offer = Offer::factory()->active()->create(array_merge([
+if (! function_exists('createTestPurchase')) {
+    function createTestPurchase(User $customer, FoodEstablishment $establishment, array $offerOverrides = [], array $sellOverrides = []): array
+    {
+        $offer = Offer::factory()->active()->create(array_merge([
         'food_establishment_id' => $establishment->id,
         'quantity' => 5,
         'price' => 2000,
@@ -71,6 +72,7 @@ function createTestPurchase(User $customer, FoodEstablishment $establishment, ar
     ]);
 
     return [$sell, $offer, $detail];
+    }
 }
 
 test('customer can cancel purchase with more than 2 hours in advance to pickup start', function () {
@@ -81,7 +83,7 @@ test('customer can cancel purchase with more than 2 hours in advance to pickup s
     ]);
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(200)
         ->assertJson([
@@ -105,7 +107,7 @@ test('customer can cancel purchase within 15 minutes grace period for purchase m
     $this->travelTo($purchaseTime->copy()->addMinutes(10));
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(200)
         ->assertJson([
@@ -131,7 +133,7 @@ test('customer cannot cancel purchase after 15 minutes grace period when less th
     $this->travelTo($purchaseTime->copy()->addMinutes(20));
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(422)
         ->assertJsonStructure(['error']);
@@ -157,7 +159,7 @@ test('customer can cancel purchase within 5 minutes express grace period for pur
     $this->travelTo($purchaseTime->copy()->addMinutes(3));
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(200)
         ->assertJson([
@@ -185,7 +187,7 @@ test('customer cannot cancel purchase after 5 minutes express grace period for p
     $this->travelTo($purchaseTime->copy()->addMinutes(7));
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(422)
         ->assertJsonStructure(['error']);
@@ -206,7 +208,7 @@ test('customer cannot cancel purchase if it has already been picked up at the st
     ]);
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(422)
         ->assertJsonStructure(['error']);
@@ -225,7 +227,7 @@ test('customer cannot cancel purchase if pickup window has already expired (No-S
     ]);
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(422)
         ->assertJsonStructure(['error']);
@@ -244,7 +246,7 @@ test('cancelling a purchase restores the stock of each offer in the order', func
     ]);
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(200);
 
@@ -261,7 +263,7 @@ test('cancelling a purchase reactivates offer from purchased back to active if i
     ]);
 
     $response = $this->actingAs($this->customer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(200);
 
@@ -278,7 +280,7 @@ test('customer cannot cancel another customer purchase', function () {
 
     // El otro cliente intenta cancelar
     $response = $this->actingAs($this->otherCustomer)
-        ->postJson("/api/customer/purchases/{$sell->id}/cancel");
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(403);
 
@@ -291,7 +293,7 @@ test('unauthenticated user cannot cancel any purchase', function () {
         'expiration_datetime' => now()->addHours(4),
     ]);
 
-    $response = $this->postJson("/api/customer/purchases/{$sell->id}/cancel");
+    $response = $this->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
 
     $response->assertStatus(401);
 

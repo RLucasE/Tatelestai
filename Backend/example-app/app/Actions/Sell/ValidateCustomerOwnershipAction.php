@@ -14,7 +14,7 @@ class ValidateCustomerOwnershipAction
      */
     public function execute(string $sellNumber, int $customerId): Sell
     {
-        $sell = Sell::with(['foodEstablishment', 'sellDetails'])
+        $sell = Sell::with(['foodEstablishment', 'sellDetails.offer'])
             ->where('id', $sellNumber)
             ->first();
 
