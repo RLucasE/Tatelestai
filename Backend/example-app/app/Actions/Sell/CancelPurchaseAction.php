@@ -4,6 +4,7 @@ namespace App\Actions\Sell;
 
 use App\Actions\Offers\RestoreOfferStockAction;
 use App\Enums\SellState;
+use App\Exceptions\CancellationNotAllowedException;
 use App\Models\Sell;
 use App\Models\User;
 use App\Policies\PurchaseCancellationPolicy;
@@ -28,12 +29,19 @@ class CancelPurchaseAction
 
         // 2. Ejecutar la mutación en transacción atómica
         return DB::transaction(function () use ($sell) {
-            // Actualizar estado de la venta a cancelada
-            $sell->update([
-                'state' => SellState::CANCELLED,
-            ]);
+            // Actualización condicional atómica: solo cancela si no estaba cancelada previamente
+            $affected = Sell::where('id', $sell->id)
+                ->where('state', '!=', SellState::CANCELLED->value)
+                ->update([
+                    'state' => SellState::CANCELLED->value,
+                ]);
 
-            // Cargar detalles de la venta si no están cargados
+            if ($affected === 0) {
+                throw new CancellationNotAllowedException('La compra ya se encuentra cancelada.', 422);
+            }
+
+            // Sincronizar el modelo en memoria y cargar detalles
+            $sell->refresh();
             $sell->loadMissing('sellDetails');
 
             // Restituir el stock de cada oferta delegando en la acción de dominio de ofertas

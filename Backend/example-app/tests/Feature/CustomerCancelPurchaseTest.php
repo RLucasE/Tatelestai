@@ -299,3 +299,55 @@ test('unauthenticated user cannot cancel any purchase', function () {
 
     expect($sell->fresh()->state)->not->toBe(SellState::CANCELLED);
 });
+
+test('customer cannot cancel an already cancelled purchase', function () {
+    [$sell, $offer] = createTestPurchase($this->customer, $this->establishment, [
+        'pickup_start_datetime' => now()->addHours(3),
+        'expiration_datetime' => now()->addHours(4),
+    ], [
+        'state' => SellState::CANCELLED->value,
+    ]);
+
+    $response = $this->actingAs($this->customer)
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
+
+    $response->assertStatus(422)
+        ->assertJson([
+            'error' => 'La compra ya se encuentra cancelada.',
+        ]);
+});
+
+test('sending cancel request twice rapidly only cancels once and does not duplicate restored stock', function () {
+    $initialStock = 5;
+    $boughtQuantity = 2;
+
+    [$sell, $offer] = createTestPurchase($this->customer, $this->establishment, [
+        'quantity' => $initialStock,
+        'pickup_start_datetime' => now()->addHours(3),
+        'expiration_datetime' => now()->addHours(4),
+    ]);
+
+    // Primer envío rápido de cancelación
+    $firstResponse = $this->actingAs($this->customer)
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
+
+    $firstResponse->assertStatus(200)
+        ->assertJson([
+            'message' => 'Compra cancelada y reembolso emitido exitosamente',
+        ]);
+
+    // Segundo envío rápido inmediato (doble clic del cliente o reintento de red)
+    $secondResponse = $this->actingAs($this->customer)
+        ->postJson("/api/customer/pack-reservations/{$sell->id}/cancel");
+
+    $secondResponse->assertStatus(422)
+        ->assertJson([
+            'error' => 'La compra ya se encuentra cancelada.',
+        ]);
+
+    // El stock debe incrementarse ÚNICAMENTE una vez: 5 + 2 = 7 (no 5 + 2 + 2 = 9)
+    expect($offer->fresh()->quantity)->toBe($initialStock + $boughtQuantity);
+    expect($sell->fresh()->state)->toBe(SellState::CANCELLED);
+});
+
+

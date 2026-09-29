@@ -22,18 +22,16 @@ class RestoreOfferStockAction
         $offer->increment('quantity', $quantityToRestore);
         $offer->refresh();
 
-        // 2. Evaluar transición de estado:
-        // - Solo se reactiva si su estado era 'purchased' (agotada por ventas).
-        // - Debe tener stock disponible > 0.
-        // - NO debe estar expirada (su ventana de retiro aún debe ser válida).
-        // - NO debe estar pausada voluntariamente por el vendedor ('inactive').
-        $wasPurchased = ($offer->state === OfferState::PURCHASED->value || $offer->state === 'purchased');
-        $hasValidWindow = ! $offer->expiration_datetime || $offer->expiration_datetime->isFuture();
+        // 2. Reactivación atómica si estaba agotada por ventas (purchased) y su franja sigue vigente
+        Offer::query()
+            ->where('id', $offerId)
+            ->where('state', OfferState::PURCHASED->value)
+            ->where(function ($query) {
+                $query->whereNull('expiration_datetime')
+                    ->orWhere('expiration_datetime', '>', now());
+            })
+            ->update(['state' => OfferState::ACTIVE->value]);
 
-        if ($wasPurchased && $offer->quantity > 0 && $hasValidWindow) {
-            $offer->update(['state' => OfferState::ACTIVE->value]);
-        }
-
-        return $offer;
+        return $offer->refresh();
     }
 }
