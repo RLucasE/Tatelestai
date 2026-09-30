@@ -11,6 +11,11 @@ class SellDetail extends Model
 
     use HasFactory;
 
+    public function sell()
+    {
+        return $this->belongsTo(Sell::class);
+    }
+
     public function offer()
     {
         return $this->belongsTo(Offer::class);
