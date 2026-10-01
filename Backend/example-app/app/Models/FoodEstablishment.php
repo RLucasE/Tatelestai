@@ -51,4 +51,9 @@ class FoodEstablishment extends Model
     {
         return $this->hasMany(EstablishmentVerificationFile::class, 'food_establishment_id');
     }
+
+    public function sells(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Sell::class, 'sold_by');
+    }
 }

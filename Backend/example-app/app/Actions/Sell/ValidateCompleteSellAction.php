@@ -17,6 +17,7 @@ class ValidateCompleteSellAction
     {
         $sell = Sell::where('id', $sellNumber)
             ->where('is_picked_up', false)
+            ->where('state', \App\Enums\SellState::PENDING->value)
             ->first();
 
         if (! $sell) {

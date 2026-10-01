@@ -16,6 +16,7 @@ use App\Http\Controllers\PackSellerController;
 use App\Http\Controllers\PackTemplateController;
 use App\Http\Controllers\PublicDataController;
 use App\Http\Controllers\SellController;
+use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerSellController;
 use App\Http\Controllers\UserManagement;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +76,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::patch('/packs/{id}', [PackSellerController::class, 'update']);
         Route::delete('/packs/{id}', [PackSellerController::class, 'destroy']);
         Route::get('/sells', [SellerSellController::class, 'sellerSells']);
+        Route::get('/seller/dashboard', [SellerDashboardController::class, 'index']);
         Route::put('/my-establishment', [FoodEstablishmentController::class, 'updateMyEstablishment']);
         Route::post('/check-customer-code', [SellerSellController::class, 'checkCustomerCode']);
         Route::post('/complete-sell/{sellNumber}', [SellerSellController::class, 'completeSell']);

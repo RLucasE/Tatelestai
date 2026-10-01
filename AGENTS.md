@@ -101,6 +101,10 @@ La SPA reside en `Frontend/vue-project/`.
 5. **Pruebas Obligatorias**:
    - Toda nueva funcionalidad o corrección de bugs debe acompañarse de sus pruebas en Pest PHP dentro de `tests/Feature/` o `tests/Unit/`.
    - Proporciona siempre al usuario el comando para verificar que pasen los tests (`docker exec tatelestai-php-fpm php artisan test`).
+6. **Flujo Estricto de Testing e Implementación (Regla Obligatoria para la IA)**:
+   - **Solo Tests ante peticiones de testing**: Cuando el usuario pida *"hacer un test"*, *"hacé un test"* o *"escribir tests"*, la IA debe escribir **ÚNICAMENTE** los archivos de prueba pertinentes (`tests/Feature/` o `tests/Unit/`). **BAJO NINGUNA CIRCUNSTANCIA** debe modificar el código de la aplicación (modelos, acciones, controladores, migraciones o frontend) a menos que el usuario lo autorice explícitamente.
+   - **Implementación condicionada**: La IA solo debe implementar el código de producción cuando el usuario indique explícitamente implementar la solución (ej. *"implementá el código"*, *"hacé el código y los tests"*).
+   - **Validación de Estados de Venta (Whitelist)**: Al validar operaciones sobre pedidos (como canjes, retiros o entregas), **NUNCA** utilices listas negras (`state !== CANCELLED`). Exige siempre el estado específico permitido por la regla de negocio (ej. `SellState::READY` o `SellState::CONFIRMED`), evitando que nuevos estados no contemplados puedan ejecutar la acción.
 
 ---
 

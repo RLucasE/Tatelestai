@@ -3,7 +3,13 @@ export default [
     path: "/seller",
     name: "seller",
     component: () => import("@/components/layouts/DashboardLayout.vue"),
+    redirect: { name: "seller-dashboard" },
     children: [
+      {
+        name: "seller-dashboard",
+        path: "dashboard",
+        component: () => import("@/components/layouts/seller/SellerDashboard.vue"),
+      },
       {
         name: "create-offer",
         path: "create-offer",

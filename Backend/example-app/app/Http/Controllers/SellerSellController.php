@@ -134,6 +134,7 @@ class SellerSellController extends Controller
                 [
                     'is_picked_up' => true,
                     'picked_up_at' => now(),
+                    'state' => \App\Enums\SellState::PICKED_UP->value,
                 ]
             );
 

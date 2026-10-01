@@ -10,6 +10,15 @@
         </button>
       </header>
       <nav class="sidebar__nav">
+        <RouterLink :to="{ name: 'seller-dashboard' }" class="nav-link">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"></path>
+            </svg>
+          </span>
+          <span>Dashboard</span>
+        </RouterLink>
+
         <RouterLink to="/seller/create-offer" class="nav-link">
           <span class="icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="18" height="18">

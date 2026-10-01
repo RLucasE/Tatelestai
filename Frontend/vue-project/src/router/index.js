@@ -27,7 +27,7 @@ function redirectByRole(authStore) {
         if (authStore.deniedConfirmation())
             return {name: "denied-confirmation"};
         if (authStore.inactive()) return {name: "inactive"};
-        return {name: "seller"};
+        return {name: "seller-dashboard"};
     }
 
     if (authStore.isAdmin()) {
