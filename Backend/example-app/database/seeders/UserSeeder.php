@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
         $user = User::factory()->create([
             'name' => 'Lucas',
             'last_name' => 'Ricalde',
-            'email' => 'customer@gmail.com',
+            'email' => 'lucascabjnmro2@gmail.com',
             'state' => UserState::ACTIVE->value,
             'password' => 12345678,
         ]);
@@ -30,7 +30,7 @@ class UserSeeder extends Seeder
         User::factory()->withRole(UserRole::SELLER->value)->create([
             'name' => 'Lucas',
             'last_name' => 'Ricalde',
-            'email' => 'seller@gmail.com',
+            'email' => 'yatarasu@gmail.com',
             'state' => UserState::ACTIVE->value,
             'password' => 12345678,
         ]);

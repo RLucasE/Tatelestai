@@ -17,7 +17,7 @@ class FoodEstablishmentSeeder extends Seeder
     {
         $establishments = [
             [
-                'seller_email' => 'seller@gmail.com',
+                'seller_email' => 'yatarasu@gmail.com',
                 'seller_name' => 'Lucas',
                 'name' => 'Café del Convento',
                 'address' => 'Caseros 540, Salta Capital',

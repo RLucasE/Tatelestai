@@ -28,7 +28,9 @@ class GmailService
      */
     public function sendEmail($to, $subject, $body)
     {
-        $this->mail->setFrom('lucascabjnmro2@gmail.com', 'LucasRD');
+        $fromAddress = config('mail.from.address', env('MAIL_FROM_ADDRESS', 'soporte@tatelestai.com'));
+        $fromName = config('mail.from.name', env('MAIL_FROM_NAME', config('app.name', 'Tatelestai')));
+        $this->mail->setFrom($fromAddress, $fromName);
         $this->mail->addAddress($to);
         $this->mail->Subject = $subject;
         $this->mail->Body = $body;

@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Events\PurchaseCompleted;
 use App\Listeners\SendPurchaseConfirmationEmail;
+use App\Mail\PurchaseConfirmation;
 use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
@@ -15,6 +16,7 @@ use Database\Seeders\EstablishmentTypeSeeder;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -115,6 +117,22 @@ class SendPurchaseConfirmationEmailTest extends TestCase
         Event::assertDispatched(PurchaseCompleted::class, function (PurchaseCompleted $event) {
             return $event->sell->bought_by === $this->customer->id
                 && $event->sell->sold_by === $this->establishment->id;
+        });
+    }
+
+    #[Test]
+    public function it_sends_purchase_confirmation_email_to_customer_email(): void
+    {
+        Mail::fake();
+
+        $listener = new SendPurchaseConfirmationEmail;
+        $event = new PurchaseCompleted($this->sell);
+
+        $listener->handle($event);
+
+        Mail::assertSent(PurchaseConfirmation::class, function (PurchaseConfirmation $mail) {
+            return $mail->hasTo($this->customer->email)
+                && $mail->sell->id === $this->sell->id;
         });
     }
 }
