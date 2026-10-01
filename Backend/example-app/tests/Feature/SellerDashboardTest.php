@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\OfferState;
 use App\Enums\SellState;
 use App\Enums\UserRole;
 use App\Enums\UserState;
@@ -417,7 +416,7 @@ class SellerDashboardTest extends TestCase
 
         $pastDate = Carbon::yesterday();
 
-        $response = $this->getJson('/api/seller/dashboard?date=' . $pastDate->format('Y-m-d'));
+        $response = $this->getJson('/api/seller/dashboard?date='.$pastDate->format('Y-m-d'));
 
         $response->assertStatus(200)
             ->assertJson([

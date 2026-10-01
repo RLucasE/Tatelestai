@@ -9,7 +9,6 @@ use App\Models\Offer;
 use App\Models\Sell;
 use App\Models\SellDetail;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 class GetSellerDashboardStatsAction
 {

@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Sell\CancelPurchaseAction;
 use App\Enums\SellState;
 use App\Enums\UserRole;
 use App\Enums\UserState;
@@ -694,4 +693,3 @@ test('cancelled order is never classified as pending in today pickups even withi
     // Comprobar que pending_pickups_today en summary es 0
     expect($response->json('data.summary.pending_pickups_today'))->toBe(0);
 });
-
