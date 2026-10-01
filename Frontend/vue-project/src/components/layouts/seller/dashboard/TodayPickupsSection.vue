@@ -11,24 +11,44 @@ const props = defineProps({
 
 defineEmits(['redeem']);
 
-const currentFilter = ref('all'); // 'all', 'pending', 'picked_up'
+const currentFilter = ref('all'); // 'all', 'pending', 'picked_up', 'cancelled'
 
 const countPending = computed(() => {
-  return props.pickups.filter((p) => !p.is_picked_up).length;
+  return props.pickups.filter((p) => !p.is_picked_up && p.status !== 'cancelled').length;
 });
 
 const countDelivered = computed(() => {
-  return props.pickups.filter((p) => p.is_picked_up).length;
+  return props.pickups.filter((p) => p.is_picked_up || p.status === 'picked_up').length;
+});
+
+const countCancelled = computed(() => {
+  return props.pickups.filter((p) => p.status === 'cancelled').length;
 });
 
 const filteredPickups = computed(() => {
   if (currentFilter.value === 'pending') {
-    return props.pickups.filter((p) => !p.is_picked_up);
+    return props.pickups.filter((p) => !p.is_picked_up && p.status !== 'cancelled');
   }
   if (currentFilter.value === 'picked_up') {
-    return props.pickups.filter((p) => p.is_picked_up);
+    return props.pickups.filter((p) => p.is_picked_up || p.status === 'picked_up');
+  }
+  if (currentFilter.value === 'cancelled') {
+    return props.pickups.filter((p) => p.status === 'cancelled');
   }
   return props.pickups;
+});
+
+const emptyStateMessage = computed(() => {
+  if (currentFilter.value === 'cancelled') {
+    return 'No hay pedidos cancelados registrados para el día de hoy.';
+  }
+  if (currentFilter.value === 'pending') {
+    return 'No hay pedidos pendientes de entrega para el día de hoy.';
+  }
+  if (currentFilter.value === 'picked_up') {
+    return 'Aún no se han completado entregas durante la jornada.';
+  }
+  return 'No se han registrado ventas para retirar en el día de hoy.';
 });
 </script>
 
@@ -46,10 +66,10 @@ const filteredPickups = computed(() => {
       </div>
 
       <!-- Segmented Buttons / Tabs -->
-      <div class="inline-flex p-1 rounded-xl bg-[#2D2438] border border-white/[0.08] self-start sm:self-center">
+      <div class="inline-flex p-1 rounded-xl bg-[#2D2438] border border-white/[0.08] self-start sm:self-center flex-wrap gap-1">
         <button
           type="button"
-          class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
           :class="currentFilter === 'all' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
           @click="currentFilter = 'all'"
         >
@@ -57,7 +77,7 @@ const filteredPickups = computed(() => {
         </button>
         <button
           type="button"
-          class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
           :class="currentFilter === 'pending' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
           @click="currentFilter = 'pending'"
         >
@@ -65,11 +85,19 @@ const filteredPickups = computed(() => {
         </button>
         <button
           type="button"
-          class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
           :class="currentFilter === 'picked_up' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
           @click="currentFilter = 'picked_up'"
         >
           Entregados ({{ countDelivered }})
+        </button>
+        <button
+          type="button"
+          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+          :class="currentFilter === 'cancelled' ? 'bg-[#EF4444] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
+          @click="currentFilter = 'cancelled'"
+        >
+          Cancelados ({{ countCancelled }})
         </button>
       </div>
     </div>
@@ -86,7 +114,7 @@ const filteredPickups = computed(() => {
       </div>
       <h3 class="text-sm font-bold text-white">Sin pedidos para mostrar</h3>
       <p class="text-xs text-[#A5A8C2] max-w-xs">
-        {{ currentFilter === 'all' ? 'No se han registrado ventas para retirar en el día de hoy.' : 'No hay pedidos con el filtro seleccionado.' }}
+        {{ emptyStateMessage }}
       </p>
     </div>
 

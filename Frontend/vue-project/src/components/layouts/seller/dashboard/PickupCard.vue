@@ -13,28 +13,46 @@ defineEmits(['redeem']);
 
 const { formatCurrency, formatTime, getInitials } = useFormatters();
 
-const isPickedUp = computed(() => Boolean(props.pickup.is_picked_up));
+const isPickedUp = computed(() => Boolean(props.pickup.is_picked_up) || props.pickup.status === 'picked_up');
+const isCancelled = computed(() => props.pickup.status === 'cancelled');
 
 const isExpired = computed(() => {
-  if (isPickedUp.value) return false;
+  if (isPickedUp.value || isCancelled.value) return false;
+  if (props.pickup.status === 'expired') return true;
   if (!props.pickup.max_pickup_datetime) return false;
   return new Date() > new Date(props.pickup.max_pickup_datetime);
 });
 
 const statusLabel = computed(() => {
+  if (isCancelled.value) return 'Cancelado';
   if (isPickedUp.value) return 'Retirado';
   if (isExpired.value) return 'Expirado';
+  if (props.pickup.status === 'ready') return 'Listo para retirar';
+  if (props.pickup.status === 'confirmed') return 'Confirmado';
   return 'Pendiente';
 });
 
 const statusPillClass = computed(() => {
+  if (isCancelled.value) {
+    return 'bg-[#EF4444]/15 border-[#EF4444]/30 text-[#F87171]';
+  }
   if (isPickedUp.value) {
     return 'bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]';
   }
   if (isExpired.value) {
     return 'bg-[#EF4444]/15 border-[#EF4444]/30 text-[#F87171]';
   }
+  if (props.pickup.status === 'ready') {
+    return 'bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]';
+  }
+  if (props.pickup.status === 'confirmed') {
+    return 'bg-[#7C3AED]/15 border-[#7C3AED]/30 text-[#C4B5FD]';
+  }
   return 'bg-[#F59E0B]/15 border-[#F59E0B]/30 text-[#FBBF24]';
+});
+
+const canRedeem = computed(() => {
+  return props.pickup.status === 'pending' && !isPickedUp.value && !isExpired.value;
 });
 </script>
 
@@ -114,7 +132,7 @@ const statusPillClass = computed(() => {
       </div>
 
       <button
-        v-if="!isPickedUp"
+        v-if="canRedeem"
         type="button"
         class="text-xs font-semibold text-[#A78BFA] hover:text-white transition-colors cursor-pointer"
         @click="$emit('redeem', pickup)"

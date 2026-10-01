@@ -37,16 +37,6 @@ class SellFactory extends Factory
 
         $establishment = FoodEstablishment::inRandomOrder()->first();
 
-        $isPickedUp = $this->faker->boolean();
-
-        $pickedUpAt = null;
-        $createdAt = $this->faker->dateTimeBetween('-1 month', 'now');
-
-        if ($isPickedUp) {
-            $pickedUpAt = $this->faker->dateTimeBetween('now', '+10 days');
-            $createdAt = $this->faker->dateTimeBetween('-1 month', $pickedUpAt);
-        }
-
         $generatePickupCodeAction = new GeneratePickupCodeAction;
         $mockDTO = new PreparePurchaseDTO(
             food_establishment_id: $establishment->id,
@@ -63,11 +53,24 @@ class SellFactory extends Factory
             'bought_by' => $customer->id,
             'sold_by' => $establishment->id,
             'pickup_code' => $pickupCode,
-            'is_picked_up' => $isPickedUp,
-            'picked_up_at' => $pickedUpAt,
-            'created_at' => $createdAt,
+            'state' => \App\Enums\SellState::PENDING->value,
+            'is_picked_up' => false,
+            'picked_up_at' => null,
+            'created_at' => now(),
             'updated_at' => now(),
         ];
+    }
+
+    /**
+     * Indicate that the sell is picked up.
+     */
+    public function pickedUp(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_picked_up' => true,
+            'picked_up_at' => now(),
+            'state' => \App\Enums\SellState::PICKED_UP->value,
+        ]);
     }
 
     /**

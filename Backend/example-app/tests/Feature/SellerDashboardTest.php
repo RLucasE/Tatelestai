@@ -225,6 +225,12 @@ class SellerDashboardTest extends TestCase
         $this->assertEquals(0, $stockB['stock_remaining']);
         $this->assertEquals(3, $stockB['stock_sold_today']);
         $this->assertTrue($stockB['is_sold_out']);
+
+        // Validar que la venta cancelada figura en today_pickups con status 'cancelled' para permitir su filtrado en el panel
+        $pickups = collect($data['today_pickups']);
+        $cancelledPickup = $pickups->firstWhere('id', $cancelledSell->id);
+        $this->assertNotNull($cancelledPickup, 'La venta cancelada debe figurar en today_pickups');
+        $this->assertEquals('cancelled', $cancelledPickup['status']);
     }
 
     #[Test]

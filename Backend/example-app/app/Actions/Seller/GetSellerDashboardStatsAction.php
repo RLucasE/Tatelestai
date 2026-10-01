@@ -168,15 +168,15 @@ class GetSellerDashboardStatsAction
 
             $totalPrice = round((float) $items->sum('subtotal'), 2);
 
-            // Determinar estado de la entrega
-            $status = 'pending';
-            if ($sell->state === SellState::CANCELLED) {
-                $status = 'cancelled';
-            } elseif ($sell->is_picked_up || $sell->state === SellState::PICKED_UP) {
-                $status = 'picked_up';
-            } elseif ($sell->max_pickup_datetime && now()->isAfter($sell->max_pickup_datetime)) {
-                $status = 'expired';
-            }
+            // Determinar estado de la entrega soportando los múltiples estados de SellState
+            $status = match (true) {
+                $sell->state === SellState::CANCELLED => 'cancelled',
+                $sell->is_picked_up || $sell->state === SellState::PICKED_UP => 'picked_up',
+                $sell->max_pickup_datetime && now()->isAfter($sell->max_pickup_datetime) => 'expired',
+                $sell->state === SellState::READY => 'ready',
+                $sell->state === SellState::CONFIRMED => 'confirmed',
+                default => 'pending',
+            };
 
             return [
                 'id' => $sell->id,
