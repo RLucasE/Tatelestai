@@ -47,6 +47,7 @@ class TypesenseSearchAdapterTest extends TestCase
         ]);
 
         $this->adapter = new TypesenseSearchAdapter;
+        $this->adapter->flushIndex();
     }
 
     #[Test]

@@ -17,6 +17,7 @@ class PackDTO
         public readonly ?int $quantity = null,
         public readonly ?string $pickupStartDatetime = null,
         public readonly ?string $pickupEndDatetime = null,
+        public readonly ?string $visibleFrom = null,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -41,6 +42,9 @@ class PackDTO
             pickupEndDatetime: $request->filled('pickup_end_datetime')
                 ? (string) $request->input('pickup_end_datetime')
                 : null,
+            visibleFrom: $request->filled('visible_from')
+                ? (string) $request->input('visible_from')
+                : null,
         );
     }
 
@@ -62,6 +66,7 @@ class PackDTO
             'quantity' => $this->quantity,
             'pickup_start_datetime' => $this->pickupStartDatetime,
             'pickup_end_datetime' => $this->pickupEndDatetime,
+            'visible_from' => $this->visibleFrom,
         ], fn ($value) => $value !== null);
     }
 }

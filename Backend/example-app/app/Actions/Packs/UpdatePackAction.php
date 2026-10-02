@@ -31,6 +31,21 @@ class UpdatePackAction
             $attributes['expiration_datetime'] = $pickupEnd->toDateTimeString();
         }
 
+        if (array_key_exists('visible_from', $attributes)) {
+            if ($attributes['visible_from'] !== null) {
+                $visibleFrom = Carbon::parse($attributes['visible_from']);
+                $expiration = Carbon::parse($attributes['expiration_datetime'] ?? $offer->expiration_datetime);
+
+                if ($visibleFrom->greaterThanOrEqualTo($expiration)) {
+                    throw new InvalidArgumentException('La fecha de visibilidad debe ser anterior al fin de la ventana de retiro');
+                }
+
+                $attributes['visible_from'] = $visibleFrom->toDateTimeString();
+            } else {
+                $attributes['visible_from'] = null;
+            }
+        }
+
         unset($attributes['pickup_end_datetime']);
 
         $offer->update($attributes);

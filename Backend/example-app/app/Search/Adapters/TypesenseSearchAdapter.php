@@ -37,6 +37,7 @@ class TypesenseSearchAdapter implements SearchServiceInterface
         $filterConditions = [
             "state:={$query->state}",
             "expiration_datetime:>={$now}",
+            "visible_from:<={$now}",
         ];
 
         $options = [];
@@ -88,7 +89,11 @@ class TypesenseSearchAdapter implements SearchServiceInterface
 
     public function flushIndex(): void
     {
-        Offer::removeAllFromSearch();
+        try {
+            app(\Laravel\Scout\EngineManager::class)->engine()->deleteIndex((new Offer)->searchableAs());
+        } catch (Throwable) {
+            Offer::removeAllFromSearch();
+        }
     }
 
     public function reindexAll(): void

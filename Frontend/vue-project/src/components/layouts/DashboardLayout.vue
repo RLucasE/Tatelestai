@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import Sidevar from "./seller/Sidevar.vue";
+import Sidebar from "./seller/Sidebar.vue";
 import Logo from "@/components/common/Logo.vue";
 
 const isSidebarOpen = ref(false);
@@ -30,7 +30,7 @@ const isSidebarOpen = ref(false);
   </nav>
   <main class="customer-cards-box">
     <RouterView />
-    <Sidevar v-model="isSidebarOpen" />
+    <Sidebar v-model="isSidebarOpen" />
   </main>
 </template>
 

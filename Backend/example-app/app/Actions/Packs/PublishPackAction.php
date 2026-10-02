@@ -71,6 +71,7 @@ class PublishPackAction
                 'quantity' => $dto->quantity,
                 'expiration_datetime' => $pickupEnd->toDateTimeString(),
                 'pickup_start_datetime' => $pickupStart->toDateTimeString(),
+                'visible_from' => $dto->visibleFrom ? Carbon::parse($dto->visibleFrom)->toDateTimeString() : null,
                 'state' => OfferState::ACTIVE->value,
                 'created_at' => now(),
                 'updated_at' => now(),

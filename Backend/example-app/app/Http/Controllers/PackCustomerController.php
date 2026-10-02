@@ -49,6 +49,10 @@ class PackCustomerController extends Controller
 
         $query = Offer::where('state', OfferState::ACTIVE->value)
             ->where('expiration_datetime', '>=', now())
+            ->where(function ($q) {
+                $q->whereNull('visible_from')
+                    ->orWhere('visible_from', '<=', now());
+            })
             ->with('foodEstablishment:id,name,address,latitude,longitude');
 
         if ($hasEstablishment) {
@@ -70,6 +74,10 @@ class PackCustomerController extends Controller
         $pack = Offer::with('foodEstablishment:id,name,address,latitude,longitude')
             ->where('state', OfferState::ACTIVE->value)
             ->where('expiration_datetime', '>=', now())
+            ->where(function ($q) {
+                $q->whereNull('visible_from')
+                    ->orWhere('visible_from', '<=', now());
+            })
             ->find($id);
 
         if (! $pack) {

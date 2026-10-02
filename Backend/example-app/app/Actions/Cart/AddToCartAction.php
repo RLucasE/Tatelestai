@@ -6,6 +6,7 @@ use App\Actions\Offers\GetOfferAction;
 use App\Actions\Offers\ResolveOfferAction;
 use App\Actions\Offers\ValidateOfferExpirationAction;
 use App\Actions\Offers\ValidateOfferStateAction;
+use App\Actions\Offers\ValidateOfferVisibilityAction;
 use App\Enums\OfferState;
 use App\Exceptions\Cart\OfferQuantityExceededException;
 use App\Http\Controllers\CartController;
@@ -18,6 +19,7 @@ class AddToCartAction
         private ResolveOfferAction $resolveOfferAction,
         private CartController $cartController,
         private ValidateOfferExpirationAction $validateOfferExpiration,
+        private ValidateOfferVisibilityAction $validateOfferVisibility,
         private GetOfferAction $getOfferAction,
         private ValidateOfferStateAction $validateOfferState,
     ) {}
@@ -32,6 +34,7 @@ class AddToCartAction
             return null;
         }
         try {
+            $this->validateOfferVisibility->execute($offerId);
             $this->validateOfferState->execute($offerId, OfferState::ACTIVE->value);
             $offer = $this->getOfferAction->execute($offerId);
 

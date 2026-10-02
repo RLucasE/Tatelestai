@@ -8,6 +8,7 @@ use App\Actions\Cart\ClearCustomerCartAction;
 use App\Actions\Cart\GetCustomerCartAction;
 use App\Enums\CartState;
 use App\Exceptions\Cart\OfferQuantityExceededException;
+use App\Models\Offer;
 use App\Models\OfferCart;
 use App\Models\User;
 use App\Models\UserCart;
@@ -121,6 +122,11 @@ class CustomerCartController extends CartController
 
         if (! $offerCart) {
             return response()->json(['message' => 'Offer not found in cart.'], status: 404);
+        }
+
+        $offer = Offer::find($offerId);
+        if ($offer && $offer->visible_from && $offer->visible_from->isFuture()) {
+            return response()->json(['message' => 'La oferta aún no está disponible para compra'], status: 400);
         }
 
         $offerCart->update(['quantity' => $request->quantity]);

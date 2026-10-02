@@ -16,6 +16,11 @@ export default [
         component: () => import("@/components/layouts/seller/CreateOffer.vue"),
       },
       {
+        name: "pack-templates",
+        path: "templates",
+        component: () => import("@/components/layouts/seller/PackTemplates.vue"),
+      },
+      {
         name: "my-offers",
         path: "my-offers",
         component: () => import("@/components/layouts/seller/MyOffers.vue"),

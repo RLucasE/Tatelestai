@@ -29,6 +29,7 @@ class PackOfferResource extends JsonResource
             'quantity' => (int) $this->quantity,
             'state' => $this->state,
             'pickup_start_datetime' => $this->pickup_start_datetime,
+            'visible_from' => $this->visible_from,
             'expiration_datetime' => $this->expiration_datetime,
             'establishment' => $this->whenLoaded('foodEstablishment', fn () => [
                 'id' => $this->foodEstablishment->id,

@@ -18,6 +18,7 @@ class Offer extends Model
         'allergens' => 'array',
         'estimated_weight_kg' => 'decimal:2',
         'pickup_start_datetime' => 'datetime',
+        'visible_from' => 'datetime',
         'expiration_datetime' => 'datetime',
     ];
 
@@ -55,6 +56,7 @@ class Offer extends Model
             'food_establishment' => $this->foodEstablishment?->name ?? '',
             'created_at' => $this->created_at?->timestamp ?? now()->timestamp,
             'state' => $this->state,
+            'visible_from' => $this->visible_from?->timestamp ?? ($this->created_at?->timestamp ?? 0),
             'expiration_datetime' => $this->expiration_datetime?->timestamp,
             'price' => (int) $this->price,
             'minimum_value' => (int) $this->minimum_value,

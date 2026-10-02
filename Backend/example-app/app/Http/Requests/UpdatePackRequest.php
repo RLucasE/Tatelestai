@@ -27,6 +27,7 @@ class UpdatePackRequest extends FormRequest
             'quantity' => 'sometimes|integer|min:1',
             'pickup_start_datetime' => 'sometimes|required_with:pickup_end_datetime|date',
             'pickup_end_datetime' => 'sometimes|required_with:pickup_start_datetime|date|after:pickup_start_datetime',
+            'visible_from' => 'sometimes|nullable|date',
         ];
     }
 

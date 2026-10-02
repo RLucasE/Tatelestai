@@ -33,6 +33,7 @@ class StorePackRequest extends FormRequest
             'quantity' => 'required|integer|min:1',
             'pickup_start_datetime' => 'required|date|after_or_equal:now',
             'pickup_end_datetime' => 'required|date|after:pickup_start_datetime',
+            'visible_from' => 'nullable|date|before:pickup_end_datetime',
         ];
     }
 
@@ -53,6 +54,7 @@ class StorePackRequest extends FormRequest
             'quantity.required' => 'La cantidad de cupos es requerida',
             'pickup_start_datetime.after_or_equal' => 'El inicio de la ventana de retiro no puede ser en el pasado',
             'pickup_end_datetime.after' => 'El fin de la ventana de retiro debe ser posterior al inicio',
+            'visible_from.before' => 'La fecha y hora de visibilidad debe ser anterior al fin de la ventana de retiro',
         ];
     }
 }
