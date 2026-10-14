@@ -12,6 +12,7 @@ use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -181,5 +182,66 @@ class RegisterEstablishmentTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['verification_files.0.document_category']);
+    }
+
+    #[Test]
+    public function resubmitting_registration_soft_deletes_previous_files_and_preserves_audit_trail()
+    {
+        Storage::fake('private');
+
+        // Primer envío
+        $initialFile = UploadedFile::fake()->image('fachada_inicial.jpg');
+        $this->postJson('/api/food-establishment', [
+            'name' => 'Comercio Original',
+            'address' => 'Calle Mitre 100, Salta',
+            'latitude' => -24.7880,
+            'longitude' => -65.4100,
+            'establishment_type_id' => $this->establishmentType->id,
+            'verification_files' => [
+                [
+                    'file' => $initialFile,
+                    'document_category' => TrustScoreCriterion::FACADE_PHOTO->value,
+                ],
+            ],
+        ])->assertStatus(201);
+
+        $establishment = $this->user->fresh()->foodEstablishment;
+        $firstFileRecord = $establishment->verificationFiles()->first();
+        $this->assertNotNull($firstFileRecord);
+        $this->assertNull($firstFileRecord->deleted_at);
+
+        // Simulamos que el admin rechaza y el usuario vuelve a estado registering
+        $this->user->update(['state' => UserState::REGISTERING->value]);
+
+        // Segundo envío (corrección)
+        $newFile = UploadedFile::fake()->create('habilitacion.pdf', 500, 'application/pdf');
+        $this->postJson('/api/food-establishment', [
+            'name' => 'Comercio Corregido',
+            'address' => 'Calle Mitre 100, Salta',
+            'latitude' => -24.7880,
+            'longitude' => -65.4100,
+            'establishment_type_id' => $this->establishmentType->id,
+            'verification_files' => [
+                [
+                    'file' => $newFile,
+                    'document_category' => TrustScoreCriterion::MUNICIPAL_PERMIT->value,
+                ],
+            ],
+        ])->assertStatus(200);
+
+        // Verificar que el archivo anterior está soft deleted en base de datos
+        $this->assertSoftDeleted('establishment_verification_files', [
+            'id' => $firstFileRecord->id,
+        ]);
+
+        // Verificar que la relación normal solo lista el nuevo archivo activo
+        $freshEstablishment = $this->user->fresh()->foodEstablishment;
+        $activeFiles = $freshEstablishment->verificationFiles;
+        $this->assertCount(1, $activeFiles);
+        $this->assertEquals(TrustScoreCriterion::MUNICIPAL_PERMIT, $activeFiles->first()->document_category);
+
+        // Verificar que con withTrashed() podemos acceder a ambos (historial completo de auditoría)
+        $allFilesIncludingHistory = $freshEstablishment->verificationFiles()->withTrashed()->get();
+        $this->assertCount(2, $allFilesIncludingHistory);
     }
 }

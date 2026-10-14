@@ -21,6 +21,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('users')
                 ->nullOnDelete();
+            $table->softDeletes();
         });
     }
 
@@ -31,6 +32,7 @@ return new class extends Migration
     {
         Schema::table('establishment_verification_files', function (Blueprint $table) {
             $table->dropForeign(['reviewed_by']);
+            $table->dropSoftDeletes();
             $table->dropColumn([
                 'document_category',
                 'status',

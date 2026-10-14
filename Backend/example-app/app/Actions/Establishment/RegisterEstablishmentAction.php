@@ -82,11 +82,9 @@ class RegisterEstablishmentAction
             $existingEstablishment = $user->foodEstablishment;
 
             if ($existingEstablishment) {
-                // Eliminar archivos físicos anteriores si se reenvía el registro
-                \Illuminate\Support\Facades\Storage::disk('private')->deleteDirectory('establishment_verification/'.$existingEstablishment->id);
-
                 $existingEstablishment->update($establishmentData);
                 $establishment = $existingEstablishment->fresh();
+                // Soft delete de los archivos anteriores (preserva historial físico y trazabilidad de auditoría)
                 $establishment->verificationFiles()->delete();
                 // Desactivar logs anteriores si se reenvía el registro
                 $establishment->trustLogs()->update(['is_active' => false]);
