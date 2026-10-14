@@ -33,6 +33,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import axiosInstance from '@/lib/axios'
 import { calculateDistance, formatDistance } from '@/lib/helpers/geo'
+import { createDarkTileLayer } from '@/lib/helpers/mapTheme'
 
 function createStoreIcon() {
   return L.divIcon({
@@ -320,13 +321,7 @@ function initMap() {
     zoom: DEFAULT_ZOOM,
   })
 
-  const cartoApiKey = import.meta.env.VITE_CARTO_API_KEY || 'cb1_30sd_1_3fbfe2ae226659ca1a63373f'
-  const tileUrl = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoApiKey}`
-
-  L.tileLayer(tileUrl, {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 19,
-  }).addTo(map)
+  createDarkTileLayer().addTo(map)
 
   // Capa para los marcadores de comercios
   offersLayerGroup = L.layerGroup().addTo(map)

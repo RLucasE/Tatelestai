@@ -42,6 +42,7 @@
 <script setup>
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import L from 'leaflet'
+import { createDarkTileLayer } from '@/lib/helpers/mapTheme'
 import { useLocationStore } from '@/stores/location'
 
 function createPickerIcon() {
@@ -106,13 +107,7 @@ function initMap() {
     zoom: DEFAULT_ZOOM,
   })
 
-  const cartoApiKey = import.meta.env.VITE_CARTO_API_KEY || 'cb1_30sd_1_3fbfe2ae226659ca1a63373f'
-  const tileUrl = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoApiKey}`
-
-  L.tileLayer(tileUrl, {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 19,
-  }).addTo(map)
+  createDarkTileLayer().addTo(map)
 
   map.on('click', (e) => {
     placeMarker(e.latlng.lat, e.latlng.lng)

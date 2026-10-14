@@ -5,12 +5,21 @@ import MessageDialog from "@/components/common/MessageDialog.vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
 import { USER_STATES } from "@/constants/userStates.js";
+import LocationMapPicker from "@/components/common/LocationMapPicker.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
 
+// Modalidad de ubicación: 'google' o 'manual'
+const locationMode = ref("google");
+
 const form = ref({
   google_place_id: "",
+  name: "",
+  address: "",
+  latitude: null,
+  longitude: null,
+  phone: "",
   establishment_type_id: "",
   additional_info: "",
 });
@@ -19,6 +28,16 @@ const verificationFiles = ref([]);
 const maxFiles = 6;
 const allowedExtensions = ['png', 'jpg', 'jpeg', 'pdf'];
 const maxFileSize = 5 * 1024 * 1024; // 5MB
+
+const documentCategories = [
+  { value: "tax_certificate", label: "Constancia CUIT (ARCA / AFIP)" },
+  { value: "municipal_permit", label: "Habilitación Municipal u Oblea" },
+  { value: "municipal_tax_receipt", label: "Boleta de Tasa Municipal (ARMSa)" },
+  { value: "pest_control_certificate", label: "Certificado de Desinfección / Fumigación" },
+  { value: "store_counter_photo", label: "Foto de Mostrador / Cocina interior" },
+  { value: "facade_photo", label: "Foto de Fachada Exterior" },
+  { value: "other", label: "Otro documento adicional" },
+];
 
 const searchQuery = ref("");
 const searchResults = ref([]);
@@ -33,9 +52,17 @@ const cancelLoading = ref(false);
 const isDragging = ref(false);
 const dropZoneRef = ref(null);
 
+
 const isValid = computed(() => {
+  const hasValidLocation = locationMode.value === "google"
+    ? form.value.google_place_id !== ""
+    : (form.value.name.trim() !== "" &&
+       form.value.address.trim() !== "" &&
+       form.value.latitude !== null &&
+       form.value.longitude !== null);
+
   return (
-    form.value.google_place_id !== "" &&
+    hasValidLocation &&
     form.value.establishment_type_id !== "" &&
     verificationFiles.value.length > 0 &&
     verificationFiles.value.length <= maxFiles
@@ -51,7 +78,8 @@ const fetchEstablishmentTypes = async () => {
   }
 };
 
-// Debounce search
+
+// Debounce search en Google Places
 let searchTimeout = null;
 watch(searchQuery, (newVal) => {
   if (searchTimeout) clearTimeout(searchTimeout);
@@ -113,7 +141,7 @@ const validateFile = (file) => {
   return null;
 };
 
-// Procesar archivos (desde drag & drop o input)
+// Procesar archivos
 const processFiles = (files) => {
   error.value = "";
   const fileList = Array.from(files);
@@ -129,7 +157,6 @@ const processFiles = (files) => {
     return;
   }
 
-  // Validar todos los archivos primero
   const validationErrors = [];
   for (const file of fileList) {
     const validationError = validateFile(file);
@@ -143,15 +170,14 @@ const processFiles = (files) => {
     return;
   }
 
-  // Agregar archivos válidos
   for (const file of fileList) {
     const fileItem = {
       id: Date.now() + Math.random(),
       file: file,
-      preview: null
+      preview: null,
+      document_category: "tax_certificate",
     };
 
-    // Crear preview si es imagen
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -177,7 +203,6 @@ const onDragOver = (e) => {
 
 const onDragLeave = (e) => {
   e.preventDefault();
-  // Solo cerrar si salimos del contenedor principal
   if (dropZoneRef.value && !dropZoneRef.value.contains(e.relatedTarget)) {
     isDragging.value = false;
   }
@@ -191,7 +216,6 @@ const onDrop = (e) => {
   }
 };
 
-// Click para abrir el selector de archivos
 const fileInputRef = ref(null);
 const triggerFileInput = () => {
   if (verificationFiles.value.length >= maxFiles) {
@@ -205,7 +229,6 @@ const handleFileInputChange = (event) => {
   if (event.target.files?.length > 0) {
     processFiles(event.target.files);
   }
-  // Reset input para poder seleccionar el mismo archivo de nuevo
   event.target.value = '';
 };
 
@@ -214,12 +237,10 @@ const removeFile = (fileId) => {
   error.value = "";
 };
 
-// Obtener extensión legible
 const getFileExtension = (fileName) => {
   return fileName.split('.').pop().toUpperCase();
 };
 
-// Obtener tamaño legible
 const getFileSize = (size) => {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
@@ -228,6 +249,11 @@ const getFileSize = (size) => {
 
 const resetForm = () => {
   form.value.google_place_id = "";
+  form.value.name = "";
+  form.value.address = "";
+  form.value.latitude = null;
+  form.value.longitude = null;
+  form.value.phone = "";
   form.value.establishment_type_id = "";
   form.value.additional_info = "";
   selectedPlace.value = null;
@@ -240,12 +266,25 @@ const registerEstablishment = async () => {
   error.value = "";
   try {
     const formData = new FormData();
-    formData.append("google_place_id", form.value.google_place_id);
     formData.append("establishment_type_id", Number(form.value.establishment_type_id));
 
-    // Agregar archivos de verificación
+    if (locationMode.value === "google") {
+      formData.append("google_place_id", form.value.google_place_id);
+    } else {
+      formData.append("name", form.value.name);
+      formData.append("address", form.value.address);
+      formData.append("latitude", form.value.latitude);
+      formData.append("longitude", form.value.longitude);
+      if (form.value.phone) {
+        formData.append("phone", form.value.phone);
+      }
+    }
+
     verificationFiles.value.forEach((fileItem, index) => {
       formData.append(`verification_files[${index}][file]`, fileItem.file);
+      if (fileItem.document_category) {
+        formData.append(`verification_files[${index}][document_category]`, fileItem.document_category);
+      }
     });
 
     if (form.value.additional_info) {
@@ -310,31 +349,135 @@ onMounted(fetchEstablishmentTypes);
       <!-- Header Section -->
       <div class="mb-8">
         <h2 class="text-2xl md:text-3xl font-bold text-[var(--color-text)] mb-2">Registrar establecimiento</h2>
-        <p class="text-base text-[var(--color-text)]/70">Busca tu establecimiento en Google Places y sube archivos de
-          verificación (máximo {{ maxFiles }}).</p>
+        <p class="text-base text-[var(--color-text)]/70">
+          Completa la ubicación de tu local y sube los documentos que tengas disponibles. Cuantas más pruebas aportes, más rápido podremos aprobarte.
+        </p>
       </div>
 
-      <!-- Requirements Section -->
-      <div
-        style="background: var(--color-primary); color: var(--color-text); border-left: 4px solid var(--color-focus); padding: 1rem; margin: 1rem 0; border-radius: var(--border-radius); font-size: 0.875rem;"
-        role="alert">
-        <p style="font-weight: bold; margin-bottom: 0.5rem;">Requisitos para aprobación</p>
-        <p style="margin-bottom: 0.5rem;">Asegúrate de cumplir la mayor cantidad de requisitos para que podamos aprobar
-          tu local:</p>
-        <ul style="margin: 0; padding-left: 1.5rem; list-style: disc;">
-          <li style="margin-bottom: 0.25rem;">Fotos de facturas o documentos fiscales</li>
-          <li style="margin-bottom: 0.25rem;">Email de confirmación en Google Places</li>
-          <li style="margin-bottom: 0.25rem;">Fotos del establecimiento (fachada e interior)</li>
-          <li style="margin-bottom: 0.25rem;">Selfie del propietario</li>
-          <li>Licencias o permisos comerciales</li>
-        </ul>
+      <!-- Guía informativa de requisitos para habilitación -->
+      <div class="requirements-guide-card">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[var(--color-focus)]/20 text-[var(--color-focus)] flex items-center justify-center flex-shrink-0 border border-[var(--color-focus)]/30">
+            <svg class="w-5 h-5 text-[var(--color-focus)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h4 class="font-bold text-white text-base mb-1">Requisitos y documentación para habilitar tu establecimiento</h4>
+            <p class="text-xs text-[var(--color-text)]/80 leading-relaxed mb-4">
+              Para verificar tu local gastronómico y habilitarlo para la venta de excedentes, nuestro equipo revisará la información que proporciones. Sube los comprobantes que tengas a mano para comenzar.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Columna 1: Documentación que puedes subir -->
+              <div class="bg-[var(--color-secondary)]/70 rounded-xl p-3.5 border border-[var(--color-border)]">
+                <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Documentos que puedes adjuntar</span>
+                </div>
+                <ul class="space-y-2 text-xs text-[var(--color-text)]/90">
+                  <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold mt-0.5">•</span>
+                    <span><b>Constancia de CUIT (ARCA / AFIP)</b>: Acredita la titularidad y actividad comercial.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold mt-0.5">•</span>
+                    <span><b>Habilitación Municipal u Oblea (ARMSa)</b>: Permiso o constancia de habilitación en Salta.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold mt-0.5">•</span>
+                    <span><b>Boleta de Tasa Municipal (TISSH)</b>: Comprobante o constancia de pago municipal del local.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold mt-0.5">•</span>
+                    <span><b>Certificado de Fumigación / Desinfección</b>: Certificado sanitario o control de plagas al día.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-emerald-400 font-bold mt-0.5">•</span>
+                    <span><b>Fotos del establecimiento</b>: Fachada con cartel y mostrador o cocina interior.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Columna 2: Qué tener en cuenta -->
+              <div class="bg-[var(--color-secondary)]/70 rounded-xl p-3.5 border border-[var(--color-border)]">
+                <div class="text-xs font-semibold text-purple-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Qué tener en cuenta para la aprobación</span>
+                </div>
+                <ul class="space-y-2 text-xs text-[var(--color-text)]/90">
+                  <li class="flex items-start gap-2">
+                    <span class="text-purple-400 font-bold mt-0.5">•</span>
+                    <span><b>Punto de retiro exacto</b>: La dirección y el punto en el mapa deben coincidir con la entrada del local.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-purple-400 font-bold mt-0.5">•</span>
+                    <span><b>Archivos claros y legibles</b>: Sube fotos o PDFs nítidos (formatos PDF, JPG o PNG hasta 5MB).</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-purple-400 font-bold mt-0.5">•</span>
+                    <span><b>Contacto directo</b>: Podemos comunicarnos por teléfono o WhatsApp para coordinar el alta comercial.</span>
+                  </li>
+                  <li class="flex items-start gap-2">
+                    <span class="text-purple-400 font-bold mt-0.5">•</span>
+                    <span><b>No es necesario tener todos los papeles juntos</b>: Puedes enviar los que tengas hoy. Cuantos más aportes, más rápida será la revisión.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Form -->
       <form @submit.prevent="registerEstablishment">
         <div class="space-y-6">
-          <!-- Google Places Search -->
+
+          <!-- Selector de Modo de Ubicación -->
           <div class="space-y-3">
+            <label class="block text-sm font-semibold text-[var(--color-text)]">
+              ¿Cómo deseas registrar la ubicación de tu local? <span class="text-red-400">*</span>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                @click="locationMode = 'google'"
+                class="location-toggle-btn"
+                :class="{ 'location-toggle-btn--active': locationMode === 'google' }"
+              >
+                <div class="font-semibold text-sm flex items-center gap-2">
+                  <svg class="w-4 h-4 text-[var(--color-focus)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span>Buscar en Google Places</span>
+                </div>
+                <div class="text-xs text-[var(--color-text)]/60 mt-0.5">Recomendado si tu negocio ya figura en Google Maps para agilizar la verificación</div>
+              </button>
+
+              <button
+                type="button"
+                @click="locationMode = 'manual'"
+                class="location-toggle-btn"
+                :class="{ 'location-toggle-btn--active': locationMode === 'manual' }"
+              >
+                <div class="font-semibold text-sm flex items-center gap-2">
+                  <svg class="w-4 h-4 text-[var(--color-focus)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Ubicar manualmente en mapa</span>
+                </div>
+                <div class="text-xs text-[var(--color-text)]/60 mt-0.5">Para negocios nuevos o sin perfil comercial en Google</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- MODALIDAD A: Búsqueda de Google Places -->
+          <div v-if="locationMode === 'google'" class="space-y-3">
             <label for="place-search" class="block text-sm font-semibold text-[var(--color-text)]">
               Buscar tu establecimiento en Google Places <span class="text-red-400">*</span>
             </label>
@@ -346,7 +489,7 @@ onMounted(fetchEstablishmentTypes);
                 </svg>
               </div>
               <input id="place-search" v-model="searchQuery" type="text" :disabled="selectedPlace !== null"
-                placeholder="Busca tu negocio..."
+                placeholder="Escribe el nombre de tu negocio o restaurante..."
                 class="w-full pl-12 pr-12 py-3.5 rounded-xl bg-[var(--color-primary)] text-[var(--color-text)] placeholder-[var(--color-text)]/40 border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent transition disabled:opacity-50" />
               <div v-if="searchLoading" class="absolute right-4 top-1/2 -translate-y-1/2">
                 <svg class="animate-spin h-5 w-5 text-[var(--color-text)]" viewBox="0 0 24 24">
@@ -357,9 +500,9 @@ onMounted(fetchEstablishmentTypes);
               </div>
             </div>
 
-            <!-- Search Results -->
+            <!-- Resultados de búsqueda -->
             <div v-if="searchResults.length > 0"
-              class="mt-2 max-h-64 overflow-y-auto bg-[var(--color-primary)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+              class="mt-2 max-h-64 overflow-y-auto bg-[var(--color-primary)] border border-[var(--color-border)] rounded-xl overflow-hidden shadow-xl">
               <button v-for="place in searchResults" :key="place.place_id" type="button" @click="selectPlace(place)"
                 class="w-full text-left px-4 py-3.5 hover:bg-[var(--color-secondary)] transition border-b border-[var(--color-border)] last:border-b-0">
                 <div class="font-medium text-[var(--color-text)]">{{ place.name }}</div>
@@ -367,7 +510,7 @@ onMounted(fetchEstablishmentTypes);
               </button>
             </div>
 
-            <!-- Selected Place -->
+            <!-- Lugar Seleccionado -->
             <div v-if="selectedPlace"
               class="mt-2 p-4 bg-[var(--color-focus)]/10 border-l-4 border-[var(--color-focus)] rounded-r-xl flex items-start justify-between">
               <div class="flex-1">
@@ -383,7 +526,8 @@ onMounted(fetchEstablishmentTypes);
                 <div class="text-sm text-[var(--color-text)]/70 mt-1 ml-7">{{ selectedPlace.formatted_address }}</div>
               </div>
               <button type="button" @click="clearSelection"
-                class="ml-3 p-1 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition">
+                class="ml-3 p-1 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition"
+                title="Cambiar lugar">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -391,7 +535,68 @@ onMounted(fetchEstablishmentTypes);
             </div>
           </div>
 
-          <!-- Establishment Type -->
+          <!-- MODALIDAD B: Ubicación Manual con Mapa -->
+          <div v-else class="space-y-4 p-4 rounded-xl bg-[var(--color-primary)] border border-[var(--color-border)]">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                  Nombre del local <span class="text-red-400">*</span>
+                </label>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  placeholder="Ej. Panadería La Tradición"
+                  class="w-full px-4 py-2.5 rounded-lg bg-[var(--color-secondary)] text-[var(--color-text)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)]"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                  Dirección exacta de retiro <span class="text-red-400">*</span>
+                </label>
+                <input
+                  v-model="form.address"
+                  type="text"
+                  placeholder="Ej. Av. San Martín 1234, Salta"
+                  class="w-full px-4 py-2.5 rounded-lg bg-[var(--color-secondary)] text-[var(--color-text)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)]"
+                />
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-[var(--color-text)] mb-1">
+                  Teléfono de contacto comercial
+                </label>
+                <input
+                  v-model="form.phone"
+                  type="text"
+                  placeholder="Ej. 387 4123456"
+                  class="w-full px-4 py-2.5 rounded-lg bg-[var(--color-secondary)] text-[var(--color-text)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)]"
+                />
+              </div>
+            </div>
+
+            <!-- Mapa interactivo modular con tema oscuro -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-semibold text-[var(--color-text)]">
+                  Marca el punto exacto en el mapa <span class="text-red-400">*</span>
+                </label>
+                <span v-if="form.latitude && form.longitude" class="text-xs text-emerald-400 font-medium font-mono">
+                  Coordenadas: {{ form.latitude }}, {{ form.longitude }}
+                </span>
+                <span v-else class="text-xs text-amber-300">
+                  Haz clic en el mapa para fijar el pin
+                </span>
+              </div>
+              <LocationMapPicker
+                v-model:latitude="form.latitude"
+                v-model:longitude="form.longitude"
+                height="17rem"
+              />
+            </div>
+          </div>
+
+          <!-- Tipo de Establecimiento -->
           <div class="space-y-3">
             <label for="estab-type" class="block text-sm font-semibold text-[var(--color-text)]">
               Tipo de establecimiento <span class="text-red-400">*</span>
@@ -412,12 +617,16 @@ onMounted(fetchEstablishmentTypes);
             </div>
           </div>
 
-          <!-- Verification Files Section -->
+          <!-- Archivos de Verificación -->
           <div class="space-y-4">
-            <label class="block text-sm font-semibold text-[var(--color-text)]">
-              Archivos de verificación <span class="text-red-400">*</span>
-              <span class="text-xs font-normal text-[var(--color-text)]/60 ml-2">({{ verificationFiles.length }}/{{ maxFiles }})</span>
-            </label>
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-[var(--color-text)]">
+                Documentos y Fotos de Verificación <span class="text-red-400">*</span>
+              </label>
+              <span class="text-xs font-normal text-[var(--color-text)]/60">
+                ({{ verificationFiles.length }}/{{ maxFiles }} archivos)
+              </span>
+            </div>
 
             <!-- Drop Zone -->
             <div
@@ -464,51 +673,62 @@ onMounted(fetchEstablishmentTypes);
               </div>
             </div>
 
-            <!-- Uploaded Files List -->
+            <!-- Lista de Archivos Subidos con Clasificación de Categoría -->
             <div v-if="verificationFiles.length > 0" class="space-y-3">
-              <div v-for="fileItem in verificationFiles" :key="fileItem.id"
-                class="file-item">
-                <div class="flex items-center gap-3">
-                  <!-- Preview / Icon -->
-                  <div class="flex-shrink-0">
-                    <div v-if="fileItem.preview" class="w-12 h-12 rounded-lg overflow-hidden">
-                      <img :src="fileItem.preview" class="w-full h-full object-cover" alt="Preview" />
+              <div v-for="fileItem in verificationFiles" :key="fileItem.id" class="file-item">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="flex-shrink-0">
+                      <div v-if="fileItem.preview" class="w-12 h-12 rounded-lg overflow-hidden border border-[var(--color-border)]">
+                        <img :src="fileItem.preview" class="w-full h-full object-cover" alt="Preview" />
+                      </div>
+                      <div v-else class="w-12 h-12 rounded-lg bg-[var(--color-secondary)] flex items-center justify-center">
+                        <svg class="w-6 h-6 text-[var(--color-text)]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div v-else class="w-12 h-12 rounded-lg bg-[var(--color-secondary)] flex items-center justify-center">
-                      <svg class="w-6 h-6 text-[var(--color-text)]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-[var(--color-text)] truncate">{{ fileItem.file.name }}</p>
+                      <div class="flex items-center gap-2 mt-0.5">
+                        <span class="file-badge file-badge--small">{{ getFileExtension(fileItem.file.name) }}</span>
+                        <span class="text-xs text-[var(--color-text)]/50">{{ getFileSize(fileItem.file.size) }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Selector de Tipo de Documento -->
+                  <div class="flex items-center gap-2">
+                    <select
+                      v-model="fileItem.document_category"
+                      class="px-3 py-1.5 rounded-lg bg-[var(--color-secondary)] text-[var(--color-text)] text-xs border border-[var(--color-border)] focus:outline-none focus:ring-1 focus:ring-[var(--color-focus)] cursor-pointer"
+                    >
+                      <option v-for="cat in documentCategories" :key="cat.value" :value="cat.value">
+                        {{ cat.label }}
+                      </option>
+                    </select>
+
+                    <button type="button" @click.stop="removeFile(fileItem.id)"
+                      class="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition"
+                      title="Eliminar archivo">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                    </div>
+                    </button>
                   </div>
-
-                  <!-- File Info -->
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-[var(--color-text)] truncate">{{ fileItem.file.name }}</p>
-                    <div class="flex items-center gap-2 mt-0.5">
-                      <span class="file-badge file-badge--small">{{ getFileExtension(fileItem.file.name) }}</span>
-                      <span class="text-xs text-[var(--color-text)]/50">{{ getFileSize(fileItem.file.size) }}</span>
-                    </div>
-                  </div>
-
-                  <!-- Remove Button -->
-                  <button type="button" @click.stop="removeFile(fileItem.id)"
-                    class="flex-shrink-0 p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Additional Info (Optional) -->
+          <!-- Información adicional -->
           <div class="space-y-3">
             <label for="additional-info" class="block text-sm font-semibold text-[var(--color-text)]">
               Información adicional (opcional)
             </label>
-            <textarea id="additional-info" v-model="form.additional_info" rows="4" maxlength="1000"
-              placeholder="Agrega cualquier información adicional que consideres relevante..."
+            <textarea id="additional-info" v-model="form.additional_info" rows="3" maxlength="1000"
+              placeholder="Horarios habituales, notas sobre la entrada o datos relevantes..."
               class="w-full px-4 py-3 rounded-xl bg-[var(--color-primary)] text-[var(--color-text)] placeholder-[var(--color-text)]/40 border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent transition resize-none"></textarea>
           </div>
 
@@ -553,10 +773,9 @@ onMounted(fetchEstablishmentTypes);
 </template>
 
 <style scoped>
-/* Spinner animation utility (fallback if Tailwind not available) */
 @keyframes spin {
   to {
-    transform: rotate(360deg)
+    transform: rotate(360deg);
   }
 }
 
@@ -564,7 +783,37 @@ onMounted(fetchEstablishmentTypes);
   animation: spin 1s linear infinite;
 }
 
-/* Drop Zone Styles */
+.requirements-guide-card,
+.trust-guide-card {
+  background: var(--color-primary);
+  border-left: 4px solid var(--color-focus);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+}
+
+.location-toggle-btn {
+  text-align: left;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--color-primary);
+  border: 2px solid var(--color-border);
+  color: var(--color-text);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.location-toggle-btn:hover {
+  border-color: var(--color-focus);
+}
+
+.location-toggle-btn--active {
+  border-color: var(--color-focus);
+  background: color-mix(in srgb, var(--color-focus) 12%, var(--color-primary));
+}
+
 .drop-zone {
   position: relative;
   border: 2px dashed var(--color-border);
@@ -601,7 +850,6 @@ onMounted(fetchEstablishmentTypes);
   pointer-events: none;
 }
 
-/* File Badges */
 .file-badge {
   display: inline-flex;
   align-items: center;
@@ -620,7 +868,6 @@ onMounted(fetchEstablishmentTypes);
   font-size: 0.625rem;
 }
 
-/* File Item */
 .file-item {
   padding: 0.75rem 1rem;
   background: var(--color-primary);
