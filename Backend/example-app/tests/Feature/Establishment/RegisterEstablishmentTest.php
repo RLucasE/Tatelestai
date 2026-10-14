@@ -211,7 +211,9 @@ class RegisterEstablishmentTest extends TestCase
         $this->assertNull($firstFileRecord->deleted_at);
 
         // Simulamos que el admin rechaza y el usuario vuelve a estado registering
-        $this->user->update(['state' => UserState::REGISTERING->value]);
+        $this->user->state = UserState::REGISTERING->value;
+        $this->user->save();
+        $this->actingAs($this->user->fresh());
 
         // Segundo envío (corrección)
         $newFile = UploadedFile::fake()->create('habilitacion.pdf', 500, 'application/pdf');
