@@ -698,4 +698,3 @@ class AdmUserControllerTest extends TestCase
         $this->assertFalse($ids->contains($other->id));
     }
 }
-

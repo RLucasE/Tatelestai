@@ -15,10 +15,6 @@ class ApproveEstablishmentAction
     /**
      * Aprueba la verificación de un establecimiento y activa al usuario vendedor.
      *
-     * @param  FoodEstablishment  $establishment
-     * @param  User  $admin
-     * @param  string|null  $notes
-     * @return FoodEstablishment
      *
      * @throws Exception
      */

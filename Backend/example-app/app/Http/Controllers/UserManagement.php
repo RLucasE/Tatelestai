@@ -3,12 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserState;
-use App\Enums\VerificationFileType;
 use App\Http\Requests\StoreEstablishmentWithVerificationRequest;
-use App\Models\EstablishmentType;
-use App\Models\EstablishmentVerificationFile;
 use App\Models\User;
-use App\Services\GooglePlacesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

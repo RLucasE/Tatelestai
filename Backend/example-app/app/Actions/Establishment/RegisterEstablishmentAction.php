@@ -23,10 +23,6 @@ class RegisterEstablishmentAction
      * Registra o actualiza un establecimiento comercial con archivos de verificación.
      * Soporta tanto modalidad de Google Places como carga manual con mapa.
      *
-     * @param  User  $user
-     * @param  array  $data
-     * @param  array  $files
-     * @return FoodEstablishment
      *
      * @throws Exception
      */

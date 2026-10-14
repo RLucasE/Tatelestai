@@ -21,6 +21,7 @@ class RegisterEstablishmentTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     protected User $user;
+
     protected EstablishmentType $establishmentType;
 
     protected function setUp(): void

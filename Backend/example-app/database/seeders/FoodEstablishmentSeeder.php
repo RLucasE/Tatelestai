@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\TrustScoreCriterion;
 use App\Enums\UserRole;
 use App\Enums\UserState;
-use App\Enums\VerificationFileType;
 use App\Models\EstablishmentTrustLog;
 use App\Models\EstablishmentVerificationFile;
 use App\Models\FoodEstablishment;

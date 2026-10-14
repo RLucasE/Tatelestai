@@ -14,13 +14,7 @@ class ReviewVerificationFileAction
     /**
      * Revisa un documento individual de verificación (aceptar o rechazar) y actualiza el score.
      *
-     * @param  EstablishmentVerificationFile  $file
-     * @param  User  $admin
      * @param  string  $decision  'accept' o 'reject'
-     * @param  string|null  $rejectionReason
-     * @param  TrustScoreCriterion|null  $overrideCategory
-     * @param  int|null  $customPoints
-     * @return EstablishmentVerificationFile
      *
      * @throws Exception
      */

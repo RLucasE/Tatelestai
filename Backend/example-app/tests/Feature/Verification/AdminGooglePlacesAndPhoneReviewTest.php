@@ -18,7 +18,9 @@ class AdminGooglePlacesAndPhoneReviewTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
 
     protected function setUp(): void

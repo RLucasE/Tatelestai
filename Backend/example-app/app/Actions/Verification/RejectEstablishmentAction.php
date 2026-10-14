@@ -15,10 +15,6 @@ class RejectEstablishmentAction
     /**
      * Rechaza la verificación de un establecimiento con un motivo explícito.
      *
-     * @param  FoodEstablishment  $establishment
-     * @param  User  $admin
-     * @param  string  $reason
-     * @return FoodEstablishment
      *
      * @throws Exception
      */
@@ -26,7 +22,7 @@ class RejectEstablishmentAction
         FoodEstablishment $establishment,
         User $admin,
         string $reason
-     ): FoodEstablishment {
+    ): FoodEstablishment {
         return DB::transaction(function () use ($establishment, $reason) {
             $lockedEstablishment = FoodEstablishment::where('id', $establishment->id)
                 ->lockForUpdate()

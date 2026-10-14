@@ -11,7 +11,6 @@ use App\Models\FoodEstablishment;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -20,7 +19,9 @@ class AdminDocumentReviewTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $seller;
+
     protected FoodEstablishment $establishment;
 
     protected function setUp(): void

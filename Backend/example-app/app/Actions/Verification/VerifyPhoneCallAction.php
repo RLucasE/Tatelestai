@@ -11,12 +11,6 @@ class VerifyPhoneCallAction
 {
     /**
      * Registra la llamada telefónica realizada por el administrador y otorga 30 puntos de confianza.
-     *
-     * @param  FoodEstablishment  $establishment
-     * @param  User  $admin
-     * @param  bool  $callSuccessful
-     * @param  string|null  $notes
-     * @return FoodEstablishment
      */
     public function execute(
         FoodEstablishment $establishment,

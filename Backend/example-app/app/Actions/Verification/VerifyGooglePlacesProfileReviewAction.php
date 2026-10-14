@@ -13,11 +13,6 @@ class VerifyGooglePlacesProfileReviewAction
     /**
      * Valida la ficha comercial de Google Places por parte del administrador y otorga o retira 20 puntos.
      *
-     * @param  FoodEstablishment  $establishment
-     * @param  User  $admin
-     * @param  bool  $isVerified
-     * @param  string|null  $notes
-     * @return FoodEstablishment
      *
      * @throws Exception
      */
