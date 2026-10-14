@@ -39,6 +39,8 @@ const form = reactive({
   quantity: 1,
   pickup_start_datetime: "",
   pickup_end_datetime: "",
+  visibility_mode: "now",
+  visible_from: "",
 });
 
 // Alérgenos comunes disponibles
@@ -207,6 +209,21 @@ const formattedPickupPreview = computed(() => {
   }
 });
 
+const formattedVisibilityPreview = computed(() => {
+  if (form.visibility_mode === "now") {
+    return "Inmediata (al confirmar)";
+  }
+  if (!form.visible_from) {
+    return "Programada (pendiente de hora)";
+  }
+  try {
+    const d = new Date(form.visible_from);
+    return `Programada para el ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" })} a las ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs`;
+  } catch (e) {
+    return form.visible_from;
+  }
+});
+
 // Barra de progreso interactiva (25%, 50%, 75%, 100% como en Figma)
 const progressPercentage = computed(() => {
   return Math.round((currentStep.value / totalSteps) * 100);
@@ -276,6 +293,7 @@ const validateCurrentStep = () => {
   if (currentStep.value === 4) {
     delete validationErrors.pickup_start_datetime;
     delete validationErrors.pickup_end_datetime;
+    delete validationErrors.visible_from;
 
     if (!form.pickup_start_datetime) {
       validationErrors.pickup_start_datetime = "Indica el inicio de la ventana de retiro";
@@ -293,6 +311,20 @@ const validateCurrentStep = () => {
       validationErrors.pickup_end_datetime = "El fin debe ser posterior al inicio";
       isValid = false;
     }
+
+    if (form.visibility_mode === "scheduled") {
+      if (!form.visible_from) {
+        validationErrors.visible_from = "Indica la fecha y hora programada";
+        isValid = false;
+      } else if (
+        form.pickup_end_datetime &&
+        new Date(form.visible_from) >= new Date(form.pickup_end_datetime)
+      ) {
+        validationErrors.visible_from = "La visibilidad debe ser anterior al fin de retiro";
+        isValid = false;
+      }
+    }
+
     return isValid;
   }
 
@@ -334,6 +366,10 @@ const handleSubmit = async () => {
     quantity: Number(form.quantity),
     pickup_start_datetime: formatApiDate(form.pickup_start_datetime),
     pickup_end_datetime: formatApiDate(form.pickup_end_datetime),
+    visible_from:
+      form.visibility_mode === "scheduled" && form.visible_from
+        ? formatApiDate(form.visible_from)
+        : null,
   };
 
   if (selectedTemplateId.value) {
@@ -954,6 +990,68 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- Modalidad de Visibilidad -->
+          <div class="mt-4 p-4 rounded-xl bg-[#1A1625]/60 border border-white/[0.08] space-y-3">
+            <label class="custom-label mb-1">
+              Visibilidad de la Oferta en el Catálogo
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                class="flex items-center gap-3 p-3 rounded-xl border text-left transition cursor-pointer"
+                :class="form.visibility_mode === 'now' ? 'bg-[#7C3AED]/20 border-[#7C3AED] text-white shadow-sm' : 'bg-[#2D2438] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'"
+                @click="form.visibility_mode = 'now'"
+              >
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="form.visibility_mode === 'now' ? 'bg-[#7C3AED] text-white' : 'bg-white/5 text-[#A5A8C2]'">
+                  🚀
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Publicar Inmediatamente</div>
+                  <div class="text-xs opacity-70">Visible en catálogo apenas se guarde</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                class="flex items-center gap-3 p-3 rounded-xl border text-left transition cursor-pointer"
+                :class="form.visibility_mode === 'scheduled' ? 'bg-[#7C3AED]/20 border-[#7C3AED] text-white shadow-sm' : 'bg-[#2D2438] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'"
+                @click="form.visibility_mode = 'scheduled'"
+              >
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="form.visibility_mode === 'scheduled' ? 'bg-[#7C3AED] text-white' : 'bg-white/5 text-[#A5A8C2]'">
+                  ⏰
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Programar Visibilidad</div>
+                  <div class="text-xs opacity-70">Elegir fecha y hora de apertura</div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Input fecha y hora programada -->
+            <div v-if="form.visibility_mode === 'scheduled'" class="pt-2">
+              <div class="custom-form-group">
+                <label for="visible_from" class="custom-label">
+                  Visible a partir de <span class="required-star">*</span>
+                </label>
+                <input
+                  id="visible_from"
+                  v-model="form.visible_from"
+                  type="datetime-local"
+                  :min="minPickupStart"
+                  :max="form.pickup_end_datetime"
+                  class="custom-input"
+                  :class="{ 'has-error': validationErrors.visible_from }"
+                />
+                <span v-if="validationErrors.visible_from" class="custom-field-error">
+                  {{ validationErrors.visible_from }}
+                </span>
+                <p class="text-xs text-[#A5A8C2] mt-1">
+                  Los clientes solo podrán ver y reservar esta bolsa a partir de este momento.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Resumen de Confirmación -->
           <div class="order-summary-panel">
             <h4 class="order-summary-title">Resumen de la Oferta a Publicar</h4>
@@ -981,6 +1079,10 @@ onMounted(() => {
               <div class="summary-cell col-span-2">
                 <span class="cell-label">Horario de retiro:</span>
                 <span class="cell-value text-purple-300 font-medium">{{ formattedPickupPreview }}</span>
+              </div>
+              <div class="summary-cell col-span-2">
+                <span class="cell-label">Visibilidad:</span>
+                <span class="cell-value text-emerald-300 font-medium">{{ formattedVisibilityPreview }}</span>
               </div>
               <div class="summary-cell col-span-2">
                 <span class="cell-label">Tipo de pack:</span>

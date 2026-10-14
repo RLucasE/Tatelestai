@@ -9,6 +9,7 @@ use App\Http\Controllers\CustomerReportController;
 use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\DashboardExportController;
 use App\Http\Controllers\EstablishmentTypeController;
+use App\Http\Controllers\EstablishmentVerificationController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\GooglePlacesController;
 use App\Http\Controllers\PackCustomerController;
@@ -53,6 +54,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::post('/food-establishment', [UserManagement::class, 'registerEstablishment'])->middleware(['user.state:'.UserState::REGISTERING->value]);
+    Route::get('/seller/verification-summary', [EstablishmentVerificationController::class, 'summary']);
 
     Route::middleware(['user.state:'.UserState::REGISTERING->value])->group(function () {
         Route::post('/cancel-seller-registration', [UserManagement::class, 'cancelSellerRegistration']);
@@ -114,9 +116,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::post('/adm/reports/{id}/take-action', [AdmReportController::class, 'takeAction']);
         Route::get('/adm/pending-establishments', [AdmUserController::class, 'pendingEstablishments']);
         Route::get('/adm/pending-establishments/{id}', [AdmUserController::class, 'showPendingEstablishment']);
+        Route::post('/adm/establishments/{id}/files/{fileId}/review', [AdmUserController::class, 'reviewFile']);
+        Route::post('/adm/establishments/{id}/review-documents', [AdmUserController::class, 'batchReviewDocuments']);
+        Route::post('/adm/establishments/{id}/verify-google-places', [AdmUserController::class, 'verifyGooglePlaces']);
+        Route::post('/adm/establishments/{id}/verify-phone-call', [AdmUserController::class, 'verifyPhoneCall']);
         Route::patch('/adm/establishments/{id}/verify', [AdmUserController::class, 'verifyEstablishment']);
         Route::patch('/adm/establishments/{id}/reject', [AdmUserController::class, 'rejectEstablishment']);
         Route::get('/admin/verification-files/{fileId}', [AdmUserController::class, 'serveVerificationFile']);
+        Route::get('/adm/verification-files/{fileId}', [AdmUserController::class, 'serveVerificationFile']);
     });
 });
 

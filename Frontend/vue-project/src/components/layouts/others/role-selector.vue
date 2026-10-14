@@ -91,10 +91,12 @@ const handleLogout = async () => {
           </div>
           <span
             v-if="role === 'customer'"
-            class="absolute right-4 top-4 text-[var(--color-secondary)]"
+            class="absolute right-4 top-4 text-[var(--color-focus)]"
             aria-hidden="true"
           >
-            ✓
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
           </span>
         </button>
 
@@ -127,17 +129,31 @@ const handleLogout = async () => {
           </div>
           <span
             v-if="role === 'seller'"
-            class="absolute right-4 top-4 text-[var(--color-secondary)]"
+            class="absolute right-4 top-4 text-[var(--color-focus)]"
             aria-hidden="true"
           >
-            ✓
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
           </span>
         </button>
       </div>
 
-      <div style="background: var(--color-primary); color: var(--color-text); border-left: 4px solid var(--color-primary); padding: 0.5rem; margin: 1rem 0; border-radius: var(--border-radius); font-size: 0.875rem;" role="alert">
-        <p style="font-weight: bold; margin-bottom: 0.25rem;">Nota importante</p>
-        <p>Debes tener el negocio registrado en google maps para poder ser un vendedor</p>
+      <!-- Nota informativa si elige vendedor -->
+      <div v-if="role === 'seller'" class="mt-5 p-4 rounded-xl bg-[var(--color-primary)] border border-[var(--color-border)] text-sm text-[var(--color-text)] transition-all">
+        <div class="flex items-start gap-3">
+          <div class="p-2 rounded-lg bg-[var(--color-focus)]/20 text-[var(--color-focus)] flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-white mb-0.5">Ubicación del establecimiento</p>
+            <p class="text-xs text-[var(--color-text)]/80 leading-relaxed">
+              No es obligatorio que tu negocio figure en Google Maps. Podrás buscarlo en Google Places o ingresar su dirección y ubicar el punto de retiro directamente en el mapa interactivo.
+            </p>
+          </div>
+        </div>
       </div>
 
        <div class="mt-6 flex items-center gap-4">

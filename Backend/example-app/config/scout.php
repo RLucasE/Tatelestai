@@ -228,6 +228,11 @@ return [
                             'optional' => true,
                         ],
                         [
+                            'name' => 'visible_from',
+                            'type' => 'int64',
+                            'optional' => true,
+                        ],
+                        [
                             'name' => 'allergens',
                             'type' => 'string[]',
                             'optional' => true,

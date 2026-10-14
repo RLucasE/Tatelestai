@@ -56,4 +56,31 @@ class FoodEstablishment extends Model
     {
         return $this->hasMany(Sell::class, 'sold_by');
     }
+
+    public function trustLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EstablishmentTrustLog::class);
+    }
+
+    public function getTrustScoreAttribute(): int
+    {
+        if ($this->relationLoaded('trustLogs')) {
+            return (int) $this->trustLogs->where('is_active', true)->sum('points');
+        }
+
+        return (int) $this->trustLogs()->where('is_active', true)->sum('points');
+    }
+
+    public function getTrustLevelAttribute(): string
+    {
+        $score = $this->trust_score;
+        if ($score >= 70) {
+            return 'green';
+        }
+        if ($score >= 40) {
+            return 'yellow';
+        }
+
+        return 'red';
+    }
 }

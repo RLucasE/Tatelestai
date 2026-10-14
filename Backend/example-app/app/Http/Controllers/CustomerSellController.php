@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Offers\OfferIsFromFoodEstablishmentAction;
 use App\Actions\Offers\ValidateOfferExpirationFromDTOAction;
 use App\Actions\Offers\ValidateOfferIsActiveAction;
+use App\Actions\Offers\ValidateOfferVisibilityFromDTOAction;
 use App\Actions\Sell\CancelPurchaseAction;
 use App\Actions\Sell\getCustomerSellsAction;
 use App\Actions\Sell\makeSellAction;
@@ -29,6 +30,7 @@ class CustomerSellController extends Controller
 {
     public function __construct(
         private readonly ValidateOfferExpirationFromDTOAction $validateOfferExpirationFromDTOAction,
+        private readonly ValidateOfferVisibilityFromDTOAction $validateOfferVisibilityFromDTOAction,
         private readonly ValidateOfferIsActiveAction $validateOfferIsActiveAction,
         private readonly OfferIsFromFoodEstablishmentAction $offerIsFromFoodEstablishmentAction,
         private readonly getCustomerSellsAction $getCustomerSellsAction,
@@ -76,6 +78,7 @@ class CustomerSellController extends Controller
 
             DB::transaction(function () use ($preparePurchaseDTO, &$sellResult) {
                 $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
+                $this->validateOfferVisibilityFromDTOAction->execute($preparePurchaseDTO->offers);
                 $this->validateOfferIsActiveAction->execute($preparePurchaseDTO->offers);
                 $this->offerIsFromFoodEstablishmentAction->execute(
                     $preparePurchaseDTO->offers,
@@ -143,6 +146,7 @@ class CustomerSellController extends Controller
             $preparePurchaseDTO = PreparePurchaseDTO::fromRequest($request);
 
             $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
+            $this->validateOfferVisibilityFromDTOAction->execute($preparePurchaseDTO->offers);
             $this->validateOfferIsActiveAction->execute($preparePurchaseDTO->offers);
             $this->offerIsFromFoodEstablishmentAction->execute(
                 $preparePurchaseDTO->offers,

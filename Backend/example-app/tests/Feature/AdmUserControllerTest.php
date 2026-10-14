@@ -545,4 +545,156 @@ class AdmUserControllerTest extends TestCase
         $responseData = $response->json('data');
         $this->assertNotNull($responseData['google_place_data']);
     }
+
+    private function createSellerUser(): User
+    {
+        return User::factory()->withRole(UserRole::SELLER->value)->create([
+            'state' => UserState::WAITING_FOR_CONFIRMATION->value,
+        ]);
+    }
+
+    #[Test]
+    public function it_can_get_establishments_list_with_all_verification_statuses()
+    {
+        $pending = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Pending Restaurant',
+            'verification_status' => 'pending',
+        ]);
+
+        $approved = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Approved Restaurant',
+            'verification_status' => 'approved',
+        ]);
+
+        $rejected = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Rejected Restaurant',
+            'verification_status' => 'rejected',
+        ]);
+
+        $response = $this->getJson('/api/adm/pending-establishments');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'verification_status',
+                        'trust_score',
+                        'trust_level',
+                    ],
+                ],
+            ]);
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($pending->id));
+        $this->assertTrue($ids->contains($approved->id));
+        $this->assertTrue($ids->contains($rejected->id));
+    }
+
+    #[Test]
+    public function it_can_filter_establishments_by_verification_status()
+    {
+        $pending = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Pending Restaurant Only',
+            'verification_status' => 'pending',
+        ]);
+
+        $approved = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Approved Restaurant Only',
+            'verification_status' => 'approved',
+        ]);
+
+        // Filter pending
+        $responsePending = $this->getJson('/api/adm/pending-establishments?status=pending');
+        $responsePending->assertStatus(200);
+        $pendingIds = collect($responsePending->json('data'))->pluck('id');
+        $this->assertTrue($pendingIds->contains($pending->id));
+        $this->assertFalse($pendingIds->contains($approved->id));
+
+        // Filter approved
+        $responseApproved = $this->getJson('/api/adm/pending-establishments?status=approved');
+        $responseApproved->assertStatus(200);
+        $approvedIds = collect($responseApproved->json('data'))->pluck('id');
+        $this->assertTrue($approvedIds->contains($approved->id));
+        $this->assertFalse($approvedIds->contains($pending->id));
+    }
+
+    #[Test]
+    public function it_can_paginate_establishments_within_status_filter()
+    {
+        // Create 6 pending establishments
+        for ($i = 1; $i <= 6; $i++) {
+            \App\Models\FoodEstablishment::factory()->create([
+                'user_id' => $this->createSellerUser()->id,
+                'name' => "Pending Restaurant {$i}",
+                'verification_status' => 'pending',
+            ]);
+        }
+
+        // Create 3 approved establishments
+        for ($i = 1; $i <= 3; $i++) {
+            \App\Models\FoodEstablishment::factory()->create([
+                'user_id' => $this->createSellerUser()->id,
+                'name' => "Approved Restaurant {$i}",
+                'verification_status' => 'approved',
+            ]);
+        }
+
+        // Request page 1 with per_page = 4 for pending
+        $response = $this->getJson('/api/adm/pending-establishments?status=pending&page=1&per_page=4');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'current_page' => 1,
+                'per_page' => 4,
+                'total' => 6,
+                'last_page' => 2,
+            ]);
+
+        $this->assertCount(4, $response->json('data'));
+
+        // Request page 2 with per_page = 4 for pending
+        $responsePage2 = $this->getJson('/api/adm/pending-establishments?status=pending&page=2&per_page=4');
+        $responsePage2->assertStatus(200)
+            ->assertJson([
+                'current_page' => 2,
+                'total' => 6,
+            ]);
+        $this->assertCount(2, $responsePage2->json('data'));
+
+        // Verify stats are included and accurate
+        $this->assertEquals(6, $response->json('stats.pending'));
+        $this->assertEquals(3, $response->json('stats.approved'));
+        $this->assertEquals(9, $response->json('stats.total'));
+    }
+
+    #[Test]
+    public function it_can_search_establishments_within_filters()
+    {
+        $special = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Empanadas Salteñitas La Linda',
+            'verification_status' => 'pending',
+        ]);
+
+        $other = \App\Models\FoodEstablishment::factory()->create([
+            'user_id' => $this->createSellerUser()->id,
+            'name' => 'Pizza House',
+            'verification_status' => 'pending',
+        ]);
+
+        $response = $this->getJson('/api/adm/pending-establishments?status=pending&search=salteñitas');
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($special->id));
+        $this->assertFalse($ids->contains($other->id));
+    }
 }

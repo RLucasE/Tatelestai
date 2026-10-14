@@ -146,3 +146,9 @@ Si creas o actualizas documentación en la carpeta `docs/`, mantén la categoriz
   - `refactor: ...` para cambios de código sin alterar comportamiento externo.
   - `test: ...` para agregado o modificación de pruebas.
   - `docs: ...` para cambios en la documentación.
+
+### 🛑 Regla Obligatoria: No Commits Autónomos
+- **La IA NUNCA debe ejecutar commits de git (`git commit`) por iniciativa propia.**
+- La creación de commits queda **exclusivamente reservada** para cuando el usuario lo solicite o autorice de forma explícita (ej. *"hacé el commit"*, *"commiteá estos cambios"*, *"creá un commit para esto"*).
+- Ante correcciones de bugs, refactorizaciones o nuevos tests, la IA debe limitarse a modificar los archivos en el árbol de trabajo (*working tree*) y proporcionar al usuario los comandos pertinentes para verificar los tests y el linter.
+
