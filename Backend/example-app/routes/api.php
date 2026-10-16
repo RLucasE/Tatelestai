@@ -8,6 +8,7 @@ use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\CustomerReportController;
 use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\DashboardExportController;
+use App\Http\Controllers\EstablishmentReviewController;
 use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\EstablishmentVerificationController;
 use App\Http\Controllers\FoodEstablishmentController;
@@ -38,6 +39,12 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
             Route::get('/history', [CustomerSellController::class, 'historySell']);
             Route::get('/{sellNumber}/pickup-code', [CustomerSellController::class, 'getPurchaseCode']);
             Route::post('/{sellNumber}/cancel', [CustomerSellController::class, 'cancelPurchase']);
+            Route::post('/{sell}/review', [EstablishmentReviewController::class, 'store'])
+                ->missing(function () {
+                    return response()->json([
+                        'message' => 'La compra especificada no existe o no fue encontrada.',
+                    ], 404);
+                });
         });
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);
         Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
@@ -50,6 +57,7 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/establishment-types', [PublicDataController::class, 'establishmentTypes'])->middleware(['user.state:'.UserState::REGISTERING->value.','.UserState::ACTIVE->value]);
     Route::get('/user', [PublicDataController::class, 'getUser']);
+    Route::get('/establishments/{id}/rating-summary', [EstablishmentReviewController::class, 'showSummary']);
 });
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
