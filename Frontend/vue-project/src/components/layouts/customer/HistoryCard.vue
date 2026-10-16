@@ -110,12 +110,60 @@
         </span>
       </div>
     </footer>
+
+    <!-- Franja de Calificación -->
+    <div class="pt-2 border-t border-[#3D3450]/40 flex items-center justify-between gap-3 text-xs">
+      <div v-if="localRating || purchase.user_rating" class="flex items-center gap-1.5 text-[#F59E0B] font-semibold">
+        <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        </svg>
+        <span>Tu calificación: {{ localRating || purchase.user_rating }}/5</span>
+      </div>
+
+      <div v-else-if="purchase.can_review && !isReviewedLocal" class="w-full flex justify-end">
+        <button
+          type="button"
+          @click="showRatingModal = true"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#F59E0B] bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+          <span>Calificar compra</span>
+        </button>
+      </div>
+
+      <div v-else-if="purchase.is_reviewed || isReviewedLocal" class="flex items-center gap-1 text-[#34D399]">
+        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Calificado</span>
+      </div>
+    </div>
+
+    <!-- Modal de Calificación -->
+    <QuickRatingModal
+      v-model="showRatingModal"
+      :sell-id="purchase.sell_id || purchase.id"
+      :establishment-name="establishmentName"
+      @reviewed="handleReviewed"
+    />
   </article>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import QuickRatingModal from '@/components/common/QuickRatingModal.vue';
+
+const showRatingModal = ref(false);
+const localRating = ref(null);
+const isReviewedLocal = ref(false);
+
+const handleReviewed = ({ rating }) => {
+  localRating.value = rating;
+  isReviewedLocal.value = true;
+};
 
 const props = defineProps({
   purchase: {

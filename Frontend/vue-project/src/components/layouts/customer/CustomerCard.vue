@@ -41,6 +41,38 @@ const establishmentInitials = computed(() => {
   return name.slice(0, 2).toUpperCase() || 'TA';
 });
 
+// Calificaciones y reputación de doble media
+const ratingInfo = computed(() => {
+  const est = props.offer.establishment || {};
+  const recentAvg = est.recent_rating_average !== undefined && est.recent_rating_average !== null ? Number(est.recent_rating_average) : null;
+  const histAvg = est.rating_average !== undefined && est.rating_average !== null ? Number(est.rating_average) : null;
+  const histCount = Number(est.reviews_count || 0);
+
+  if (recentAvg !== null && recentAvg > 0) {
+    return {
+      type: 'recent',
+      score: recentAvg.toFixed(1),
+      count: Number(est.recent_reviews_count || histCount),
+      globalScore: histAvg !== null ? histAvg.toFixed(1) : null,
+      globalCount: histCount,
+    };
+  }
+
+  if (histAvg !== null && histAvg > 0) {
+    return {
+      type: 'historical',
+      score: histAvg.toFixed(1),
+      count: histCount,
+    };
+  }
+
+  return {
+    type: 'new',
+    score: null,
+    count: 0,
+  };
+});
+
 // Reloj dinámico y temporizador en tiempo real
 const now = ref(Date.now());
 let timerInterval = null;
@@ -142,6 +174,35 @@ const formattedPickupWindow = computed(() => {
         <span class="text-xs font-semibold text-[#CBD5E1] truncate">
           {{ establishmentName }}
         </span>
+
+        <!-- Badge de Calificación (Doble Media) -->
+        <span
+          v-if="ratingInfo.type === 'recent'"
+          class="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[#F59E0B] text-[10px] font-extrabold"
+          :title="`Reciente: ${ratingInfo.score} ★ ${ratingInfo.globalScore ? '· Global: ' + ratingInfo.globalScore + ' ★' : ''}`"
+        >
+          <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+          <span>{{ ratingInfo.score }}</span>
+        </span>
+        <span
+          v-else-if="ratingInfo.type === 'historical'"
+          class="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/10 text-[#F59E0B] text-[10px] font-bold"
+          :title="`Global: ${ratingInfo.score} ★`"
+        >
+          <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+          <span>{{ ratingInfo.score }}</span>
+        </span>
+        <span
+          v-else
+          class="shrink-0 text-[10px] font-semibold text-[#A78BFA] bg-[#7C3AED]/20 px-1.5 py-0.5 rounded"
+        >
+          Nuevo
+        </span>
+
         <span
           v-if="distance"
           class="shrink-0 text-[11px] text-[#A5A8C2]/60"
