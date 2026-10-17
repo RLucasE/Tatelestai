@@ -41,6 +41,14 @@ class PackOfferResource extends JsonResource
                 'longitude' => $this->foodEstablishment->longitude !== null
                     ? (float) $this->foodEstablishment->longitude
                     : null,
+                'rating_average' => $this->foodEstablishment->rating_average !== null
+                    ? (float) $this->foodEstablishment->rating_average
+                    : null,
+                'reviews_count' => (int) $this->foodEstablishment->reviews_count,
+                'recent_rating_average' => $this->foodEstablishment->recent_rating_average !== null
+                    ? (float) $this->foodEstablishment->recent_rating_average
+                    : null,
+                'recent_reviews_count' => (int) $this->foodEstablishment->recent_reviews_count,
             ]),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

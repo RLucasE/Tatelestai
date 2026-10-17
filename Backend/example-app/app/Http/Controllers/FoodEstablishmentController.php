@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserState;
+use App\Http\Resources\FoodEstablishmentResource;
 use App\Models\FoodEstablishment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,19 +22,8 @@ class FoodEstablishmentController extends Controller
         }
 
         return response()->json([
-            'data' => [
-                'id' => $establishment->id,
-                'name' => $establishment->name,
-                'address' => $establishment->address,
-                'latitude' => $establishment->latitude !== null ? (float) $establishment->latitude : null,
-                'longitude' => $establishment->longitude !== null ? (float) $establishment->longitude : null,
-                'establishment_type' => $establishment->establishmentType?->name,
-                'phone' => $establishment->phone,
-                'phone_number' => $establishment->phone,
-                'email' => $establishment->user?->email,
-                'description' => $establishment->description,
-            ],
-        ]);
+            'data' => (new FoodEstablishmentResource($establishment))->resolve(),
+        ], 200);
     }
 
     public function getMyEstablishment(): JsonResponse

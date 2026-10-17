@@ -238,8 +238,9 @@ class CustomerSellController extends Controller
         try {
             $customerId = Auth::id();
 
-            $sells = Sell::with(['foodEstablishment', 'sellDetails.offer'])
+            $sells = Sell::with(['foodEstablishment', 'sellDetails.offer', 'review'])
                 ->where('bought_by', $customerId)
+                ->where('state', SellState::PICKED_UP->value)
                 ->where('is_picked_up', true)
                 ->orderBy('created_at', 'desc')
                 ->get();

@@ -14,37 +14,33 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     if (error.response) {
       const status = error.response.status;
-      const data = error.response.data;
-
-      console.log("Unauthorized access", status);
-      console.log("Router:", router);
-      console.log("Rutas disponibles:", router.getRoutes());
-      localStorage.removeItem("authToken");
-      sessionStorage.removeItem("userData");
 
       if (router) {
         if (status === 401) {
-          // Handle unauthorized access
-          console.log("a");
+          localStorage.removeItem("authToken");
+          sessionStorage.removeItem("userData");
+
           try {
             await router.push({ name: "login" });
-            console.log("b");
           } catch (err) {
             console.error("Error al redirigir:", err);
             window.location.href = "/login"; // ← Fallback con recarga de página
           }
         } else if (status === 403) {
-          // Handle forbidden access
           router.push({ name: "login" });
         } else if (status === 404) {
-          // Handle not found
-          router.push({ name: "not-found" });
+          // No redirigir a página global 404 en operaciones de mutación o peticiones que indiquen omitirlo
+          const method = error.config?.method?.toLowerCase();
+          const isMutation = ["post", "put", "patch", "delete"].includes(method);
+          const skipRedirect = Boolean(error.config?.skipNotFoundRedirect);
+
+          if (!isMutation && !skipRedirect) {
+            router.push({ name: "not-found" });
+          }
         } else if (status === 500) {
           // Handle server error
           router.push({ name: "server-error" });
         }
-      } else {
-        console.log("Router is not set");
       }
     }
 

@@ -35,6 +35,11 @@ class Sell extends Model
         return $this->belongsTo(User::class, 'bought_by');
     }
 
+    public function review(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(EstablishmentReview::class);
+    }
+
     /**
      * Obtiene la fecha/hora de inicio de la franja de retiro más temprana entre las ofertas del pedido.
      */

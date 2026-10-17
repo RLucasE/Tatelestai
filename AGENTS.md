@@ -23,7 +23,7 @@ Este archivo define el contexto operativo, la arquitectura del sistema y las reg
 > ⚠️ **CRÍTICO: NUNCA ejecutes PHP, Composer, Artisan o Pest directamente en la máquina host.**
 > El entorno de desarrollo corre completamente encapsulado en contenedores Docker.
 > 
-> 🛑 **REGLA OBLIGATORIA PARA LA IA: NO EJECUTAR COMANDOS DE DOCKER.** La IA NO debe ejecutar comandos de Docker (`docker`, `docker exec`, `docker compose`, etc.); estos comandos los ejecuta el usuario manualmente. La IA debe únicamente proporcionar e indicar los comandos pertinentes para que el desarrollador los corra.
+> 🐳 **EJECUCIÓN DE BACKEND VÍA DOCKER AUTORIZADA:** La IA está autorizada a ejecutar comandos de Docker dentro de los contenedores activos (especialmente `docker exec tatelestai-php-fpm ...`) para correr tests automatizados, verificar el linter, ejecutar migraciones o inspeccionar el estado del backend cuando el desarrollador lo solicite o sea parte del flujo de verificación.
 
 Todas las operaciones de backend deben ejecutarse dentro del contenedor `tatelestai-php-fpm`. Al usar el nombre del contenedor, estos comandos funcionan desde cualquier directorio:
 
@@ -50,8 +50,6 @@ docker exec tatelestai-php-fpm php artisan scout:flush "App\Models\Offer"
 # Limpieza y refresco de caché
 docker exec tatelestai-php-fpm php artisan optimize:clear
 ```
-
-> **Nota para la IA**: No ejecutes comandos de Docker; indícaselos al desarrollador para su ejecución manual.
 
 ### Comandos de Frontend
 La SPA reside en `Frontend/vue-project/`.
@@ -100,7 +98,7 @@ La SPA reside en `Frontend/vue-project/`.
    - Consulta `docs/explanation/concurrencia-y-stock.md` para ver el patrón de implementación establecido.
 5. **Pruebas Obligatorias**:
    - Toda nueva funcionalidad o corrección de bugs debe acompañarse de sus pruebas en Pest PHP dentro de `tests/Feature/` o `tests/Unit/`.
-   - Proporciona siempre al usuario el comando para verificar que pasen los tests (`docker exec tatelestai-php-fpm php artisan test`).
+   - Ejecuta o proporciona el comando para verificar que pasen los tests (`docker exec tatelestai-php-fpm php artisan test`).
 6. **Flujo Estricto de Testing e Implementación (Regla Obligatoria para la IA)**:
    - **Solo Tests ante peticiones de testing**: Cuando el usuario pida *"hacer un test"*, *"hacé un test"* o *"escribir tests"*, la IA debe escribir **ÚNICAMENTE** los archivos de prueba pertinentes (`tests/Feature/` o `tests/Unit/`). **BAJO NINGUNA CIRCUNSTANCIA** debe modificar el código de la aplicación (modelos, acciones, controladores, migraciones o frontend) a menos que el usuario lo autorice explícitamente.
    - **Implementación condicionada**: La IA solo debe implementar el código de producción cuando el usuario indique explícitamente implementar la solución (ej. *"implementá el código"*, *"hacé el código y los tests"*).

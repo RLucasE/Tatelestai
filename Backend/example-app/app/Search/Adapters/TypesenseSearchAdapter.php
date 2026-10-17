@@ -57,7 +57,17 @@ class TypesenseSearchAdapter implements SearchServiceInterface
             ->paginate($query->perPage, 'page', $query->page);
 
         $paginator->load([
-            'foodEstablishment' => fn ($q) => $q->select('id', 'name', 'address', 'latitude', 'longitude'),
+            'foodEstablishment' => fn ($q) => $q->select(
+                'id',
+                'name',
+                'address',
+                'latitude',
+                'longitude',
+                'rating_average',
+                'reviews_count',
+                'recent_rating_average',
+                'recent_reviews_count'
+            ),
         ]);
 
         return $paginator->getCollection();

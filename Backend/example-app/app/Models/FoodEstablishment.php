@@ -20,7 +20,16 @@ class FoodEstablishment extends Model
         'google_place_data' => 'array',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'rating_average' => 'decimal:2',
+        'recent_rating_average' => 'decimal:2',
+        'reviews_count' => 'integer',
+        'recent_reviews_count' => 'integer',
     ];
+
+    public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EstablishmentReview::class);
+    }
 
     public function user()
     {

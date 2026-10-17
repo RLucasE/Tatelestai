@@ -29,6 +29,17 @@ const establishmentInitials = computed(() => {
   return name.slice(0, 2).toUpperCase() || 'CA';
 });
 
+// Resumen de calificaciones y doble media
+const ratingSummary = computed(() => {
+  if (!establishment.value) return null;
+  return {
+    rating_average: establishment.value.rating_average,
+    reviews_count: establishment.value.reviews_count || 0,
+    recent_rating_average: establishment.value.recent_rating_average,
+    recent_reviews_count: establishment.value.recent_reviews_count || 0,
+  };
+});
+
 // Sistema de notificaciones
 const notification = ref({
   show: false,
@@ -86,6 +97,10 @@ const fetchEstablishmentData = async () => {
         phone_number: first.establishment?.phone || first.establishment_phone,
         email: first.establishment?.email || first.establishment_email,
         description: first.establishment?.description || first.establishment_description,
+        rating_average: first.establishment?.rating_average ?? null,
+        reviews_count: first.establishment?.reviews_count ?? 0,
+        recent_rating_average: first.establishment?.recent_rating_average ?? null,
+        recent_reviews_count: first.establishment?.recent_reviews_count ?? 0,
       };
     } else if (!establishment.value) {
       establishment.value = {
@@ -296,6 +311,51 @@ onMounted(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
               </svg>
             </button>
+          </div>
+        </div>
+
+        <!-- Sección de Reputación y Calificaciones (Doble Media) -->
+        <div v-if="ratingSummary" class="mt-6 pt-5 border-t border-[#3D3450]/60 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <!-- Tarjeta 1: Desempeño Reciente (Últimos 30 días) -->
+          <div class="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3.5 flex items-center justify-between gap-3">
+            <div>
+              <div class="text-[11px] uppercase tracking-wider font-extrabold text-[#A78BFA] flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                <span>Desempeño Reciente</span>
+              </div>
+              <p class="text-xs text-[#94A3B8] mt-0.5">
+                {{ ratingSummary.recent_reviews_count ? `Basado en ${ratingSummary.recent_reviews_count} compras recientes` : 'Sin calificaciones recientes' }}
+              </p>
+            </div>
+            <div class="text-right shrink-0">
+              <span v-if="ratingSummary.recent_rating_average" class="text-xl font-black text-[#F59E0B] flex items-center gap-1">
+                ★ {{ Number(ratingSummary.recent_rating_average).toFixed(1) }}
+              </span>
+              <span v-else class="text-xs font-semibold text-[#A5A8C2] bg-white/5 px-2 py-1 rounded-md">
+                Nuevo
+              </span>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2: Trayectoria Histórica (Global) -->
+          <div class="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3.5 flex items-center justify-between gap-3">
+            <div>
+              <div class="text-[11px] uppercase tracking-wider font-extrabold text-[#CBD5E1] flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#7C3AED]"></span>
+                <span>Trayectoria Histórica</span>
+              </div>
+              <p class="text-xs text-[#94A3B8] mt-0.5">
+                {{ ratingSummary.reviews_count ? `${ratingSummary.reviews_count} calificaciones totales` : 'Comercio recién adherido' }}
+              </p>
+            </div>
+            <div class="text-right shrink-0">
+              <span v-if="ratingSummary.rating_average" class="text-xl font-black text-white flex items-center gap-1">
+                ★ {{ Number(ratingSummary.rating_average).toFixed(1) }}
+              </span>
+              <span v-else class="text-xs font-semibold text-[#A5A8C2] bg-white/5 px-2 py-1 rounded-md">
+                Nuevo
+              </span>
+            </div>
           </div>
         </div>
       </header>

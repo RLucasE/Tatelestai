@@ -53,7 +53,7 @@ class PackCustomerController extends Controller
                 $q->whereNull('visible_from')
                     ->orWhere('visible_from', '<=', now());
             })
-            ->with('foodEstablishment:id,name,address,latitude,longitude');
+            ->with('foodEstablishment:id,name,address,latitude,longitude,rating_average,reviews_count,recent_rating_average,recent_reviews_count');
 
         if ($hasEstablishment) {
             $query->where('food_establishment_id', (int) $request->get('food_establishment_id'));
@@ -71,7 +71,7 @@ class PackCustomerController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $pack = Offer::with('foodEstablishment:id,name,address,latitude,longitude')
+        $pack = Offer::with('foodEstablishment:id,name,address,latitude,longitude,rating_average,reviews_count,recent_rating_average,recent_reviews_count')
             ->where('state', OfferState::ACTIVE->value)
             ->where('expiration_datetime', '>=', now())
             ->where(function ($q) {

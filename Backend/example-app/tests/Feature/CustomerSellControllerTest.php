@@ -402,6 +402,7 @@ class CustomerSellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'pickup_code' => 'CODE-001-ABC',
+            'state' => \App\Enums\SellState::PICKED_UP->value,
             'is_picked_up' => true,
             'created_at' => now()->subDays(5),
         ]);
@@ -418,6 +419,7 @@ class CustomerSellControllerTest extends TestCase
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
             'pickup_code' => 'CODE-003-GHI',
+            'state' => \App\Enums\SellState::PICKED_UP->value,
             'is_picked_up' => true,
             'created_at' => now()->subDay(),
         ]);
