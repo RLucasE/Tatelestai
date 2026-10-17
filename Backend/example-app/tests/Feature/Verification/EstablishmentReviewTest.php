@@ -297,9 +297,9 @@ class EstablishmentReviewTest extends TestCase
     }
 
     #[Test]
-    public function job_aplica_fallback_a_ultimas_calificaciones_si_hubo_bajo_volumen_en_30_dias(): void
+    public function job_calcula_directamente_reciente_e_historica_sin_umbral_minimo_de_resenas(): void
     {
-        // Solo 1 review en los últimos 30 días (4 estrellas)
+        // 1 review en los últimos 30 días (4 estrellas)
         $sellRecent = Sell::create([
             'bought_by' => $this->customer->id,
             'sold_by' => $this->establishment->id,
@@ -338,11 +338,47 @@ class EstablishmentReviewTest extends TestCase
         (new RecalculateEstablishmentRatingsJob($this->establishment->id))->handle();
         $this->establishment->refresh();
 
-        // En 30 días hubo 1 (< 3), por lo que toma las últimas calificaciones disponibles (3 en total: 4, 5, 5 => avg 4.67)
+        // Directo: total 3 calificaciones (4 + 5 + 5) / 3 = 4.67
         $this->assertEquals(3, $this->establishment->reviews_count);
         $this->assertEquals(4.67, (float) $this->establishment->rating_average);
-        $this->assertEquals(3, $this->establishment->recent_reviews_count);
-        $this->assertEquals(4.67, (float) $this->establishment->recent_rating_average);
+
+        // Reciente directo: solo la de los últimos 30 días (1 calificación de 4)
+        $this->assertEquals(1, $this->establishment->recent_reviews_count);
+        $this->assertEquals(4.00, (float) $this->establishment->recent_rating_average);
+    }
+
+    #[Test]
+    public function job_establece_reciente_en_null_si_no_hay_calificaciones_en_ultimos_30_dias(): void
+    {
+        // 2 reviews viejas (> 30 días) con 5 estrellas
+        for ($i = 1; $i <= 2; $i++) {
+            $sellOld = Sell::create([
+                'bought_by' => $this->customer->id,
+                'sold_by' => $this->establishment->id,
+                'pickup_code' => 'ONLY-OLD-'.$i,
+                'state' => SellState::PICKED_UP->value,
+                'is_picked_up' => true,
+                'picked_up_at' => now()->subDays(45),
+            ]);
+            EstablishmentReview::create([
+                'sell_id' => $sellOld->id,
+                'customer_id' => $this->customer->id,
+                'food_establishment_id' => $this->establishment->id,
+                'rating' => 5,
+                'created_at' => now()->subDays(45),
+            ]);
+        }
+
+        (new RecalculateEstablishmentRatingsJob($this->establishment->id))->handle();
+        $this->establishment->refresh();
+
+        // Histórico presente: 2 calificaciones de 5.0
+        $this->assertEquals(2, $this->establishment->reviews_count);
+        $this->assertEquals(5.00, (float) $this->establishment->rating_average);
+
+        // Reciente nulo: 0 compras en los últimos 30 días
+        $this->assertEquals(0, $this->establishment->recent_reviews_count);
+        $this->assertNull($this->establishment->recent_rating_average);
     }
 
     #[Test]
