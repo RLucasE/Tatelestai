@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\Payment\PaymentServiceInterface;
 use App\Contracts\Search\SearchServiceInterface;
 use App\Events\PurchaseCompleted;
 use App\Events\SellerActivated;
@@ -11,6 +12,7 @@ use App\Listeners\SendPurchaseConfirmationEmail;
 use App\Listeners\SendSellerActivatedEmail;
 use App\Listeners\SendSellerDeactivatedEmail;
 use App\Listeners\SendSellerDeniedEmail;
+use App\Payment\Adapters\MercadoPagoPaymentAdapter;
 use App\Search\Adapters\NullSearchAdapter;
 use App\Search\Adapters\TypesenseSearchAdapter;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -31,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
             'null' => NullSearchAdapter::class,
             default => TypesenseSearchAdapter::class,
         });
+
+        $this->app->bind(PaymentServiceInterface::class, MercadoPagoPaymentAdapter::class);
     }
 
     /**

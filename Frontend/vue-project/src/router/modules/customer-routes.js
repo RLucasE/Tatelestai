@@ -65,6 +65,16 @@ export default [
         },
       },
       {
+        path: "payment/return",
+        name: "customer-payment-return",
+        component: () =>
+          import("@/components/layouts/customer/PaymentReturn.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
+      },
+      {
         path: "establishment/:id",
         name: "establishment-view",
         component: () =>

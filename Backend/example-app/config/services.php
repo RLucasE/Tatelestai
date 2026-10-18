@@ -40,4 +40,12 @@ return [
         'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'mercadopago' => [
+        'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
+        'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
+        'webhook_secret' => env('MERCADOPAGO_WEBHOOK_SECRET'),
+        'sandbox' => env('MERCADOPAGO_SANDBOX', true),
+        'commission_percentage' => (float) env('TATELESTAI_COMMISSION_PERCENTAGE', 15.0),
+    ],
+
 ];

@@ -3,6 +3,8 @@
 namespace App\Actions\Sell;
 
 use App\Actions\Offers\RestoreOfferStockAction;
+use App\Contracts\Payment\PaymentServiceInterface;
+use App\Enums\PaymentStatus;
 use App\Enums\SellState;
 use App\Exceptions\CancellationNotAllowedException;
 use App\Models\Sell;
@@ -15,6 +17,7 @@ class CancelPurchaseAction
     public function __construct(
         private readonly PurchaseCancellationPolicy $policy,
         private readonly RestoreOfferStockAction $restoreOfferStockAction,
+        private readonly PaymentServiceInterface $paymentService,
     ) {}
 
     /**
@@ -34,10 +37,28 @@ class CancelPurchaseAction
                 ->where('state', '!=', SellState::CANCELLED->value)
                 ->update([
                     'state' => SellState::CANCELLED->value,
+                    'payment_status' => PaymentStatus::REFUNDED->value,
+                    'refunded_at' => now(),
+                    'cancelled_by' => 'customer',
+                    'cancellation_reason' => 'Cancelación voluntaria del comprador dentro de plazo',
                 ]);
 
             if ($affected === 0) {
                 throw new CancellationNotAllowedException('La compra ya se encuentra cancelada.', 422);
+            }
+
+            // Si tiene pago registrado en Mercado Pago, emitir reembolso
+            if ($sell->payment_id) {
+                try {
+                    $this->paymentService->refundPayment($sell->payment_id);
+                } catch (\Throwable $e) {
+                    // Loguear pero continuar para no romper la cancelación del usuario
+                    \Illuminate\Support\Facades\Log::error('Fallo al emitir reembolso en pasarela:', [
+                        'sell_id' => $sell->id,
+                        'payment_id' => $sell->payment_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             // Sincronizar el modelo en memoria y cargar detalles

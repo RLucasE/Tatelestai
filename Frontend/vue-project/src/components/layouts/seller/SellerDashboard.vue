@@ -135,6 +135,7 @@ onMounted(() => {
           <TodayPickupsSection
             :pickups="dashboardData.today_pickups || []"
             @redeem="handleRedeemRequest"
+            @reload="fetchDashboard(true)"
           />
         </div>
 

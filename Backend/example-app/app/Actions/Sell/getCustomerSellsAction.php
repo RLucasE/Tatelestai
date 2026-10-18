@@ -6,7 +6,9 @@ use App\Models\Sell;
 
 class getCustomerSellsAction
 {
-    public function __construct() {}
+    public function __construct(
+        private readonly ProcessExpiredSellsAction $processExpiredSellsAction,
+    ) {}
 
     /**
      * Obtiene todas las compras (sells) de un customer específico con sus detalles
@@ -16,6 +18,9 @@ class getCustomerSellsAction
      */
     public function execute(int $userId): array
     {
+        // Sincronización lazy de compras vencidas antes de retornar
+        $this->processExpiredSellsAction->execute(boughtBy: $userId);
+
         $sells = Sell::with([
             'sellDetails',
             'foodEstablishment',
@@ -38,6 +43,7 @@ class getCustomerSellsAction
                 'updated_at' => $sell->updated_at,
                 'max_pickup_datetime' => $sell->max_pickup_datetime,
                 'state' => $sell->state?->value ?? $sell->state,
+                'payment_status' => $sell->payment_status?->value ?? $sell->payment_status ?? 'approved',
                 'establishment' => [
                     'id' => $sell->foodEstablishment->id,
                     'name' => $sell->foodEstablishment->name,

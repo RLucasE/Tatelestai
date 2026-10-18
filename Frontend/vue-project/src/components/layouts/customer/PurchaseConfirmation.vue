@@ -1,118 +1,5 @@
-<template>
-  <div class="purchase-confirmation">
-    <div class="confirmation-header">
-      <h2>Confirmar Compra</h2>
-      <p class="confirmation-subtitle">Revisa los detalles de tu pedido antes de confirmar</p>
-    </div>
-
-    <div v-if="loading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Cargando datos de confirmación...</p>
-    </div>
-
-    <div v-else-if="purchaseData" class="confirmation-content">
-      <div class="establishment-info">
-        <h3>Establecimiento: {{ establishmentName }}</h3>
-        <p class="expiration-notice">
-          ⏰ Esta confirmación expira el {{ formatExpirationDate(purchaseData.expires_at) }}
-        </p>
-      </div>
-
-      <div class="offers-summary">
-        <h4>Resumen de tu pedido</h4>
-        <div class="offers-list">
-          <div
-            v-for="offer in purchaseData.offers.offers"
-            :key="offer.id"
-            class="offer-item"
-          >
-            <div class="offer-header">
-              <h5>{{ offer.title }}</h5>
-              <span class="offer-quantity">Cantidad: {{ offer.quantity }}</span>
-            </div>
-            <p class="offer-description">{{ offer.description }}</p>
-
-            <div class="offer-pricing-row">
-              <span class="unit-price">Precio unitario: ${{ Number(offer.price).toLocaleString('es-AR') }}</span>
-            </div>
-
-            <div class="offer-total">
-              <span class="total-label">Subtotal:</span>
-              <span class="total-amount">${{ calculateOfferTotal(offer) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="total-section">
-        <div class="grand-total">
-          <span class="total-label">Total a pagar:</span>
-          <span class="total-amount">${{ calculateGrandTotal() }}</span>
-        </div>
-      </div>
-
-      <div class="action-buttons">
-        <button
-          class="btn btn-secondary"
-          @click="goBack"
-          :disabled="processingPurchase"
-        >
-          Volver al carrito
-        </button>
-
-        <button
-          class="btn btn-primary purchase-btn"
-          @click="startPurchase"
-          :disabled="processingPurchase"
-          :class="{ 'loading': processingPurchase }"
-        >
-          <span v-if="!processingPurchase">Confirmar Compra</span>
-          <div v-if="processingPurchase" class="purchase-progress">
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
-            </div>
-            <span class="progress-text">{{ progressText }}</span>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <div v-else class="error-container">
-      <div class="error-message">
-        <h3>Error al cargar la confirmación</h3>
-        <p>{{ errorMessage || 'No se pudieron cargar los datos de confirmación.' }}</p>
-        <button class="btn btn-primary" @click="goBack">
-          Volver al carrito
-        </button>
-      </div>
-    </div>
-
-    <!-- Notificación de éxito -->
-    <div v-if="showSuccessNotification" class="notification success">
-      <div class="notification-content">
-        <i class="fas fa-check-circle"></i>
-        <div class="notification-text">
-          <h4>¡Compra realizada con éxito!</h4>
-          <p>Tu pedido ha sido procesado correctamente.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notificación de error -->
-    <div v-if="showErrorNotification" class="notification error">
-      <div class="notification-content">
-        <i class="fas fa-exclamation-circle"></i>
-        <div class="notification-text">
-          <h4>Error en la compra</h4>
-          <p>{{ purchaseErrorMessage }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from '@/lib/axios';
 
@@ -121,116 +8,89 @@ const router = useRouter();
 
 const loading = ref(true);
 const purchaseData = ref(null);
-const establishmentName = ref('');
 const errorMessage = ref('');
-const processingPurchase = ref(false);
-const progressPercentage = ref(0);
-const progressText = ref('');
-const showSuccessNotification = ref(false);
+const processingPayment = ref(false);
+const paymentErrorMessage = ref('');
 const showErrorNotification = ref(false);
-const purchaseErrorMessage = ref('');
 
 const purchaseToken = route.params.token;
 
-onMounted(async () => {
+onMounted(() => {
   if (!purchaseToken) {
-    errorMessage.value = 'Token de compra no válido';
+    errorMessage.value = 'Token de compra no válido o inexistente.';
     loading.value = false;
     return;
   }
 
-  // Los datos de confirmación ya vienen del preparePurchase
   const sessionData = sessionStorage.getItem('purchaseConfirmation');
   if (sessionData) {
     try {
       purchaseData.value = JSON.parse(sessionData);
-      establishmentName.value = `Establecimiento ${purchaseData.value.food_establishment_id}`;
       loading.value = false;
     } catch (error) {
-      errorMessage.value = 'Error al procesar los datos de confirmación';
+      errorMessage.value = 'Error al leer los datos de confirmación de tu reserva.';
       loading.value = false;
     }
   } else {
-    errorMessage.value = 'No se encontraron datos de confirmación';
+    errorMessage.value = 'No se encontraron datos de reserva en la sesión activa.';
     loading.value = false;
   }
+});
+
+const establishmentName = computed(() => {
+  return purchaseData.value?.establishment?.name || `Establecimiento #${purchaseData.value?.food_establishment_id || ''}`;
+});
+
+const establishmentAddress = computed(() => {
+  return purchaseData.value?.establishment?.address || '';
+});
+
+const offersList = computed(() => {
+  return purchaseData.value?.offers?.offers || [];
 });
 
 const calculateOfferTotal = (offer) => {
   return (Number(offer.price || 0) * Number(offer.quantity || 1)).toFixed(2);
 };
 
-const calculateGrandTotal = () => {
-  if (!purchaseData.value?.offers?.offers) return '0.00';
-
-  return purchaseData.value.offers.offers.reduce((total, offer) => {
+const grandTotal = computed(() => {
+  if (!offersList.value.length) return '0.00';
+  return offersList.value.reduce((total, offer) => {
     return total + (Number(offer.price || 0) * Number(offer.quantity || 1));
   }, 0).toFixed(2);
-};
+});
 
 const formatExpirationDate = (dateString) => {
-  return new Date(dateString).toLocaleString('es-ES', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleString('es-AR', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
-const startPurchase = async () => {
-  processingPurchase.value = true;
-  progressPercentage.value = 0;
-  progressText.value = 'Iniciando compra...';
-
-  // Simular progreso de carga
-  const progressInterval = setInterval(() => {
-    if (progressPercentage.value < 90) {
-      progressPercentage.value += Math.random() * 15;
-      if (progressPercentage.value < 30) {
-        progressText.value = 'Validando ofertas...';
-      } else if (progressPercentage.value < 60) {
-        progressText.value = 'Procesando pago...';
-      } else if (progressPercentage.value < 90) {
-        progressText.value = 'Finalizando compra...';
-      }
-    }
-  }, 200);
+const payWithMercadoPago = async () => {
+  processingPayment.value = true;
+  showErrorNotification.value = false;
 
   try {
-    await axiosInstance.post('/customer/pack-reservations/confirm', {
-      purchase_token: purchaseToken
+    const response = await axiosInstance.post('/customer/payment/create-preference', {
+      purchase_token: purchaseToken,
     });
 
-    // Completar la barra de progreso
-    progressPercentage.value = 100;
-    progressText.value = 'Compra completada';
+    const data = response.data?.data;
 
-    clearInterval(progressInterval);
+    if (!data?.init_point) {
+      throw new Error('No se recibió la URL de pago de Mercado Pago');
+    }
 
-    setTimeout(() => {
-      processingPurchase.value = false;
-      showSuccessNotification.value = true;
-
-      // Limpiar datos de sesión
-      sessionStorage.removeItem('purchaseConfirmation');
-
-      // Ocultar notificación después de 3 segundos y redirigir
-      setTimeout(() => {
-        showSuccessNotification.value = false;
-        router.push({ name: 'customer-purchases' });
-      }, 3000);
-    }, 500);
+    // Redirigir a Mercado Pago Checkout Pro (o modo Sandbox)
+    const targetUrl = data.sandbox_init_point || data.init_point;
+    window.location.href = targetUrl;
 
   } catch (error) {
-    clearInterval(progressInterval);
-    processingPurchase.value = false;
+    processingPayment.value = false;
     showErrorNotification.value = true;
-    purchaseErrorMessage.value = error.response?.data?.error || 'Error desconocido al procesar la compra';
-
-    setTimeout(() => {
-      showErrorNotification.value = false;
-    }, 5000);
+    paymentErrorMessage.value = error.response?.data?.error || error.message || 'No se pudo iniciar el pago con Mercado Pago.';
   }
 };
 
@@ -239,353 +99,163 @@ const goBack = () => {
 };
 </script>
 
-<style scoped>
-.purchase-confirmation {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  background: var(--color-bg);
-  min-height: 100vh;
-}
+<template>
+  <div class="min-h-screen bg-[#1A1625] text-[#E8EAF6] py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto space-y-6">
+      
+      <!-- Encabezado -->
+      <div class="space-y-1">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 text-xs font-semibold text-[#A78BFA] hover:text-white transition-colors cursor-pointer mb-2"
+          @click="goBack"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Volver al carrito
+        </button>
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Confirmar y Abonar</h1>
+        <p class="text-xs sm:text-sm text-[#A5A8C2]">Revisá el resumen de tus bolsas sorpresa antes de pagar.</p>
+      </div>
 
-.confirmation-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--color-text);
-}
+      <!-- Estado de Carga -->
+      <div v-if="loading" class="p-12 rounded-3xl bg-[#2D2438] border border-white/[0.08] text-center space-y-3">
+        <div class="w-10 h-10 border-3 border-[#7C3AED] border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-xs text-[#A5A8C2]">Cargando detalles de tu reserva...</p>
+      </div>
 
-.confirmation-header h2 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-text);
-}
+      <!-- Error de Datos de Sesión -->
+      <div v-else-if="errorMessage" class="p-8 rounded-3xl bg-[#2D2438] border border-[#EF4444]/30 text-center space-y-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#EF4444]/15 text-[#EF4444] flex items-center justify-center mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p class="text-sm font-semibold text-[#F87171]">{{ errorMessage }}</p>
+        <button
+          type="button"
+          class="px-4 py-2.5 rounded-xl bg-[#7C3AED] text-white font-bold text-xs cursor-pointer hover:bg-[#6D28D9] transition-colors"
+          @click="goBack"
+        >
+          Regresar al Carrito
+        </button>
+      </div>
 
-.confirmation-subtitle {
-  font-size: 1.2rem;
-  color: var(--color-text);
-  opacity: 0.8;
-}
+      <!-- Contenido Principal -->
+      <div v-else class="space-y-4">
+        
+        <!-- Tarjeta de Comercio y Expiración -->
+        <div class="p-5 rounded-3xl bg-[#2D2438] border border-white/[0.08] space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span class="text-[11px] font-bold text-[#A78BFA] uppercase tracking-wider">Establecimiento</span>
+              <h2 class="text-lg font-bold text-white mt-0.5">{{ establishmentName }}</h2>
+              <p v-if="establishmentAddress" class="text-xs text-[#A5A8C2] mt-0.5 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-[#A78BFA] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {{ establishmentAddress }}
+              </p>
+            </div>
+            
+            <div class="px-3 py-1.5 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/25 text-right shrink-0">
+              <span class="text-[10px] font-bold text-[#FBBF24] block uppercase">Reserva Temporal</span>
+              <span class="text-xs font-semibold text-white">
+                Expira a las {{ formatExpirationDate(purchaseData?.expires_at) }} hs
+              </span>
+            </div>
+          </div>
+        </div>
 
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: var(--color-text);
-}
+        <!-- Lista de Packs Sorpresa -->
+        <div class="p-5 rounded-3xl bg-[#2D2438] border border-white/[0.08] space-y-3">
+          <h3 class="text-xs font-bold text-[#A5A8C2] uppercase tracking-wider">Bolsas Sorpresa en este pedido</h3>
+          
+          <div class="divide-y divide-white/[0.06] space-y-2">
+            <div
+              v-for="offer in offersList"
+              :key="offer.id"
+              class="pt-2 first:pt-0 flex items-center justify-between gap-4"
+            >
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-md bg-[#7C3AED]/20 text-[#C4B5FD] font-bold text-xs">
+                    x{{ offer.quantity }}
+                  </span>
+                  <h4 class="text-sm font-bold text-white truncate">{{ offer.title }}</h4>
+                </div>
+                <p v-if="offer.description" class="text-xs text-[#A5A8C2] truncate mt-0.5 max-w-sm">
+                  {{ offer.description }}
+                </p>
+              </div>
 
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--color-primary);
-  border-top: 4px solid var(--color-text);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
+              <div class="text-right shrink-0">
+                <span class="text-sm font-black text-white">${{ calculateOfferTotal(offer) }}</span>
+                <span class="block text-[10px] text-[#A5A8C2]">
+                  ${{ Number(offer.price).toLocaleString('es-AR') }} c/u
+                </span>
+              </div>
+            </div>
+          </div>
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+          <!-- Total a Pagar -->
+          <div class="pt-4 border-t border-white/[0.08] flex items-center justify-between">
+            <div>
+              <span class="text-xs font-semibold text-[#A5A8C2] uppercase tracking-wide">Total Final</span>
+              <p class="text-[11px] text-[#10B981] font-medium">Incluye garantía de rescate Tatelestai</p>
+            </div>
+            <div class="text-right">
+              <span class="text-2xl font-black text-white">${{ grandTotal }}</span>
+            </div>
+          </div>
+        </div>
 
-.confirmation-content {
-  background: var(--color-primary);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-}
+        <!-- Botón de Pago con Mercado Pago -->
+        <div class="p-5 rounded-3xl bg-[#2D2438] border border-white/[0.08] space-y-4">
+          <div class="flex items-center justify-between gap-2 text-xs text-[#A5A8C2]">
+            <span class="flex items-center gap-1.5 font-semibold text-white">
+              <svg class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Pago seguro y protegido
+            </span>
+            <span class="text-[11px] text-[#A5A8C2]">Mercado Pago Checkout Pro</span>
+          </div>
 
-.establishment-info {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--color-secondary);
-}
+          <button
+            type="button"
+            class="w-full py-3.5 px-6 rounded-2xl bg-[#009EE3] hover:bg-[#0086C3] text-white font-extrabold text-base flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-[#009EE3]/25 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="processingPayment"
+            @click="payWithMercadoPago"
+          >
+            <svg v-if="processingPayment" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg v-else class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            <span>{{ processingPayment ? 'Conectando con Mercado Pago...' : 'Pagar con Mercado Pago' }}</span>
+          </button>
 
-.establishment-info h3 {
-  color: var(--color-text);
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-}
+          <p class="text-[11px] text-[#A5A8C2] text-center">
+            Podrás abonar con dinero en cuenta de Mercado Pago, tarjeta de débito/crédito o transferencia.
+          </p>
+        </div>
 
-.expiration-notice {
-  color: var(--color-text);
-  background: var(--color-secondary);
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
-}
+        <!-- Alerta de Error -->
+        <div
+          v-if="showErrorNotification"
+          class="p-4 rounded-2xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-xs text-[#F87171] flex items-center justify-between gap-3"
+        >
+          <span>{{ paymentErrorMessage }}</span>
+          <button type="button" class="font-bold underline cursor-pointer" @click="showErrorNotification = false">Cerrar</button>
+        </div>
 
-.offers-summary h4 {
-  color: var(--color-text);
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-}
+      </div>
 
-.offer-item {
-  background: var(--color-secondary);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.offer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.offer-header h5 {
-  color: var(--color-text);
-  font-size: 1.3rem;
-  margin: 0;
-}
-
-.offer-quantity {
-  background: var(--color-focus);
-  color: var(--color-text);
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-weight: 600;
-}
-
-.offer-description {
-  color: var(--color-text);
-  margin-bottom: 1rem;
-  opacity: 0.9;
-}
-
-.offer-pricing-row {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 0.5rem 0;
-  margin-bottom: 0.5rem;
-}
-
-.unit-price {
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.offer-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-focus);
-}
-
-.total-label {
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.total-amount {
-  color: var(--color-text);
-  font-weight: 700;
-  font-size: 1.2rem;
-}
-
-.total-section {
-  margin: 2rem 0;
-  padding: 1.5rem;
-  background: var(--color-secondary);
-  border-radius: 12px;
-  border: 2px solid var(--color-focus);
-}
-
-.grand-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.grand-total .total-label {
-  font-size: 1.4rem;
-  font-weight: 700;
-}
-
-.grand-total .total-amount {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.btn {
-  padding: 1rem 2rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 150px;
-}
-
-.btn-secondary {
-  background: var(--color-secondary);
-  color: var(--color-text);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-focus);
-  transform: translateY(-2px);
-}
-
-.btn-primary {
-  background: var(--color-focus);
-  color: var(--color-text);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-darkest);
-  transform: translateY(-2px);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.purchase-btn.loading {
-  padding: 0.5rem 2rem;
-}
-
-.purchase-progress {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: var(--color-secondary);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--color-text);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 0.9rem;
-  color: var(--color-text);
-}
-
-.error-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-.error-message {
-  text-align: center;
-  background: var(--color-primary);
-  padding: 2rem;
-  border-radius: 12px;
-  color: var(--color-text);
-}
-
-.error-message h3 {
-  color: var(--color-text);
-  margin-bottom: 1rem;
-}
-
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  max-width: 400px;
-  border-radius: 12px;
-  padding: 1rem;
-  animation: slideIn 0.5s ease;
-}
-
-.notification.success {
-  background: #10b981;
-  color: white;
-}
-
-.notification.error {
-  background: #ef4444;
-  color: white;
-}
-
-.notification-content {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.notification-content i {
-  font-size: 1.5rem;
-}
-
-.notification-text h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-}
-
-.notification-text p {
-  margin: 0;
-  opacity: 0.9;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@media (max-width: 768px) {
-  .purchase-confirmation {
-    padding: 1rem;
-  }
-
-  .confirmation-header h2 {
-    font-size: 2rem;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  .offer-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .notification {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    max-width: none;
-  }
-}
-</style>
+    </div>
+  </div>
+</template>

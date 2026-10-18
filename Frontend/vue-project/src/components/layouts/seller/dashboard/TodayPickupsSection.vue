@@ -9,7 +9,7 @@ const props = defineProps({
   },
 });
 
-defineEmits(['redeem']);
+defineEmits(['redeem', 'reload']);
 
 const currentFilter = ref('all'); // 'all', 'pending', 'picked_up', 'cancelled'
 
@@ -125,6 +125,7 @@ const emptyStateMessage = computed(() => {
         :key="pickup.id"
         :pickup="pickup"
         @redeem="$emit('redeem', $event)"
+        @cancelled="$emit('reload')"
       />
     </div>
   </section>
