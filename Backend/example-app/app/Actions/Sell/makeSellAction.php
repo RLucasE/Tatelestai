@@ -28,18 +28,43 @@ class makeSellAction
     /**
      * @throws \Throwable
      */
-    public function execute(PreparePurchaseDTO $preparePurchaseDTO, int $bought_by, int $sold_by): array
-    {
-        return DB::transaction(function () use ($preparePurchaseDTO, $bought_by, $sold_by) {
+    public function execute(
+        PreparePurchaseDTO $preparePurchaseDTO,
+        int $bought_by,
+        int $sold_by,
+        string $paymentStatus = 'approved',
+        ?string $paymentId = null,
+        ?string $preferenceId = null,
+        ?string $paymentMethod = null
+    ): array {
+        return DB::transaction(function () use ($preparePurchaseDTO, $bought_by, $sold_by, $paymentStatus, $paymentId, $preferenceId, $paymentMethod) {
             $pickupCode = $this->generatePickupCodeAction->execute($bought_by, $sold_by, $preparePurchaseDTO);
 
             $maxPickupDatetime = $this->calculateMaxPickupDatetimeAction->execute($preparePurchaseDTO->offers);
+
+            $grossAmount = 0.0;
+            foreach ($preparePurchaseDTO->offers as $offerDTO) {
+                $grossAmount += (int) $offerDTO->quantity * (float) $offerDTO->price;
+            }
+            $grossAmount = round($grossAmount, 2);
+
+            $commissionPercentage = (float) config('services.mercadopago.commission_percentage', 15.0);
+            $commissionAmount = round($grossAmount * ($commissionPercentage / 100), 2);
+            $netAmount = round($grossAmount - $commissionAmount, 2);
 
             $sell = Sell::create([
                 'bought_by' => $bought_by,
                 'sold_by' => $sold_by,
                 'pickup_code' => $pickupCode,
                 'max_pickup_datetime' => $maxPickupDatetime,
+                'payment_status' => $paymentStatus,
+                'payment_id' => $paymentId,
+                'preference_id' => $preferenceId,
+                'payment_method' => $paymentMethod,
+                'gross_amount' => $grossAmount,
+                'commission_percentage' => $commissionPercentage,
+                'commission_amount' => $commissionAmount,
+                'net_amount' => $netAmount,
             ]);
 
             foreach ($preparePurchaseDTO->offers as $offerDTO) {

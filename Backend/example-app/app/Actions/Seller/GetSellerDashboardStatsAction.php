@@ -2,6 +2,7 @@
 
 namespace App\Actions\Seller;
 
+use App\Actions\Sell\ProcessExpiredSellsAction;
 use App\Enums\OfferState;
 use App\Enums\SellState;
 use App\Models\FoodEstablishment;
@@ -12,11 +13,18 @@ use Carbon\Carbon;
 
 class GetSellerDashboardStatsAction
 {
+    public function __construct(
+        private readonly ProcessExpiredSellsAction $processExpiredSellsAction,
+    ) {}
+
     /**
      * Obtiene y estructura las estadísticas y la operativa del día para el vendedor.
      */
     public function execute(FoodEstablishment $establishment, ?Carbon $targetDate = null): array
     {
+        // Sincronización lazy de pedidos vencidos del comercio antes de calcular métricas
+        $this->processExpiredSellsAction->execute(soldBy: $establishment->id);
+
         $date = $targetDate ? $targetDate->copy() : Carbon::today();
         $startOfDay = $date->copy()->startOfDay();
         $endOfDay = $date->copy()->endOfDay();
@@ -59,6 +67,10 @@ class GetSellerDashboardStatsAction
             return (int) $detail->offer_quantity * (float) $detail->pack_price;
         });
 
+        $commissionPercentage = (float) config('services.mercadopago.commission_percentage', 15.0);
+        $commissionToday = round($earningsToday * ($commissionPercentage / 100), 2);
+        $netEarningsToday = round($earningsToday - $commissionToday, 2);
+
         // Retiros completados hoy
         $completedPickupsToday = Sell::query()
             ->where('sold_by', $establishment->id)
@@ -89,6 +101,10 @@ class GetSellerDashboardStatsAction
             'pending_pickups_today' => $pendingPickupsToday,
             'completed_pickups_today' => $completedPickupsToday,
             'earnings_today' => round($earningsToday, 2),
+            'gross_earnings_today' => round($earningsToday, 2),
+            'commission_percentage' => $commissionPercentage,
+            'commission_today' => $commissionToday,
+            'net_earnings_today' => $netEarningsToday,
         ];
     }
 
@@ -182,6 +198,13 @@ class GetSellerDashboardStatsAction
                 'customer_name' => $sell->customer?->name ?? 'Cliente',
                 'packs' => $items->values()->toArray(),
                 'total_price' => $totalPrice,
+                'gross_amount' => $sell->getGrossAmount(),
+                'commission_amount' => $sell->getCommissionAmount(),
+                'net_amount' => $sell->getNetAmount(),
+                'commission_percentage' => (float) ($sell->commission_percentage ?: config('services.mercadopago.commission_percentage', 15.0)),
+                'payment_status' => $sell->payment_status?->value ?? 'approved',
+                'cancelled_by' => $sell->cancelled_by,
+                'cancellation_reason' => $sell->cancellation_reason,
                 'status' => $status,
                 'is_picked_up' => (bool) $sell->is_picked_up,
                 'pickup_start_datetime' => $sell->getPickupStartDatetime()?->toIso8601String(),

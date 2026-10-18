@@ -5,6 +5,7 @@ use App\Http\Controllers\AdmOfferController;
 use App\Http\Controllers\AdmReportController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
+use App\Http\Controllers\CustomerPaymentController;
 use App\Http\Controllers\CustomerReportController;
 use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\DashboardExportController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\EstablishmentTypeController;
 use App\Http\Controllers\EstablishmentVerificationController;
 use App\Http\Controllers\FoodEstablishmentController;
 use App\Http\Controllers\GooglePlacesController;
+use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Http\Controllers\PackCustomerController;
 use App\Http\Controllers\PackSellerController;
 use App\Http\Controllers\PackTemplateController;
@@ -46,6 +48,8 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
                     ], 404);
                 });
         });
+        Route::post('/customer/payment/create-preference', [CustomerPaymentController::class, 'createPreference']);
+        Route::post('/customer/payment/verify', [CustomerPaymentController::class, 'verifyPayment']);
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);
         Route::put('/customer-cart/{offerId}', [CustomerCartController::class, 'updateCart']);
         Route::delete('/customer-cart/establishment/{establishment_id}', [CustomerCartController::class, 'clearByEstablishment']);
@@ -90,6 +94,7 @@ Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
         Route::put('/my-establishment', [FoodEstablishmentController::class, 'updateMyEstablishment']);
         Route::post('/check-customer-code', [SellerSellController::class, 'checkCustomerCode']);
         Route::post('/complete-sell/{sellNumber}', [SellerSellController::class, 'completeSell']);
+        Route::post('/seller/sells/{sellNumber}/cancel', [SellerSellController::class, 'cancelSell']);
     });
 });
 
@@ -138,3 +143,5 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 Route::get('/test', function () {
     return 'test';
 });
+
+Route::post('/webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle']);

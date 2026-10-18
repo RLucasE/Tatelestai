@@ -13,6 +13,7 @@
         "laravel/scout": "^10.19",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
+        "mercadopago/dx-php": "^3.16",
         "spatie/laravel-permission": "^6.17",
         "typesense/typesense-php": "^5.1"
     },

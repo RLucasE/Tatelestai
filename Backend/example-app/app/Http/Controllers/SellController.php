@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Sell\ProcessExpiredSellsAction;
 use App\Models\Sell;
 use App\Models\User;
 use Carbon\Carbon;
@@ -10,9 +11,16 @@ use Illuminate\Http\Request;
 
 class SellController extends Controller
 {
+    public function __construct(
+        private readonly ProcessExpiredSellsAction $processExpiredSellsAction,
+    ) {}
+
     public function adminSells(Request $request)
     {
         try {
+            // Sincronización lazy global de compras vencidas
+            $this->processExpiredSellsAction->execute();
+
             $sells = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -51,6 +59,11 @@ class SellController extends Controller
         if (! $user->hasRole('seller')) {
             return response()->json(['error' => 'User is not a seller'], 400);
         }
+
+        if ($user->foodEstablishment) {
+            $this->processExpiredSellsAction->execute(soldBy: $user->foodEstablishment->id);
+        }
+
         $sells = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
             ->where('sold_by', $user->foodEstablishment->id)
             ->get();
@@ -67,6 +80,8 @@ class SellController extends Controller
         if (! $user->hasRole('customer')) {
             return response()->json(['error' => 'User is not a customer'], 400);
         }
+
+        $this->processExpiredSellsAction->execute(boughtBy: $user->id);
 
         $purchases = Sell::with(['sellDetails', 'foodEstablishment.user', 'customer'])
             ->where('bought_by', $user->id)

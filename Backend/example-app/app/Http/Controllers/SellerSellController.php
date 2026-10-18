@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Sell\ProcessExpiredSellsAction;
+use App\Actions\Sell\SellerCancelSellAction;
 use App\Actions\Sell\ValidateCompleteSellAction;
 use App\Actions\Sell\ValidateMaxPickupDatetimeAction;
 use App\Actions\Sell\ValidatePickupCodeAction;
@@ -19,12 +21,18 @@ class SellerSellController extends Controller
         private readonly ValidatePickupCodeAction $validatePickupCodeAction,
         private readonly ValidatePickupCodeFromSellAction $validatePickupCodeFromSellAction,
         private readonly ValidateMaxPickupDatetimeAction $validateMaxPickupDatetimeAction,
+        private readonly ProcessExpiredSellsAction $processExpiredSellsAction,
+        private readonly SellerCancelSellAction $sellerCancelSellAction,
     ) {}
 
     public function sellerSells(Request $request)
     {
         try {
             $foodEstablishment = FoodEstablishment::where('user_id', Auth::id())->firstOrFail();
+
+            // Sincronización lazy de pedidos vencidos antes de listar
+            $this->processExpiredSellsAction->execute(soldBy: $foodEstablishment->id);
+
             $sells = Sell::with(['sellDetails.offer'])
                 ->where('sold_by', $foodEstablishment->id)
                 ->orderBy('created_at', 'desc')->get();
@@ -35,6 +43,14 @@ class SellerSellController extends Controller
                     'created_at' => $sell->created_at,
                     'updated_at' => $sell->updated_at,
                     'sold_by' => $sell->sold_by,
+                    'state' => $sell->state?->value ?? $sell->state,
+                    'payment_status' => $sell->payment_status?->value ?? 'approved',
+                    'gross_amount' => $sell->getGrossAmount(),
+                    'commission_percentage' => (float) ($sell->commission_percentage ?: config('services.mercadopago.commission_percentage', 15.0)),
+                    'commission_amount' => $sell->getCommissionAmount(),
+                    'net_amount' => $sell->getNetAmount(),
+                    'cancelled_by' => $sell->cancelled_by,
+                    'cancellation_reason' => $sell->cancellation_reason,
                     'sell_details' => $sell->sellDetails->map(function ($detail) {
                         return [
                             'id' => $detail->id,
@@ -152,6 +168,37 @@ class SellerSellController extends Controller
             return response()->json([
                 'error' => $exception->getMessage(),
             ], $statusCode);
+        }
+    }
+
+    /**
+     * Permite al vendedor cancelar una venta que no puede entregar (por falta de merma) y reembolsar al cliente.
+     */
+    public function cancelSell(Request $request, string $sellNumber)
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:255',
+            'restore_stock' => 'nullable|boolean',
+        ]);
+
+        try {
+            $foodEstablishment = FoodEstablishment::where('user_id', Auth::id())->firstOrFail();
+            $sell = Sell::where('id', $sellNumber)
+                ->where('sold_by', $foodEstablishment->id)
+                ->firstOrFail();
+
+            $reason = $validated['reason'] ?? 'Comercio sin merma suficiente para armar el pack';
+            $restoreStock = (bool) ($validated['restore_stock'] ?? false);
+
+            $result = $this->sellerCancelSellAction->execute($sell, Auth::user(), $reason, $restoreStock);
+
+            return response()->json($result, 200);
+        } catch (\App\Exceptions\CancellationNotAllowedException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 422);
+        } catch (Exception $e) {
+            $statusCode = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+
+            return response()->json(['error' => $e->getMessage()], $statusCode);
         }
     }
 }

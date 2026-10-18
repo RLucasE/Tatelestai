@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useFormatters } from '@/composables/useFormatters';
+import axiosInstance from '@/lib/axios';
 
 const props = defineProps({
   pickup: {
@@ -9,9 +10,13 @@ const props = defineProps({
   },
 });
 
-defineEmits(['redeem']);
+const emit = defineEmits(['redeem', 'cancelled']);
 
 const { formatCurrency, formatTime, getInitials } = useFormatters();
+
+const isCancelling = ref(false);
+const showCancelConfirm = ref(false);
+const cancelErrorMessage = ref('');
 
 const isPickedUp = computed(() => Boolean(props.pickup.is_picked_up) || props.pickup.status === 'picked_up');
 const isCancelled = computed(() => props.pickup.status === 'cancelled');
@@ -24,9 +29,9 @@ const isExpired = computed(() => {
 });
 
 const statusLabel = computed(() => {
-  if (isCancelled.value) return 'Cancelado';
+  if (isCancelled.value) return 'Cancelado / Reembolsado';
   if (isPickedUp.value) return 'Retirado';
-  if (isExpired.value) return 'Expirado';
+  if (isExpired.value) return 'Expirado (No-Show)';
   if (props.pickup.status === 'ready') return 'Listo para retirar';
   if (props.pickup.status === 'confirmed') return 'Confirmado';
   return 'Pendiente';
@@ -52,8 +57,42 @@ const statusPillClass = computed(() => {
 });
 
 const canRedeem = computed(() => {
-  return props.pickup.status === 'pending' && !isPickedUp.value && !isExpired.value;
+  return props.pickup.status === 'pending' && !isPickedUp.value && !isExpired.value && !isCancelled.value;
 });
+
+const grossAmount = computed(() => {
+  return props.pickup.gross_amount ?? props.pickup.total_price ?? 0;
+});
+
+const commissionAmount = computed(() => {
+  if (props.pickup.commission_amount !== undefined) return props.pickup.commission_amount;
+  const rate = props.pickup.commission_percentage ?? 15;
+  return (grossAmount.value * (rate / 100));
+});
+
+const netAmount = computed(() => {
+  if (props.pickup.net_amount !== undefined) return props.pickup.net_amount;
+  return grossAmount.value - commissionAmount.value;
+});
+
+const handleCancelAndRefund = async () => {
+  isCancelling.value = true;
+  cancelErrorMessage.value = '';
+
+  try {
+    await axiosInstance.post(`/seller/sells/${props.pickup.id}/cancel`, {
+      reason: 'Comercio sin merma suficiente',
+      restore_stock: false,
+    });
+    showCancelConfirm.value = false;
+    emit('cancelled', props.pickup.id);
+  } catch (error) {
+    console.error('Error al cancelar pedido:', error);
+    cancelErrorMessage.value = error.response?.data?.error || 'No se pudo cancelar el pedido.';
+  } finally {
+    isCancelling.value = false;
+  }
+};
 </script>
 
 <template>
@@ -84,7 +123,7 @@ const canRedeem = computed(() => {
         <svg v-if="isPickedUp" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
         </svg>
-        <svg v-else-if="isExpired" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg v-else-if="isExpired || isCancelled" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,13 +161,59 @@ const canRedeem = computed(() => {
       </div>
     </div>
 
-    <!-- Total y Acción -->
-    <div class="flex items-center justify-between pt-2.5 border-t border-white/[0.06]">
-      <div class="flex items-baseline gap-1.5">
-        <span class="text-[11px] text-[#A5A8C2]">Total:</span>
-        <strong class="text-sm font-bold text-white">
-          ${{ formatCurrency(pickup.total_price) }}
-        </strong>
+    <!-- Desglose Financiero: Total Cliente, Comisión y Neto Comercio -->
+    <div class="p-2.5 rounded-xl bg-[#1A1625]/60 border border-white/[0.04] grid grid-cols-3 gap-2 text-[11px]">
+      <div>
+        <span class="text-[#A5A8C2] block text-[10px]">Total Venta</span>
+        <strong class="text-white font-bold">${{ formatCurrency(grossAmount) }}</strong>
+      </div>
+      <div>
+        <span class="text-[#F87171]/80 block text-[10px]">Comisión (15%)</span>
+        <span class="text-[#F87171] font-semibold">-${{ formatCurrency(commissionAmount) }}</span>
+      </div>
+      <div>
+        <span class="text-[#34D399] block text-[10px]">Tu Neto (85%)</span>
+        <strong class="text-[#10B981] font-extrabold">${{ formatCurrency(netAmount) }}</strong>
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+      <!-- Botón de Cancelación / Falta de Merma -->
+      <div v-if="canRedeem && !showCancelConfirm">
+        <button
+          type="button"
+          class="text-[11px] font-semibold text-[#F87171] hover:text-[#EF4444] transition-colors cursor-pointer"
+          @click="showCancelConfirm = true"
+        >
+          Sin merma / Reembolsar
+        </button>
+      </div>
+
+      <!-- Confirmación rápida de cancelación -->
+      <div v-else-if="showCancelConfirm" class="flex items-center gap-2">
+        <span class="text-[11px] text-[#F87171] font-medium">¿Reembolsar 100%?</span>
+        <button
+          type="button"
+          class="px-2 py-0.5 rounded-md bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-[10px] cursor-pointer disabled:opacity-50"
+          :disabled="isCancelling"
+          @click="handleCancelAndRefund"
+        >
+          {{ isCancelling ? 'Reembolsando...' : 'Sí, reembolsar' }}
+        </button>
+        <button
+          type="button"
+          class="px-2 py-0.5 rounded-md bg-white/[0.08] text-white font-semibold text-[10px] cursor-pointer"
+          @click="showCancelConfirm = false"
+        >
+          No
+        </button>
+      </div>
+
+      <div v-else>
+        <span v-if="pickup.payment_status === 'refunded'" class="text-[11px] text-[#F87171] font-medium">
+          Reembolso emitido en MP
+        </span>
       </div>
 
       <button
@@ -140,5 +225,7 @@ const canRedeem = computed(() => {
         Verificar código &rarr;
       </button>
     </div>
+
+    <p v-if="cancelErrorMessage" class="text-[10px] text-[#F87171] mt-1">{{ cancelErrorMessage }}</p>
   </div>
 </template>
