@@ -75,6 +75,24 @@ class CancelPurchaseAction
                 }
             }
 
+            // Notificar al vendedor en tiempo real que el cliente canceló la reserva
+            $sell->loadMissing(['foodEstablishment.user', 'customer']);
+            $sellerUser = $sell->foodEstablishment?->user;
+            if ($sellerUser) {
+                $sellerUser->notify(new \App\Notifications\RealtimeOrderNotification(
+                    eventType: 'cancelled_by_customer',
+                    title: 'Reserva cancelada por cliente',
+                    message: "El cliente canceló la reserva #{$sell->id}. El stock fue restituido automáticamente.",
+                    sellId: $sell->id,
+                    establishmentId: $sell->sold_by,
+                    actionUrl: '/seller/sells',
+                    meta: [
+                        'sell_id' => $sell->id,
+                        'customer_name' => $sell->customer?->name,
+                    ]
+                ));
+            }
+
             return [
                 'success' => true,
                 'message' => 'Compra cancelada y reembolso emitido exitosamente',

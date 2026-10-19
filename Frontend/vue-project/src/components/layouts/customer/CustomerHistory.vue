@@ -210,10 +210,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import axiosInstance from '@/lib/axios';
 import HistoryCard from './HistoryCard.vue';
+import { useNotificationStore } from '@/stores/notifications';
+
+const notificationStore = useNotificationStore();
 
 const history = ref([]);
 const loading = ref(true);
@@ -232,9 +235,10 @@ const totalAmountSpent = computed(() => {
   }, 0);
 });
 
-const getHistory = async () => {
+const getHistory = async (silent = false) => {
+  const isSilent = silent === true;
   try {
-    loading.value = true;
+    if (!isSilent) loading.value = true;
     error.value = null;
     const response = await axiosInstance.get('/customer/pack-reservations/history');
     history.value = response.data.data || response.data || [];
@@ -242,9 +246,18 @@ const getHistory = async () => {
     console.error('Error fetching history:', err);
     error.value = 'No pudimos conectar con el servidor para consultar tu historial.';
   } finally {
-    loading.value = false;
+    if (!isSilent) loading.value = false;
   }
 };
+
+watch(
+  () => notificationStore.lastOrderEvent,
+  (event) => {
+    if (event) {
+      getHistory(true);
+    }
+  }
+);
 
 onMounted(() => {
   getHistory();

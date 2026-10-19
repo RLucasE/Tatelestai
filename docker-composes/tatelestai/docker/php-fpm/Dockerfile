@@ -23,6 +23,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     zip \
     bcmath \
     mbstring \
+    pcntl \
     opcache
 
 # Configure opcache for production

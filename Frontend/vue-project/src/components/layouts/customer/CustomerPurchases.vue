@@ -178,10 +178,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import axiosInstance from '@/lib/axios';
 import PurchaseCard from './PurchaseCard.vue';
+import { useNotificationStore } from '@/stores/notifications';
+
+const notificationStore = useNotificationStore();
 
 const purchases = ref([]);
 const loading = ref(true);
@@ -193,9 +196,10 @@ const activePurchasesCount = computed(() => {
   ).length;
 });
 
-const getPurchases = async () => {
+const getPurchases = async (silent = false) => {
+  const isSilent = silent === true;
   try {
-    loading.value = true;
+    if (!isSilent) loading.value = true;
     error.value = null;
     const response = await axiosInstance.get('/customer/pack-reservations');
     purchases.value = response.data.data || response.data || [];
@@ -203,7 +207,7 @@ const getPurchases = async () => {
     console.error('Error fetching purchases:', err);
     error.value = 'No pudimos conectar con el servidor para actualizar tus reservas.';
   } finally {
-    loading.value = false;
+    if (!isSilent) loading.value = false;
   }
 };
 
@@ -214,6 +218,16 @@ const handlePurchaseCancelled = (purchaseId) => {
     item.state = 'cancelled';
   }
 };
+
+// Sincronización en vivo: ante cambios del pedido (cancelado por vendedor o entregado)
+watch(
+  () => notificationStore.lastOrderEvent,
+  (event) => {
+    if (event) {
+      getPurchases(true);
+    }
+  }
+);
 
 onMounted(() => {
   getPurchases();

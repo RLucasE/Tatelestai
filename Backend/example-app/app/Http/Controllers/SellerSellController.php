@@ -154,6 +154,24 @@ class SellerSellController extends Controller
                 ]
             );
 
+            // Notificar al cliente que el pack fue retirado con éxito
+            $validatedSell->loadMissing(['customer', 'foodEstablishment']);
+            if ($validatedSell->customer) {
+                $establishmentName = $validatedSell->foodEstablishment?->name ?? 'el comercio';
+                $validatedSell->customer->notify(new \App\Notifications\RealtimeOrderNotification(
+                    eventType: 'order_picked_up',
+                    title: '¡Pack retirado con éxito!',
+                    message: "Confirmamos la entrega de tu reserva #{$validatedSell->id} en {$establishmentName}. ¡Que lo disfrutes!",
+                    sellId: $validatedSell->id,
+                    establishmentId: $validatedSell->sold_by,
+                    actionUrl: '/customer/history',
+                    meta: [
+                        'sell_id' => $validatedSell->id,
+                        'establishment_name' => $establishmentName,
+                    ]
+                ));
+            }
+
             return response()->json([
                 'message' => 'Venta completada exitosamente',
                 'data' => [

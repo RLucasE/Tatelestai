@@ -52,6 +52,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Event::listen(
+            PurchaseCompleted::class,
+            \App\Listeners\SendSellerNewSaleNotification::class
+        );
+
+        Event::listen(
             SellerActivated::class,
             SendSellerActivatedEmail::class
         );

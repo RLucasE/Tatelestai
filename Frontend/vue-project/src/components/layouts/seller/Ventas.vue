@@ -1,7 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axiosInstance from '@/lib/axios';
 import { useFormatters } from '@/composables/useFormatters';
+import { useNotificationStore } from '@/stores/notifications';
+
+const notificationStore = useNotificationStore();
 
 const ventas = ref([]);
 const loading = ref(true);
@@ -49,9 +52,10 @@ const getStatusBadge = (venta) => {
   return { text: 'Pendiente de entrega', class: 'bg-[#F59E0B]/15 border-[#F59E0B]/30 text-[#FBBF24]' };
 };
 
-const fetchVentas = async () => {
+const fetchVentas = async (silent = false) => {
+  const isSilent = silent === true;
   try {
-    loading.value = true;
+    if (!isSilent) loading.value = true;
     error.value = null;
     const response = await axiosInstance.get('/sells');
     ventas.value = response.data;
@@ -59,11 +63,23 @@ const fetchVentas = async () => {
     error.value = 'Error al cargar el historial de ventas.';
     console.error('Error:', err);
   } finally {
-    loading.value = false;
+    if (!isSilent) loading.value = false;
   }
 };
 
-onMounted(fetchVentas);
+// Sincronización en vivo: ante cualquier evento de compra o cancelación, refrescar sin parpadeo
+watch(
+  () => notificationStore.lastOrderEvent,
+  (newEvent) => {
+    if (newEvent) {
+      fetchVentas(true);
+    }
+  }
+);
+
+onMounted(() => {
+  fetchVentas();
+});
 </script>
 
 <template>

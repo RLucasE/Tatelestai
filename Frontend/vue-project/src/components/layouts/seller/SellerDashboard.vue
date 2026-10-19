@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axiosInstance from '@/lib/axios';
+import { useNotificationStore } from '@/stores/notifications';
 import DashboardHeader from './dashboard/DashboardHeader.vue';
 import DashboardKpiCards from './dashboard/DashboardKpiCards.vue';
 import QuickRedeemCounter from './dashboard/QuickRedeemCounter.vue';
@@ -9,6 +10,7 @@ import TodayPickupsSection from './dashboard/TodayPickupsSection.vue';
 import LiveStockSection from './dashboard/LiveStockSection.vue';
 
 const router = useRouter();
+const notificationStore = useNotificationStore();
 
 // Estado del Dashboard
 const dashboardData = ref(null);
@@ -68,6 +70,14 @@ const handleRedeemRequest = () => {
     inputEl.focus();
   }
 };
+
+// Sincronización en vivo ante nuevas ventas, cancelaciones o retiros de pedidos
+watch(
+  () => notificationStore.lastOrderEvent,
+  () => {
+    fetchDashboard(true);
+  }
+);
 
 onMounted(() => {
   fetchDashboard();

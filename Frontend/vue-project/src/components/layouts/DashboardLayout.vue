@@ -1,9 +1,27 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import Sidebar from "./seller/Sidebar.vue";
 import Logo from "@/components/common/Logo.vue";
+import NotificationBell from "@/components/common/NotificationBell.vue";
+import RealtimeToastContainer from "@/components/common/RealtimeToastContainer.vue";
+import { useNotificationStore } from "@/stores/notifications";
+import { useAuthStore } from "@/stores/auth";
 
 const isSidebarOpen = ref(false);
+const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
+
+onMounted(() => {
+  const user = authStore.getUser();
+  if (user?.id) {
+    notificationStore.fetchNotifications();
+    notificationStore.connectRealtime(user.id);
+  }
+});
+
+onUnmounted(() => {
+  notificationStore.disconnect();
+});
 </script>
 
 <template>
@@ -24,13 +42,14 @@ const isSidebarOpen = ref(false);
         <Logo />
       </RouterLink>
     </div>
-    <div>
-      <!-- Espacio para navegación adicional -->
+    <div class="flex items-center gap-3">
+      <NotificationBell />
     </div>
   </nav>
   <main class="customer-cards-box">
     <RouterView />
     <Sidebar v-model="isSidebarOpen" />
+    <RealtimeToastContainer />
   </main>
 </template>
 

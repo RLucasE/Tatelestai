@@ -83,6 +83,25 @@ class SellerCancelSellAction
                 }
             }
 
+            // Notificar al cliente que el vendedor canceló la orden y se emitió reembolso
+            $sell->loadMissing(['customer', 'foodEstablishment']);
+            if ($sell->customer) {
+                $establishmentName = $sell->foodEstablishment?->name ?? 'El comercio';
+                $sell->customer->notify(new \App\Notifications\RealtimeOrderNotification(
+                    eventType: 'cancelled_by_seller',
+                    title: 'Reserva cancelada por el comercio',
+                    message: "{$establishmentName} canceló tu pedido #{$sell->id}. Motivo: {$reason}. Se emitió tu reembolso.",
+                    sellId: $sell->id,
+                    establishmentId: $sell->sold_by,
+                    actionUrl: '/customer/purchases',
+                    meta: [
+                        'sell_id' => $sell->id,
+                        'reason' => $reason,
+                        'establishment_name' => $establishmentName,
+                    ]
+                ));
+            }
+
             return [
                 'success' => true,
                 'message' => 'Pedido cancelado por el comercio y reembolso del 100% emitido al cliente con éxito.',

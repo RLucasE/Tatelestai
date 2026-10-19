@@ -1,5 +1,25 @@
 <script setup>
+import { onMounted, onUnmounted } from 'vue';
 import Logo from '@/components/common/Logo.vue';
+import NotificationBell from '@/components/common/NotificationBell.vue';
+import RealtimeToastContainer from '@/components/common/RealtimeToastContainer.vue';
+import { useNotificationStore } from '@/stores/notifications';
+import { useAuthStore } from '@/stores/auth';
+
+const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
+
+onMounted(() => {
+  const user = authStore.getUser();
+  if (user?.id) {
+    notificationStore.fetchNotifications();
+    notificationStore.connectRealtime(user.id);
+  }
+});
+
+onUnmounted(() => {
+  notificationStore.disconnect();
+});
 
 const navItems = [
   {
@@ -122,6 +142,11 @@ const navItems = [
             <span class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#2D2438] border-t border-l border-[#3D3450] rotate-45"></span>
           </div>
         </RouterLink>
+
+        <!-- Campanita de Notificaciones en Vivo -->
+        <div class="ml-1 sm:ml-2 pl-2 border-l border-[#3D3450]/60">
+          <NotificationBell />
+        </div>
       </div>
     </nav>
   </header>
@@ -129,5 +154,6 @@ const navItems = [
   <!-- Contenedor Principal -->
   <main class="min-h-[calc(100vh-4rem)] w-full bg-[#1A1625] text-[#E8EAF6]">
     <RouterView></RouterView>
+    <RealtimeToastContainer />
   </main>
 </template>
