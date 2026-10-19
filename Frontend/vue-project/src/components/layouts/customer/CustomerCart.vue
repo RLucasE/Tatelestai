@@ -1,8 +1,11 @@
 <script setup>
 import SellerSection from "./SellerSection.vue";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { RouterLink } from "vue-router";
 import axiosInstance from "@/lib/axios";
+import { useNotificationStore } from "@/stores/notifications";
+
+const notificationStore = useNotificationStore();
 
 const establishments = ref([]);
 const loading = ref(true);
@@ -91,6 +94,17 @@ const removeEstablishmentOffers = async (establishmentId) => {
     console.error("Error removing establishment offers:", err);
   }
 };
+
+// Sincronización en vivo: si llega una alerta de que un item del carrito se agotó o redujo stock, refrescar
+watch(
+  () => notificationStore.lastOrderEvent,
+  (event) => {
+    if (!event) return;
+    if (['cart_item_sold_out', 'cart_item_stock_reduced'].includes(event.event_type)) {
+      getCart();
+    }
+  }
+);
 
 onMounted(() => {
   getCart();

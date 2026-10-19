@@ -1,18 +1,21 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import axiosInstance from "@/lib/axios";
 import OfferSellerCard from "./OfferSellerCard.vue";
+import { useNotificationStore } from "@/stores/notifications";
 
 const router = useRouter();
+const notificationStore = useNotificationStore();
 
 const offers = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
-const fetchOffers = async () => {
+const fetchOffers = async (silent = false) => {
+  const isSilent = silent === true;
   try {
-    loading.value = true;
+    if (!isSilent) loading.value = true;
     const response = await axiosInstance.get("/my-packs");
     offers.value = response.data?.data || response.data || [];
     error.value = null;
@@ -21,7 +24,7 @@ const fetchOffers = async () => {
     error.value = "Error al cargar tus ofertas";
     offers.value = [];
   } finally {
-    loading.value = false;
+    if (!isSilent) loading.value = false;
   }
 };
 
@@ -32,6 +35,16 @@ const handleOfferClick = (offer) => {
 const goToCreateOffer = () => {
   router.push({ name: "create-offer" });
 };
+
+// Sincronización en vivo: refrescar ofertas ante nuevas ventas o cancelaciones
+watch(
+  () => notificationStore.lastOrderEvent,
+  (event) => {
+    if (event) {
+      fetchOffers(true);
+    }
+  }
+);
 
 onMounted(() => {
   fetchOffers();
