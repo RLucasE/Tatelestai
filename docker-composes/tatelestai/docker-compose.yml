@@ -90,6 +90,35 @@ services:
         condition: service_started
 
   # ───────────────────────────────────────────
+  # Reverb – Servidor WebSocket en tiempo real
+  # ───────────────────────────────────────────
+  reverb:
+    build:
+      context: .
+      dockerfile: ./docker/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        XDEBUG_ENABLED: "false"
+    container_name: tatelestai-reverb
+    restart: unless-stopped
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080 --hostname=0.0.0.0
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "${REVERB_PORT:-8080}:8080"
+    volumes:
+      - ../../Backend/example-app:/var/www
+      - ./docker/php-fpm/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    networks:
+      - tatelestai-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      php-fpm:
+        condition: service_started
+
+  # ───────────────────────────────────────────
   # Vue.js – Frontend (Vite dev server / Nginx prod)
   # ───────────────────────────────────────────
   vue:
