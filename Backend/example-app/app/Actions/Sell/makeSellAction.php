@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sell;
 
+use App\Actions\Cart\NotifyCartStockDisruptionAction;
 use App\Actions\Offers\GetOfferAction;
 use App\DTOs\PreparePurchaseDTO;
 use App\Enums\OfferState;
@@ -22,8 +23,11 @@ class makeSellAction
     public function __construct(
         private GetOfferAction $getOfferAction,
         private GeneratePickupCodeAction $generatePickupCodeAction,
-        private CalculateMaxPickupDatetimeAction $calculateMaxPickupDatetimeAction
-    ) {}
+        private CalculateMaxPickupDatetimeAction $calculateMaxPickupDatetimeAction,
+        private ?NotifyCartStockDisruptionAction $notifyCartStockDisruptionAction = null
+    ) {
+        $this->notifyCartStockDisruptionAction ??= app(NotifyCartStockDisruptionAction::class);
+    }
 
     /**
      * @throws \Throwable
@@ -93,7 +97,24 @@ class makeSellAction
 
                 if ($offer->quantity <= 0) {
                     $offer->update(['state' => OfferState::PURCHASED->value]);
+
+                    // Notificar al vendedor dueño del local que la oferta se agotó
+                    $sellerUser = $offer->foodEstablishment?->user;
+                    if ($sellerUser) {
+                        $sellerUser->notify(new \App\Notifications\RealtimeOrderNotification(
+                            eventType: 'offer_sold_out',
+                            title: '¡Oferta agotada!',
+                            message: "Se agotaron todas las unidades disponibles de «{$offer->title}».",
+                            offerId: $offer->id,
+                            establishmentId: $offer->food_establishment_id,
+                            actionUrl: '/seller/my-offers',
+                            meta: ['offer_title' => $offer->title]
+                        ));
+                    }
                 }
+
+                // Notificar en forma privada a clientes con carritos activos afectados
+                $this->notifyCartStockDisruptionAction->execute($offer, $bought_by);
             }
 
             return [

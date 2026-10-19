@@ -15,4 +15,9 @@ class OfferCart extends Model
     {
         return $this->belongsTo(Offer::class);
     }
+
+    public function userCart()
+    {
+        return $this->belongsTo(UserCart::class);
+    }
 }

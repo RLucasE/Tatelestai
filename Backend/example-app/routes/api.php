@@ -62,6 +62,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/establishment-types', [PublicDataController::class, 'establishmentTypes'])->middleware(['user.state:'.UserState::REGISTERING->value.','.UserState::ACTIVE->value]);
     Route::get('/user', [PublicDataController::class, 'getUser']);
     Route::get('/establishments/{id}/rating-summary', [EstablishmentReviewController::class, 'showSummary']);
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
 });
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
