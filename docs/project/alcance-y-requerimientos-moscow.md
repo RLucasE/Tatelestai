@@ -57,7 +57,8 @@ Para garantizar que el producto cumpla los objetivos de negocio y académicos si
 | Creación y publicación de ofertas de excedentes | 🟢 | 6 | `CreateOfferAction`: vincula productos, define precios de descuento y stock. |
 | Pausar o reactivar ofertas propias | 🟢 | 3 | Control del estado de publicación según disponibilidad diaria. |
 | Visualizar historial de ventas y compras asignadas | 🟢 | 4 | Pantalla de control de retiros pendientes para el comerciante. |
-| Confirmación y validación de retiro en mostrador | 🟡 | 5 | Verificación del código de retiro provisto por el comprador. |
+| Confirmación y validación de retiro en mostrador | 🟢 | 5 | Verificación del código de retiro provisto por el comprador (`/check-customer-code` y `/complete-sell`). |
+| Pasarela de pagos integrada (Checkout Pro) | 🟢 | 8 | Integración con Mercado Pago, split de comisiones (15%) y webhooks idempotentes. |
 
 ---
 
@@ -68,9 +69,12 @@ Para garantizar que el producto cumpla los objetivos de negocio y académicos si
 | **Motor de Búsqueda Instantánea** | Core | 🟢 | 7 | Indexación en Typesense desacoplada mediante el Patrón Adaptador (`SearchServiceInterface`). |
 | **Geobúsqueda por Radio** | Búsqueda | 🟢 | 8 | Filtrado de ofertas por proximidad geográfica (`_geoloc`) ordenadas por distancia ascendente. |
 | **Sistema de Reclamos y Reportes** | Calidad | 🟢 | 6 | `ReportReason` y `CreateReportAction` para alertar fraudes o problemas bromatológicos. |
-| **Ventana de Reserva (5 minutos)** | Compra | 🟢 | 6 | Token temporal para congelar datos y precio mientras el comprador confirma. |
+| **Ventana de Reserva y Checkout** | Compra | 🟢 | 6 | Token temporal y bloqueo pesimista para congelar datos y precio mientras el comprador confirma. |
 | **Filtros por Categoría y Precio** | UX | 🟢 | 4 | Filtrado combinado en el catálogo de ofertas. |
-| **Cancelación justificada con reembolso** | Ventas | 🔴 | 7 | Mecanismo para cancelar ventas cuando el comercio agota imprevistamente el producto. |
+| **Cancelación justificada con reembolso automático** | Ventas | 🟢 | 7 | Mecanismo en `CancelPurchaseAction` que restituye stock y emite reembolso en Mercado Pago. |
+| **Notificaciones en Tiempo Real (WebSockets)** | Realtime | 🟢 | 8 | Servidor Laravel Reverb y Laravel Echo con alertas focalizadas de carrito y órdenes. |
+| **Calificaciones Post-Retiro y Doble Media** | Calidad | 🟢 | 7 | Reseñas de 1 a 5 estrellas (ventana de 14 días) con media histórica y media reciente (30 días). |
+| **Verificación Documental y Trust Score** | Seguridad | 🟢 | 8 | Auditoría de habilitaciones comerciales y libro mayor inmutable (`EstablishmentTrustLog`). |
 
 ---
 
@@ -78,14 +82,15 @@ Para garantizar que el producto cumpla los objetivos de negocio y académicos si
 
 | Requerimiento | Área | Estado | Complejidad (1-10) | Notas |
 |---|---|---|---|---|
-| Ofertas compuestas tipo Pack | Catálogo | 🔴 | 6 | Paquetes cerrados de múltiples productos (ej. "Bolsa sorpresa de panadería"). |
-| Contabilización de visualizaciones de ofertas | Analytics | 🔴 | 3 | Métrica de interés para el vendedor. |
-| Mapa interactivo en Frontend con marcadores | UI / Maps | 🟡 | 7 | Integración con Leaflet / MapLibre en Vue 3 mostrando comercios cercanos. |
-| Cacheo de solicitudes frecuentes | Infraestructura | 🔴 | 5 | Cacheo en Redis para reducir lecturas en catálogo estático. |
+| Ofertas compuestas tipo Pack y Plantillas | Catálogo | 🟢 | 7 | Modelo de bolsas sorpresa y plantillas reutilizables (`PackTemplate`) para publicación ágil. |
+| Dashboard Operativo de Mostrador | Seller UX | 🟢 | 6 | Consola en tiempo real con ventas del día, retiros pendientes e ingresos netos. |
+| Mapa interactivo en Frontend con marcadores | UI / Maps | 🟢 | 7 | Integración con Leaflet en Vue 3 mostrando comercios cercanos y fijación de pin. |
+| Exportación de reportes de administración | Admin | 🟢 | 4 | Exportación en formato estructurado desde `DashboardExportController`. |
+| Cacheo de solicitudes frecuentes | Infraestructura | 🟡 | 5 | Optimización de caché en PostgreSQL y Typesense para lecturas masivas. |
 
 ---
 
 ## 5. Requisitos "Won't Have" (Descartados para esta Versión)
 
 * **Motor de recomendaciones con Machine Learning**: Descartado por requerir grandes volúmenes de telemetría y entrenamiento innecesarios en la etapa inicial.
-* **Procesamiento de pagos con tarjeta de crédito en línea**: El modelo de negocio se basa en reserva digital y cobro en mostrador / billetera virtual en el punto de retiro para evitar costos financieros de pasarela a pequeños comercios.
+* **Envío a domicilio / Delivery propio**: El modelo de impacto ecológico y reducción de costes se fundamenta estrictamente en el retiro en tienda (*take away*), minimizando la huella de carbono asociada al transporte.

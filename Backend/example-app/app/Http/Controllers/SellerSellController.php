@@ -8,6 +8,8 @@ use App\Actions\Sell\ValidateCompleteSellAction;
 use App\Actions\Sell\ValidateMaxPickupDatetimeAction;
 use App\Actions\Sell\ValidatePickupCodeAction;
 use App\Actions\Sell\ValidatePickupCodeFromSellAction;
+use App\Http\Requests\Sell\CheckCustomerCodeRequest;
+use App\Http\Requests\Sell\CompleteSellRequest;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use Exception;
@@ -84,14 +86,10 @@ class SellerSellController extends Controller
         }
     }
 
-    public function checkCustomerCode(Request $request)
+    public function checkCustomerCode(CheckCustomerCodeRequest $request)
     {
-        $request->validate([
-            'pickup_code' => 'required|string',
-        ]);
-
         try {
-            $pickupCode = $request->input('pickup_code');
+            $pickupCode = $request->validated('pickup_code');
 
             $sell = $this->validatePickupCodeAction->execute($pickupCode, Auth::id());
             $sell = $this->validateMaxPickupDatetimeAction->execute($sell);
@@ -136,14 +134,11 @@ class SellerSellController extends Controller
         }
     }
 
-    public function completeSell(Request $request, string $sellNumber)
+    public function completeSell(CompleteSellRequest $request, string $sellNumber)
     {
-        $validatedRequest = $request->validate([
-            'pick_up_code' => 'required|string',
-        ]);
         try {
             $validatedSell = $this->validateCompleteSellAction->execute($sellNumber, Auth::id());
-            $validatedSell = $this->validatePickupCodeFromSellAction->execute($validatedSell->id, $validatedRequest['pick_up_code']);
+            $validatedSell = $this->validatePickupCodeFromSellAction->execute($validatedSell->id, $request->validated('pick_up_code'));
             $validatedSell = $this->validateMaxPickupDatetimeAction->execute($validatedSell);
 
             $validatedSell->update(

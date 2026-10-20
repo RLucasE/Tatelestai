@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from '@/lib/axios';
+import QRCode from 'qrcode';
+import { buildPickupQrPayload } from '@/utils/qrPayload';
 
 const route = useRoute();
 const router = useRouter();
@@ -10,6 +12,7 @@ const loading = ref(true);
 const verificationSuccess = ref(false);
 const orderData = ref(null);
 const errorMessage = ref('');
+const qrDataUrl = ref('');
 
 const verifyPaymentReturn = async () => {
   loading.value = true;
@@ -37,6 +40,19 @@ const verifyPaymentReturn = async () => {
     orderData.value = response.data?.data || null;
     verificationSuccess.value = true;
     sessionStorage.removeItem('purchaseConfirmation');
+
+    if (orderData.value?.pickup_code) {
+      try {
+        const payload = buildPickupQrPayload(orderData.value.pickup_code, orderData.value.sell_id);
+        qrDataUrl.value = await QRCode.toDataURL(payload, {
+          width: 260,
+          margin: 2,
+          color: { dark: '#000000', light: '#FFFFFF' },
+        });
+      } catch (qrErr) {
+        console.error('Error generando QR:', qrErr);
+      }
+    }
   } catch (error) {
     console.error('Error al verificar pago:', error);
     errorMessage.value = error.response?.data?.error || 'No se pudo verificar el estado del pago con Mercado Pago.';
@@ -85,13 +101,27 @@ onMounted(() => {
           </p>
         </div>
 
-        <!-- Código de Retiro -->
-        <div v-if="orderData?.pickup_code" class="p-4 rounded-2xl bg-[#1A1625] border border-white/[0.08] space-y-2">
-          <span class="text-xs font-semibold text-[#A5A8C2] uppercase tracking-wider">Tu Código de Retiro</span>
+        <!-- Código de Retiro & QR -->
+        <div v-if="orderData?.pickup_code" class="p-5 rounded-3xl bg-[#1A1625] border border-white/[0.08] space-y-4">
+          <span class="text-xs font-semibold text-[#A5A8C2] uppercase tracking-wider block">Tu Ticket de Retiro</span>
+
+          <!-- QR en Tarjeta Blanca de Alto Contraste -->
+          <div v-if="qrDataUrl" class="flex justify-center">
+            <div class="p-3 bg-white rounded-2xl shadow-xl border border-white/20 inline-block">
+              <img
+                :src="qrDataUrl"
+                alt="Código QR de retiro"
+                class="w-48 h-48 sm:w-52 sm:h-52 object-contain rounded-lg"
+              />
+            </div>
+          </div>
+
           <div class="text-2xl sm:text-3xl font-black tracking-widest text-[#10B981] font-mono">
             {{ orderData.pickup_code }}
           </div>
-          <p class="text-[11px] text-[#A5A8C2]">Presentá este código en el mostrador del comercio durante el horario de retiro.</p>
+          <p class="text-[11px] text-[#A5A8C2]">
+            Presentá este código o mostrá el QR directamente en el mostrador durante la ventana de retiro.
+          </p>
         </div>
 
         <div class="pt-2 flex flex-col sm:flex-row gap-3">

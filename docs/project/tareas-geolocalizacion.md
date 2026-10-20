@@ -1,5 +1,6 @@
 # Especificación de Tareas: Búsqueda Geolocalizada por Selección en Mapa
 
+> **Estado**: 🟢 **Completado**  
 > **Contexto**: Tatelestai — Plataforma de rescate de alimentos por proximidad.  
 > **Documento de referencia**: [Análisis de Priorización de Tareas](./analisis-priorizacion-tareas.md) (Tarea prioritaria #1).  
 > **Alcance actual**: La ubicación del usuario se define **exclusivamente mediante selección manual de un punto sobre un mapa interactivo en el navegador** (sin solicitar permisos de geolocalización/GPS automática por el momento).  

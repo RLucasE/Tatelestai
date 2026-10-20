@@ -11,5 +11,6 @@ Seguimos el estándar **MADR** (Markdown Architectural Decision Records).
 | ADR | Título | Estado | Fecha |
 |---|---|---|---|
 | [ADR-0001](./0001-bloqueo-pesimista-para-control-de-stock.md) | Bloqueo Pesimista para el Control Concurrente de Stock | **Aceptado** | 2026-09-02 |
-| [ADR-0002](./0002-eleccion-typesense-para-geobusqueda.md) | Elección de Typesense sobre Elasticsearch para Geobúsqueda | *En redacción* | — |
-| [ADR-0003](./0003-actions-y-dtos-en-backend.md) | Desacoplamiento de Lógica de Negocio mediante Actions y DTOs | *En redacción* | — |
+| ADR-0002 | Elección de Typesense sobre Elasticsearch para Geobúsqueda | *En redacción* | — |
+| ADR-0003 | Desacoplamiento de Lógica de Negocio mediante Actions y DTOs | *En redacción* | — |
+| [ADR-0004](./0004-transicion-a-modelo-bolsas-sorpresa.md) | Transición al Modelo Operativo de Bolsas Sorpresa (Packs) | **Aceptado** | 2026-09-18 |

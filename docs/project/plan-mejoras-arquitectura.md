@@ -71,15 +71,16 @@ flowchart LR
 
 ---
 
-### Fase 4: Estandarización, Excepciones y Eventos de Dominio
+### Fase 4: Excepciones de Dominio, Manejo Centralizado en API y Eventos
 
-1. **Estandarización PSR-12 (PascalCase)**:
-   * Renombrar archivos en camelCase (`makeSellAction.php` ➔ `MakeSellAction.php`, etc.).
-2. **Excepciones de Dominio Tipadas (`app/Exceptions/`)**:
-   * `InsufficientOfferStockException` (HTTP 409 Conflict).
-   * `OfferExpiredException` (HTTP 410 Gone / 422 Unprocessable).
-   * `InvalidPurchaseTokenException` (HTTP 400 Bad Request).
-   * `UnauthorizedProductAccessException` (HTTP 403 Forbidden).
-3. **Desacoplamiento de Notificaciones mediante Eventos**:
+1. **Excepciones de Dominio Tipadas (`app/Exceptions/`)**:
+   * Reemplazar `\Exception` genéricas por excepciones de negocio expresivas con códigos HTTP semánticos:
+     * `InsufficientOfferStockException` (HTTP 409 Conflict).
+     * `OfferExpiredException` (HTTP 410 Gone / 422 Unprocessable).
+     * `InvalidPurchaseTokenException` (HTTP 400 Bad Request).
+     * `UnauthorizedProductAccessException` (HTTP 403 Forbidden).
+2. **Estrategia Centralizada de Manejo de Excepciones para la API**:
+   * Diseñar e implementar un mecanismo limpio y unificado para capturar y transformar excepciones en respuestas JSON estandarizadas (por ejemplo, una clase base `DomainException` o configuración declarativa en `bootstrap/app.php` con `withExceptions`), eliminando la repetición de bloques `try / catch` manuales en los controladores.
+3. **Desacoplamiento de Notificaciones mediante Eventos (🟢 Completado)**:
    * Disparar evento de dominio `PurchaseCompleted` al cerrar la transacción.
    * Procesar el listener `SendPurchaseConfirmationEmail` mediante el worker de colas de Laravel (`ShouldQueue`).

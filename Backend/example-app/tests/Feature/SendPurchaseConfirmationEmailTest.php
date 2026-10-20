@@ -135,4 +135,63 @@ class SendPurchaseConfirmationEmailTest extends TestCase
                 && $mail->sell->id === $this->sell->id;
         });
     }
+
+    #[Test]
+    public function it_renders_qr_code_in_purchase_confirmation_email_content(): void
+    {
+        $mailable = new PurchaseConfirmation($this->sell);
+        $rendered = $mailable->render();
+
+        $this->assertStringContainsString($this->sell->pickup_code, $rendered);
+        $this->assertStringContainsString('Código QR de retiro', $rendered);
+    }
+
+    #[Test]
+    public function it_generates_valid_png_binary_and_decodes_qr_payload_correctly(): void
+    {
+        $mailable = new PurchaseConfirmation($this->sell);
+        $mailable->build();
+
+        $qrBinary = $mailable->viewData['qrBinary'] ?? null;
+
+        $this->assertNotNull($qrBinary, 'El binario del QR no debe ser nulo.');
+        $this->assertNotEmpty($qrBinary, 'El binario del QR no debe estar vacío.');
+
+        // 1. Verificación de firma mágica PNG (\x89PNG\r\n\x1a\n)
+        $this->assertStringStartsWith("\x89PNG\r\n\x1a\n", $qrBinary, 'El archivo generado no tiene cabecera PNG válida.');
+
+        // 2. Decodificación óptica con chillerlan QRCode
+        $expectedPayload = "TAT:{$this->sell->pickup_code}:{$this->sell->id}";
+        $decoded = (new \chillerlan\QRCode\QRCode)->readFromBlob($qrBinary);
+
+        $this->assertEquals($expectedPayload, $decoded->data, 'El QR decodificado no coincide con el payload esperado.');
+    }
+
+    #[Test]
+    public function it_embeds_qr_as_inline_cid_attachment(): void
+    {
+        $mailable = new PurchaseConfirmation($this->sell);
+        $mailable->build();
+
+        $qrBinary = $mailable->viewData['qrBinary'];
+        $this->assertNotNull($qrBinary);
+
+        // 1. Verificar que Illuminate\Mail\Message genera el CID correcto para clientes de correo (Gmail, Outlook)
+        $symfonyEmail = new \Symfony\Component\Mime\Email;
+        $message = new \Illuminate\Mail\Message($symfonyEmail);
+        $cid = $message->embedData($qrBinary, 'pickup-qr.png', 'image/png');
+
+        $this->assertEquals('cid:pickup-qr.png', $cid);
+
+        $attachments = $symfonyEmail->getAttachments();
+        $this->assertCount(1, $attachments);
+        $this->assertEquals('pickup-qr.png', $attachments[0]->getFilename());
+        $this->assertEquals('image/png', $attachments[0]->getContentType());
+
+        // 2. Verificar que el render de la plantilla procesa el embedData correctamente
+        $rendered = $mailable->render();
+        $this->assertStringContainsString('alt="Código QR de retiro"', $rendered);
+        // Laravel en render() reemplaza internamente los tags cid: por data-uris para visualización web
+        $this->assertStringContainsString('data:image/png;base64,', $rendered);
+    }
 }

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import axiosInstance from '@/lib/axios';
+import PickupQrModal from '@/components/common/PickupQrModal.vue';
 
 const props = defineProps({
   purchase: {
@@ -16,6 +17,7 @@ const emit = defineEmits(['cancelled']);
 const currentPurchase = ref({ ...props.purchase });
 const showCode = ref(false);
 const isCopied = ref(false);
+const showQrModal = ref(false);
 const showCancelModal = ref(false);
 const cancelling = ref(false);
 const cancelError = ref(null);
@@ -379,6 +381,20 @@ const executeCancellation = async () => {
           </button>
         </div>
 
+        <!-- Botón Ver QR -->
+        <button
+          v-if="currentPurchase.state !== 'cancelled' && currentPurchase.pickup_code"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#C4B5FD] hover:text-white bg-[#7C3AED]/15 hover:bg-[#7C3AED]/30 border border-[#7C3AED]/35 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm"
+          title="Ver código QR para escaneo en mostrador"
+          @click="showQrModal = true"
+        >
+          <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+          </svg>
+          <span>Ver QR</span>
+        </button>
+
         <!-- Botón Cancelar Reserva (si está habilitado) -->
         <button
           v-if="canCancel"
@@ -486,5 +502,12 @@ const executeCancellation = async () => {
         </div>
       </div>
     </Teleport>
+
+    <!-- Modal de Código QR para Retiro en Mostrador -->
+    <PickupQrModal
+      :show="showQrModal"
+      :purchase="currentPurchase"
+      @close="showQrModal = false"
+    />
   </article>
 </template>
