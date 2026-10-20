@@ -19,7 +19,7 @@ const handleLogin = async () => {
   errorMessage.value = "";
   try {
     await authStore.login(form);
-    window.location.reload();
+    await router.replace(authStore.getDefaultRoute());
   } catch (error) {
     console.error("Login failed:", error);
     errorMessage.value = "No pudimos iniciar sesión. Verifica tus credenciales e inténtalo nuevamente.";

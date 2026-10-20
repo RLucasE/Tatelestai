@@ -1,14 +1,12 @@
 <script setup>
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
-import { useStorageStore } from "@/stores/storage";
 
+const router = useRouter();
 const authStore = useAuthStore();
-const storage = useStorageStore();
-
-// user es un ref reactivo proveniente del storage
-const user = storage.getUser();
+const { user } = storeToRefs(authStore);
 
 const initials = computed(() => {
   const base = user.value?.name || user.value?.email || "";
@@ -38,7 +36,7 @@ async function refresh() {
 
 async function handleLogout() {
   await authStore.logout();
-  window.location.reload();
+  await router.replace({ name: "login" });
 }
 </script>
 

@@ -4,6 +4,7 @@ export default [
   {
     path: "/",
     component: HomeLayout,
+    redirect: { name: "login" },
     children: [
       {
         name: "register",

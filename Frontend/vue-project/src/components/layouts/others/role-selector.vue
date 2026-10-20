@@ -30,7 +30,7 @@ const hadleElection = async () => {
     });
     console.log("Role selection response:", response.data);
     await authStore.refreshUser();
-    router.push({ name: role.value === "customer" ? "customer" : "seller" });
+    await router.replace(authStore.getDefaultRoute());
   } catch (error) {
     console.error("Error selecting role:", error);
     errorMessage.value = "Hubo un error al seleccionar el rol. Inténtalo de nuevo.";

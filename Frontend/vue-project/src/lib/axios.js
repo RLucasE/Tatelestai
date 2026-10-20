@@ -1,5 +1,11 @@
 import axios from "axios";
 import router from "@/router";
+import { useAuthStore } from "@/stores/auth";
+import {
+  getApiErrorCode,
+  getApiErrorMessage,
+  getApiRequestId,
+} from "@/utils/apiError";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:8000/api",
@@ -12,34 +18,66 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Enriquecer el error con propiedades normalizadas para consumo directo en vistas y stores
+    error.userMessage = getApiErrorMessage(error);
+    error.errorCode = getApiErrorCode(error);
+    error.requestId = getApiRequestId(error);
+
     if (error.response) {
       const status = error.response.status;
+      const method = error.config?.method?.toLowerCase();
+      const isMutation = ["post", "put", "patch", "delete"].includes(method);
 
       if (router) {
         if (status === 401) {
-          localStorage.removeItem("authToken");
-          sessionStorage.removeItem("userData");
+          const authStore = useAuthStore();
+          authStore.clearLocalSession();
 
-          try {
-            await router.push({ name: "login" });
-          } catch (err) {
-            console.error("Error al redirigir:", err);
-            window.location.href = "/login"; // ← Fallback con recarga de página
+          const skipAuthRedirect = Boolean(error.config?.skipAuthRedirect);
+          const currentRouteName = router.currentRoute.value?.name;
+          const isAuthRoute = currentRouteName === "login" || currentRouteName === "register";
+
+          if (!skipAuthRedirect && !isAuthRoute) {
+            try {
+              await router.replace({ name: "login" });
+            } catch (err) {
+              console.error("Error al redirigir al login tras 401:", err);
+            }
           }
         } else if (status === 403) {
-          router.push({ name: "login" });
+          const authStore = useAuthStore();
+          const currentState = error.response.data?.current_state;
+
+          // Sincronización en caliente ante rechazo por estado de usuario (CheckUserState)
+          if (currentState) {
+            if (currentState === "guest") {
+              authStore.clearLocalSession();
+              router.replace({ name: "login" });
+            } else {
+              authStore.setState(currentState);
+              router.replace(authStore.getDefaultRoute());
+            }
+          } else {
+            // No redirigir a login en mutaciones o errores 403 de regla de negocio
+            const skipForbiddenRedirect = Boolean(error.config?.skipForbiddenRedirect);
+            const isBusinessForbidden = Boolean(error.errorCode && error.errorCode !== "FORBIDDEN");
+
+            if (!isMutation && !skipForbiddenRedirect && !isBusinessForbidden) {
+              router.replace({ name: "login" });
+            }
+          }
         } else if (status === 404) {
-          // No redirigir a página global 404 en operaciones de mutación o peticiones que indiquen omitirlo
-          const method = error.config?.method?.toLowerCase();
-          const isMutation = ["post", "put", "patch", "delete"].includes(method);
           const skipRedirect = Boolean(error.config?.skipNotFoundRedirect);
 
           if (!isMutation && !skipRedirect) {
             router.push({ name: "not-found" });
           }
         } else if (status === 500) {
-          // Handle server error
-          router.push({ name: "server-error" });
+          const skipServerErrorRedirect = Boolean(error.config?.skipServerErrorRedirect);
+
+          if (!isMutation && !skipServerErrorRedirect) {
+            router.push({ name: "server-error" });
+          }
         }
       }
     }

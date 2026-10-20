@@ -1,15 +1,39 @@
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const checking = ref(false);
+
+const handleCheckStatus = async () => {
+  checking.value = true;
+  try {
+    await authStore.refreshUser();
+    if (authStore.active() || !authStore.waitingConfirmation()) {
+      await router.replace(authStore.getDefaultRoute());
+    }
+  } catch (error) {
+    console.error("Error al verificar estado:", error);
+  } finally {
+    checking.value = false;
+  }
+};
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout();
+    await router.replace({ name: "login" });
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+  }
+};
 
 onMounted(async () => {
   await authStore.refreshUser();
-  if (authStore.active()) {
-    router.push({ name: "seller" });
+  if (authStore.active() || !authStore.waitingConfirmation()) {
+    await router.replace(authStore.getDefaultRoute());
   }
 });
 </script>
@@ -24,7 +48,7 @@ onMounted(async () => {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="currentColor"
-          class="w-10 h-10 text-[var(--color-secondary)]"
+          class="w-10 h-10 text-[var(--color-secondary)] shrink-0"
         >
           <path
             fill-rule="evenodd"
@@ -35,25 +59,29 @@ onMounted(async () => {
         <div>
           <h1 class="text-2xl font-semibold mb-1">Estamos revisando tu solicitud</h1>
           <p class="text-[var(--color-heading)]/80">
-            Estamos verificando tu establecimiento. Te notificaremos por correo
-            electrónico cuando sea aprobado. Esto suele tardar poco tiempo.
+            Estamos verificando los datos y documentación de tu establecimiento. Te notificaremos
+            cuando sea aprobado para que puedas comenzar a publicar ofertas.
           </p>
         </div>
       </div>
 
-      <div class="mt-6 flex items-center justify-between">
+      <div class="mt-8 flex items-center justify-between flex-wrap gap-4 pt-4 border-t border-[var(--color-border)]">
         <button
-          @click="authStore.refreshUser()"
-          class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)]"
+          type="button"
+          :disabled="checking"
+          @click="handleCheckStatus"
+          class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)] disabled:opacity-60"
         >
-          Comprobar estado
+          {{ checking ? "Verificando..." : "Comprobar estado" }}
         </button>
 
-        <router-link
-          :to="{ name: 'seller' }"
-          class="text-sm text-[var(--color-heading)]/70 hover:text-[var(--color-heading)] underline"
-          >Volver al panel</router-link
+        <button
+          type="button"
+          @click="handleLogout"
+          class="text-sm text-[var(--color-heading)]/70 hover:text-[var(--color-heading)] underline cursor-pointer"
         >
+          Cerrar sesión
+        </button>
       </div>
     </section>
   </main>

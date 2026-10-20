@@ -30,7 +30,7 @@ const handleRegister = async () => {
   loading.value = true;
   try {
     await authStore.register(form);
-    router.push("/customer");
+    await router.replace(authStore.getDefaultRoute());
   } catch (error) {
     console.error("Register failed:", error);
     errorMessage.value = "No pudimos crear tu cuenta. Revisa los campos e inténtalo de nuevo.";
