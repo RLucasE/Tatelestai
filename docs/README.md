@@ -19,6 +19,7 @@ Soluciones directas a problemas y operaciones habituales del ciclo de desarrollo
 * [Cómo probar pagos y webhooks de Mercado Pago localmente](./how-to/probar-pagos-y-webhooks-mercadopago.md)
 * [Cómo conectar y depurar WebSockets con Laravel Reverb](./how-to/conectar-y-depurar-reverb-websockets.md)
 * [Cómo realizar la verificación manual de códigos QR de retiro](./how-to/verificacion-manual-codigos-qr.md)
+* [Cómo manejar errores y excepciones en Backend y Frontend](./how-to/manejar-errores-y-excepciones.md)
 
 ---
 
@@ -27,6 +28,7 @@ Descripción técnica exacta, fría y exhaustiva de contratos, configuraciones y
 * [Servicios, Contenedores y Puertos](./reference/servicios-y-puertos.md)
 * [Variables de Entorno (.env)](./reference/variables-entorno.md)
 * [Contratos de API para Módulos Avanzados (Pagos, Reverb, Calificaciones, Trust Score)](./reference/contratos-api-modulos-avanzados.md)
+* [Estándar de Respuestas, Cabeceras y Errores de API](./reference/estandar-respuestas-y-errores-api.md)
 
 ---
 
@@ -34,6 +36,7 @@ Descripción técnica exacta, fría y exhaustiva de contratos, configuraciones y
 El trasfondo teórico, análisis de diseño y justificación de por qué el sistema fue construido de esta manera.
 * [Lógica de Dominio y Reglas de Negocio](./explanation/logica-de-negocio-y-reglas.md)
 * [Control de Concurrencia y Stock (Pessimistic Locking)](./explanation/concurrencia-y-stock.md)
+* [Manejo de Errores, Doble Perspectiva y Trazabilidad de Peticiones](./explanation/manejo-de-errores-y-trazabilidad.md)
 * [Máquinas de Estado del Dominio (Seller, Offer, Cart, Sell, Payment)](./explanation/maquinas-de-estado.md)
 * [Notificaciones en Tiempo Real y Arquitectura WebSocket (Reverb + Echo)](./explanation/notificaciones-en-tiempo-real.md)
 * [Integración de Pagos con Mercado Pago Checkout Pro y Reembolsos](./explanation/integracion-pagos-mercadopago.md)

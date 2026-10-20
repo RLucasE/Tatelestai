@@ -15,16 +15,21 @@ use App\DTOs\PreparePurchaseDTO;
 use App\Enums\CartState;
 use App\Enums\SellState;
 use App\Events\PurchaseCompleted;
-use App\Exceptions\CancellationNotAllowedException;
+use App\Exceptions\ApiErrorRenderer;
+use App\Exceptions\ApiException;
+use App\Exceptions\BusinessRuleException;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Resources\SellResource;
 use App\Models\FoodEstablishment;
 use App\Models\Sell;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CustomerSellController extends Controller
 {
@@ -42,36 +47,31 @@ class CustomerSellController extends Controller
 
     public function buyOffers(Request $request)
     {
+        $purchaseToken = $request->input('purchase_token');
+        if (! $purchaseToken) {
+            throw BusinessRuleException::badRequest('Token de compra inválido o expirado', 'INVALID_PURCHASE_TOKEN');
+        }
+
+        $lock = Cache::lock('purchase_token_'.$purchaseToken, 300);
+
+        if (! $lock->get()) {
+            throw BusinessRuleException::badRequest('Token de compra inválido o expirado', 'INVALID_PURCHASE_TOKEN');
+        }
+
+        // Reclamar y remover el token de la sesión
+        $purchaseData = session()->pull('purchase_'.$purchaseToken);
+        if (! $purchaseData) {
+            $lock->release();
+            throw BusinessRuleException::badRequest('Token de compra inválido o expirado', 'INVALID_PURCHASE_TOKEN');
+        }
+        session()->save();
+
+        if (now()->isAfter($purchaseData['expires_at'])) {
+            $lock->release();
+            throw BusinessRuleException::badRequest('El tiempo para confirmar la compra ha expirado', 'PURCHASE_TOKEN_EXPIRED');
+        }
+
         try {
-            $purchaseToken = $request->input('purchase_token');
-            if (! $purchaseToken) {
-                return response()->json([
-                    'error' => 'Token de compra inválido o expirado',
-                ], 400);
-            }
-            $lock = Cache::lock('purchase_token_'.$purchaseToken, 300);
-
-            if (! $lock->get()) {
-                return response()->json([
-                    'error' => 'Token de compra inválido o expirado',
-                ], 400);
-            }
-
-            // Reclamar y remover el token de la sesión
-            $purchaseData = session()->pull('purchase_'.$purchaseToken);
-            if (! $purchaseData) {
-                return response()->json([
-                    'error' => 'Token de compra inválido o expirado',
-                ], 400);
-            }
-            session()->save();
-
-            if (now()->isAfter($purchaseData['expires_at'])) {
-                return response()->json([
-                    'error' => 'El tiempo para confirmar la compra ha expirado',
-                ], 400);
-            }
-
             $preparePurchaseDTO = PreparePurchaseDTO::clone($purchaseData['preparePurchaseDTO']);
 
             $sellResult = null;
@@ -122,11 +122,12 @@ class CustomerSellController extends Controller
                 ],
             ], 200);
 
+        } catch (ApiException|ValidationException|QueryException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
-            return response()->json([
-                'error' => $exception->getMessage(),
-                'line' => $exception->getLine(),
-            ], 400);
+            throw BusinessRuleException::badRequest($exception->getMessage(), 'PURCHASE_CONFIRMATION_FAILED');
+        } finally {
+            $lock->release();
         }
     }
 
@@ -135,14 +136,14 @@ class CustomerSellController extends Controller
      */
     public function prepareBuyOffers(Request $request): JsonResponse
     {
-        try {
-            $request->validate([
-                'food_establishment_id' => 'required|integer|exists:food_establishments,id',
-                'offers' => 'required|array|min:1',
-                'offers.*.id' => 'required|integer|exists:offers,id',
-                'offers.*.quantity' => 'required|integer|min:1',
-            ]);
+        $request->validate([
+            'food_establishment_id' => 'required|integer|exists:food_establishments,id',
+            'offers' => 'required|array|min:1',
+            'offers.*.id' => 'required|integer|exists:offers,id',
+            'offers.*.quantity' => 'required|integer|min:1',
+        ]);
 
+        try {
             $preparePurchaseDTO = PreparePurchaseDTO::fromRequest($request);
 
             $this->validateOfferExpirationFromDTOAction->execute($preparePurchaseDTO->offers);
@@ -178,32 +179,37 @@ class CustomerSellController extends Controller
                 ],
             ], 200);
 
+        } catch (ApiException|ValidationException|QueryException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
+            $requestId = AssignRequestId::resolveRequestId($request);
+
             return response()->json([
                 'error' => 'Failed to prepare purchase',
                 'message' => $exception->getMessage(),
-            ], 500);
+                'error_code' => 'PURCHASE_PREPARATION_FAILED',
+                'errors' => null,
+                'context' => [
+                    'request_id' => $requestId,
+                ],
+            ], 500, [
+                AssignRequestId::HEADER_NAME => $requestId,
+            ]);
         }
     }
 
     public function customerPurchases(Request $request)
     {
-        try {
-            $customerId = Auth::id();
+        $customerId = Auth::id();
 
-            $customerSells = $this->getCustomerSellsAction->execute($customerId);
+        $customerSells = $this->getCustomerSellsAction->execute($customerId);
 
-            return response()->json([
-                'data' => $customerSells,
-            ]);
-        } catch (Exception $exception) {
-            return response()->json([
-                'error' => $exception->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'data' => $customerSells,
+        ]);
     }
 
-    public function getPurchaseCode(string $sellNumber)
+    public function getPurchaseCode(Request $request, string $sellNumber)
     {
         try {
             $customerId = Auth::id();
@@ -224,39 +230,41 @@ class CustomerSellController extends Controller
                 ],
             ], 200);
 
+        } catch (ApiException|ValidationException|QueryException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
-            $statusCode = $exception->getCode() ?: 500;
+            $statusCode = (is_int($exception->getCode()) && $exception->getCode() >= 400 && $exception->getCode() < 600)
+                ? $exception->getCode()
+                : 500;
 
-            return response()->json([
-                'error' => $exception->getMessage(),
-            ], $statusCode);
+            if ($statusCode >= 500) {
+                throw $exception;
+            }
+
+            return ApiErrorRenderer::buildResponse(
+                requestId: AssignRequestId::resolveRequestId($request),
+                status: $statusCode,
+                message: $exception->getMessage(),
+                errorCode: $statusCode === 404 ? 'RESOURCE_NOT_FOUND' : ($statusCode === 403 ? 'FORBIDDEN' : 'BUSINESS_RULE_VIOLATION')
+            );
         }
     }
 
     public function historySell(): JsonResponse
     {
-        try {
-            $customerId = Auth::id();
+        $customerId = Auth::id();
 
-            $sells = Sell::with(['foodEstablishment', 'sellDetails.offer', 'review'])
-                ->where('bought_by', $customerId)
-                ->where('state', SellState::PICKED_UP->value)
-                ->where('is_picked_up', true)
-                ->orderBy('created_at', 'desc')
-                ->get();
+        $sells = Sell::with(['foodEstablishment', 'sellDetails.offer', 'review'])
+            ->where('bought_by', $customerId)
+            ->where('state', SellState::PICKED_UP->value)
+            ->where('is_picked_up', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-            return response()->json([
-                'message' => 'Historial de compras obtenido exitosamente',
-                'data' => SellResource::collection($sells),
-            ], 200);
-
-        } catch (Exception $exception) {
-            $statusCode = $exception->getCode() ?: 500;
-
-            return response()->json([
-                'error' => $exception->getMessage(),
-            ], $statusCode);
-        }
+        return response()->json([
+            'message' => 'Historial de compras obtenido exitosamente',
+            'data' => SellResource::collection($sells),
+        ], 200);
     }
 
     /**
@@ -281,19 +289,19 @@ class CustomerSellController extends Controller
                 ],
             ], 200);
 
-        } catch (CancellationNotAllowedException $exception) {
-            return response()->json([
-                'error' => $exception->getMessage(),
-            ], $exception->getCode() ?: 422);
-
+        } catch (ApiException|ValidationException|QueryException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
-            $statusCode = ($exception->getCode() >= 400 && $exception->getCode() < 600)
+            $statusCode = (is_int($exception->getCode()) && $exception->getCode() >= 400 && $exception->getCode() < 600)
                 ? $exception->getCode()
                 : 422;
 
-            return response()->json([
-                'error' => $exception->getMessage(),
-            ], $statusCode);
+            return ApiErrorRenderer::buildResponse(
+                requestId: AssignRequestId::resolveRequestId($request),
+                status: $statusCode,
+                message: $exception->getMessage(),
+                errorCode: 'CANCELLATION_FAILED'
+            );
         }
     }
 }

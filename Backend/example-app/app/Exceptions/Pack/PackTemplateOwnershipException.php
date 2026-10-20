@@ -2,10 +2,14 @@
 
 namespace App\Exceptions\Pack;
 
-use Exception;
+use App\Exceptions\ApiException;
 
-class PackTemplateOwnershipException extends Exception
+class PackTemplateOwnershipException extends ApiException
 {
+    protected int $httpStatus = 403;
+
+    protected string $errorCode = 'PACK_TEMPLATE_OWNERSHIP_ERROR';
+
     protected ?int $packTemplateId = null;
 
     protected ?int $establishmentId = null;
@@ -13,6 +17,19 @@ class PackTemplateOwnershipException extends Exception
     public function __construct($message = 'La plantilla de pack no pertenece a tu establecimiento', $code = 403)
     {
         parent::__construct($message, $code);
+    }
+
+    /**
+     * Contexto público seguro expuesto al cliente.
+     *
+     * @return array<string, mixed>
+     */
+    public function publicContext(): array
+    {
+        return [
+            'pack_template_id' => $this->packTemplateId,
+            'establishment_id' => $this->establishmentId,
+        ];
     }
 
     /**

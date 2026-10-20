@@ -43,9 +43,10 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
             Route::post('/{sellNumber}/cancel', [CustomerSellController::class, 'cancelPurchase']);
             Route::post('/{sell}/review', [EstablishmentReviewController::class, 'store'])
                 ->missing(function () {
-                    return response()->json([
-                        'message' => 'La compra especificada no existe o no fue encontrada.',
-                    ], 404);
+                    throw \App\Exceptions\BusinessRuleException::notFound(
+                        'La compra especificada no existe o no fue encontrada.',
+                        'RESOURCE_NOT_FOUND'
+                    );
                 });
         });
         Route::post('/customer/payment/create-preference', [CustomerPaymentController::class, 'createPreference']);

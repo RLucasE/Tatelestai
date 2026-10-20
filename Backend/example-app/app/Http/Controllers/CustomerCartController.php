@@ -7,14 +7,17 @@ use App\Actions\Cart\AssignFirstCartAction;
 use App\Actions\Cart\ClearCustomerCartAction;
 use App\Actions\Cart\GetCustomerCartAction;
 use App\Enums\CartState;
-use App\Exceptions\Cart\OfferQuantityExceededException;
+use App\Exceptions\ApiException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Offer;
 use App\Models\OfferCart;
 use App\Models\User;
 use App\Models\UserCart;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class CustomerCartController extends CartController
 {
@@ -32,12 +35,14 @@ class CustomerCartController extends CartController
     {
         try {
             $groupedOffers = $this->customerCartAction->handle(Auth::user());
+        } catch (ApiException|QueryException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], status: 404);
+            throw BusinessRuleException::notFound($exception->getMessage(), 'CART_NOT_FOUND');
         }
 
         if ($groupedOffers === null) {
-            return response()->json(['message' => 'No active cart found.'], status: 404);
+            throw BusinessRuleException::notFound('No active cart found.', 'CART_NOT_FOUND');
         }
 
         return response()->json(
@@ -52,24 +57,20 @@ class CustomerCartController extends CartController
             'offer_id' => 'required|integer|exists:offers,id',
             'quantity' => 'required|integer|min:1',
         ]);
+
         try {
             $offerCart = app(AddToCartAction::class)->handle(
                 $request->offer_id,
                 $request->quantity
             );
-        } catch (OfferQuantityExceededException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'requested_quantity' => $e->context()['requested_quantity'] ?? null,
-                'available_quantity' => $e->context()['available_quantity'] ?? null,
-                'already_in_cart' => $e->context()['already_in_cart'] ?? null,
-                'error' => $e->context()['error'] ?? null,
-            ], 400);
+        } catch (ApiException|ValidationException|QueryException $e) {
+            throw $e;
         } catch (Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], status: 400);
+            throw BusinessRuleException::badRequest($exception->getMessage(), 'ADD_TO_CART_FAILED');
         }
+
         if (! $offerCart) {
-            return response()->json(['message' => 'Offer has expired.'], status: 400);
+            throw BusinessRuleException::badRequest('Offer has expired.', 'OFFER_EXPIRED');
         }
 
         return response()->json($offerCart, status: 200);
@@ -77,27 +78,23 @@ class CustomerCartController extends CartController
 
     public function removeFromCart(string $offerId)
     {
-        try {
-            $userCarts = UserCart::where('user_id', Auth::id())
-                ->where('state', CartState::ACTIVE->value)
-                ->pluck('id');
+        $userCarts = UserCart::where('user_id', Auth::id())
+            ->where('state', CartState::ACTIVE->value)
+            ->pluck('id');
 
-            if ($userCarts->isEmpty()) {
-                return response()->json(['message' => 'No active cart found.'], status: 404);
-            }
-
-            $offerCart = OfferCart::whereIn('user_cart_id', $userCarts)
-                ->where('offer_id', $offerId)
-                ->first();
-
-            if (! $offerCart) {
-                return response()->json(['message' => 'Offer not found in cart.'], status: 404);
-            }
-
-            $offerCart->delete();
-        } catch (Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], status: 404);
+        if ($userCarts->isEmpty()) {
+            throw BusinessRuleException::notFound('No active cart found.', 'CART_NOT_FOUND');
         }
+
+        $offerCart = OfferCart::whereIn('user_cart_id', $userCarts)
+            ->where('offer_id', $offerId)
+            ->first();
+
+        if (! $offerCart) {
+            throw BusinessRuleException::notFound('Offer not found in cart.', 'CART_ITEM_NOT_FOUND');
+        }
+
+        $offerCart->delete();
 
         return response()->json(['deleted' => $offerCart]);
     }
@@ -113,7 +110,7 @@ class CustomerCartController extends CartController
             ->pluck('id');
 
         if ($userCarts->isEmpty()) {
-            return response()->json(['message' => 'No active cart found.'], status: 404);
+            throw BusinessRuleException::notFound('No active cart found.', 'CART_NOT_FOUND');
         }
 
         $offerCart = OfferCart::where('offer_id', $offerId)
@@ -121,12 +118,12 @@ class CustomerCartController extends CartController
             ->first();
 
         if (! $offerCart) {
-            return response()->json(['message' => 'Offer not found in cart.'], status: 404);
+            throw BusinessRuleException::notFound('Offer not found in cart.', 'CART_ITEM_NOT_FOUND');
         }
 
         $offer = Offer::find($offerId);
         if ($offer && $offer->visible_from && $offer->visible_from->isFuture()) {
-            return response()->json(['message' => 'La oferta aún no está disponible para compra'], status: 400);
+            throw BusinessRuleException::badRequest('La oferta aún no está disponible para compra', 'OFFER_NOT_VISIBLE_YET');
         }
 
         $offerCart->update(['quantity' => $request->quantity]);

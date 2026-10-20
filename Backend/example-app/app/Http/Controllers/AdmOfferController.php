@@ -45,10 +45,7 @@ class AdmOfferController extends Controller
         try {
             $offer = $changeOfferStatusAction->execute($id, $request->input('state'));
         } catch (OfferStatusChangeException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'error' => $e->context(),
-            ], $e->getCode());
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al cambiar el estado de la oferta',
