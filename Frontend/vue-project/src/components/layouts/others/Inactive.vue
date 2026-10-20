@@ -1,28 +1,40 @@
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const checking = ref(false);
+
+const handleCheckStatus = async () => {
+  checking.value = true;
+  try {
+    await authStore.refreshUser();
+    if (!authStore.inactive()) {
+      await router.replace(authStore.getDefaultRoute());
+    }
+  } catch (error) {
+    console.error("Error al comprobar estado:", error);
+  } finally {
+    checking.value = false;
+  }
+};
 
 onMounted(async () => {
   await authStore.refreshUser();
-  // Si el usuario vuelve a estar activo, redirigir según su rol
-  if (authStore.active()) {
-    if (authStore.user.roles.includes('seller')) {
-      router.push({ name: "seller" });
-    } else if (authStore.user.roles.includes('customer')) {
-      router.push({ name: "customer" });
-    } else if (authStore.user.roles.includes('admin')) {
-      router.push({ name: "admin" });
-    }
+  if (!authStore.inactive()) {
+    await router.replace(authStore.getDefaultRoute());
   }
 });
 
 const handleLogout = async () => {
-  await authStore.logout();
-  router.push({ name: "login" });
+  try {
+    await authStore.logout();
+    await router.replace({ name: "login" });
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+  }
 };
 </script>
 
@@ -35,56 +47,47 @@ const handleLogout = async () => {
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
-          class="w-10 h-10 text-red-500"
+          class="w-10 h-10 text-red-500 shrink-0"
         >
           <path
             fill-rule="evenodd"
-            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
             clip-rule="evenodd"
           />
         </svg>
         <div>
-          <h1 class="text-2xl font-semibold mb-1 text-red-600">Cuenta Desactivada</h1>
+          <h1 class="text-2xl font-semibold mb-1 text-red-500">Cuenta Desactivada</h1>
           <p class="text-[var(--color-heading)]/80 mb-4">
-            Tu cuenta ha sido desactivada por un administrador. Si crees que esto es un error
-            o necesitas más información, por favor contacta con el soporte técnico.
+            Tu cuenta ha sido desactivada temporalmente por un administrador. Si consideras que se trata
+            de un error, por favor ponte en contacto con nuestro equipo de soporte.
           </p>
-          <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm text-red-700">
-                  <strong>Motivo:</strong> Tu cuenta ha sido suspendida temporalmente.
-                  Contacta con soporte para obtener más detalles sobre la reactivación.
-                </p>
-              </div>
-            </div>
+          <div class="bg-red-950/40 border-l-4 border-red-500 p-4 rounded text-sm text-red-200">
+            <strong>Estado:</strong> Suspensión temporal de cuenta. Comunícate con soporte para mayor detalle sobre la reactivación.
           </div>
         </div>
       </div>
 
-      <div class="mt-6 flex items-center justify-between flex-wrap gap-4">
+      <div class="mt-8 flex items-center justify-between flex-wrap gap-4 pt-4 border-t border-[var(--color-border)]">
         <button
-          @click="authStore.refreshUser()"
-          class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)]"
+          type="button"
+          :disabled="checking"
+          @click="handleCheckStatus"
+          class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)] disabled:opacity-60 cursor-pointer"
         >
-          Comprobar estado
+          {{ checking ? "Comprobando..." : "Comprobar estado" }}
         </button>
 
         <div class="flex items-center gap-4">
           <a
-            href="mailto:soporte@tuapp.com"
+            href="mailto:soporte@tatelestai.com"
             class="text-sm text-[var(--color-heading)]/70 hover:text-[var(--color-heading)] underline"
           >
             Contactar soporte
           </a>
           <button
+            type="button"
             @click="handleLogout"
-            class="text-sm text-red-600 hover:text-red-800 underline"
+            class="text-sm text-red-400 hover:text-red-300 underline cursor-pointer"
           >
             Cerrar sesión
           </button>

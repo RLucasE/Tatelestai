@@ -2,10 +2,14 @@
 
 namespace App\Exceptions\Offer;
 
-use Exception;
+use App\Exceptions\ApiException;
 
-class OfferStatusChangeException extends Exception
+class OfferStatusChangeException extends ApiException
 {
+    protected int $httpStatus = 422;
+
+    protected string $errorCode = 'OFFER_STATUS_CHANGE_INVALID';
+
     protected $offerId;
 
     protected $currentStatus;
@@ -19,6 +23,20 @@ class OfferStatusChangeException extends Exception
         $this->offerId = $offerId;
         $this->currentStatus = $currentStatus;
         $this->requestedStatus = $requestedStatus;
+    }
+
+    /**
+     * Contexto público seguro expuesto al cliente.
+     *
+     * @return array<string, mixed>
+     */
+    public function publicContext(): array
+    {
+        return [
+            'offer_id' => $this->offerId,
+            'current_status' => $this->currentStatus,
+            'requested_status' => $this->requestedStatus,
+        ];
     }
 
     /**

@@ -15,15 +15,21 @@ use App\Enums\CartState;
 use App\Enums\PaymentStatus;
 use App\Enums\SellState;
 use App\Events\PurchaseCompleted;
+use App\Exceptions\ApiException;
+use App\Exceptions\BusinessRuleException;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Requests\CreatePaymentPreferenceRequest;
 use App\Http\Requests\VerifyPaymentRequest;
 use App\Models\Sell;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class CustomerPaymentController extends Controller
 {
@@ -47,23 +53,17 @@ class CustomerPaymentController extends Controller
 
         $lock = Cache::lock('purchase_token_'.$purchaseToken, 300);
         if (! $lock->get()) {
-            return response()->json([
-                'error' => 'Token de compra inválido o en procesamiento',
-            ], 400);
+            throw BusinessRuleException::badRequest('Token de compra inválido o en procesamiento', 'INVALID_PURCHASE_TOKEN');
         }
 
         try {
             $purchaseData = session()->get('purchase_'.$purchaseToken);
             if (! $purchaseData) {
-                return response()->json([
-                    'error' => 'Token de compra inválido o expirado',
-                ], 400);
+                throw BusinessRuleException::badRequest('Token de compra inválido o expirado', 'INVALID_PURCHASE_TOKEN');
             }
 
             if (now()->isAfter($purchaseData['expires_at'])) {
-                return response()->json([
-                    'error' => 'El tiempo para confirmar la compra ha expirado',
-                ], 400);
+                throw BusinessRuleException::badRequest('El tiempo para confirmar la compra ha expirado', 'PURCHASE_TOKEN_EXPIRED');
             }
 
             $preparePurchaseDTO = PreparePurchaseDTO::clone($purchaseData['preparePurchaseDTO']);
@@ -116,15 +116,15 @@ class CustomerPaymentController extends Controller
                 ],
             ], 200);
 
+        } catch (ApiException|ValidationException|ModelNotFoundException|QueryException $e) {
+            throw $e;
         } catch (Exception $e) {
             Log::error('Error al generar preferencia de Mercado Pago:', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
             ]);
 
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], 422);
+            throw BusinessRuleException::unprocessable($e->getMessage(), 'PAYMENT_PREFERENCE_FAILED');
         } finally {
             $lock->release();
         }
@@ -135,101 +135,106 @@ class CustomerPaymentController extends Controller
      */
     public function verifyPayment(VerifyPaymentRequest $request): JsonResponse
     {
-        try {
-            $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
-                ->where('id', $request->validated('sell_id'))
-                ->where('bought_by', Auth::id())
-                ->firstOrFail();
+        $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
+            ->where('id', $request->validated('sell_id'))
+            ->where('bought_by', Auth::id())
+            ->firstOrFail();
 
-            // Si ya fue aprobado (por ejemplo, vía Webhook concurrente)
-            if ($sell->payment_status === PaymentStatus::APPROVED) {
-                return response()->json([
-                    'message' => 'Pago verificado y orden confirmada exitosamente',
-                    'data' => [
-                        'sell_id' => $sell->id,
-                        'pickup_code' => $sell->pickup_code,
-                        'payment_status' => PaymentStatus::APPROVED->value,
-                        'max_pickup_datetime' => $sell->max_pickup_datetime,
-                    ],
-                ], 200);
-            }
-
-            $paymentId = $request->validated('payment_id');
-            $status = $request->validated('status');
-
-            $isApproved = false;
-            $paymentMethod = null;
-
-            if ($paymentId) {
-                $details = $this->paymentService->getPaymentDetails($paymentId);
-                $isApproved = ($details['status'] === 'approved');
-                $paymentMethod = $details['payment_method_id'] ?? null;
-            } elseif ($status === 'approved') {
-                $isApproved = true;
-            }
-
-            if ($isApproved) {
-                $sell->update([
-                    'payment_status' => PaymentStatus::APPROVED->value,
-                    'payment_id' => $paymentId ?: ($sell->payment_id ?: 'approved_direct'),
-                    'payment_method' => $paymentMethod ?: 'mercadopago',
-                    'state' => SellState::PENDING->value,
-                ]);
-
-                // Transicionar carrito a comprado
-                $activeCart = app(CartController::class)->getActiveCartByEstablishment(
-                    Auth::id(),
-                    $sell->sold_by
-                );
-                if ($activeCart) {
-                    $activeCart->update(['state' => CartState::PURCHASED->value]);
-                }
-
-                PurchaseCompleted::dispatch($sell);
-
-                return response()->json([
-                    'message' => 'Pago confirmado exitosamente',
-                    'data' => [
-                        'sell_id' => $sell->id,
-                        'pickup_code' => $sell->pickup_code,
-                        'payment_status' => PaymentStatus::APPROVED->value,
-                        'max_pickup_datetime' => $sell->max_pickup_datetime,
-                    ],
-                ], 200);
-            }
-
-            // Si el pago fue rechazado o cancelado, revertir reserva de stock
-            DB::transaction(function () use ($sell, $paymentId) {
-                $sell->update([
-                    'payment_status' => PaymentStatus::REJECTED->value,
-                    'payment_id' => $paymentId,
-                    'state' => SellState::CANCELLED->value,
-                    'cancelled_by' => 'system',
-                    'cancellation_reason' => 'Pago no aprobado en Mercado Pago',
-                ]);
-
-                foreach ($sell->sellDetails as $detail) {
-                    if ($detail->offer_id && $detail->offer_quantity > 0) {
-                        $this->restoreOfferStockAction->execute(
-                            (int) $detail->offer_id,
-                            (int) $detail->offer_quantity
-                        );
-                    }
-                }
-            });
-
+        // Si ya fue aprobado (por ejemplo, vía Webhook concurrente)
+        if ($sell->payment_status === PaymentStatus::APPROVED) {
             return response()->json([
-                'error' => 'El pago no fue aprobado en Mercado Pago.',
+                'message' => 'Pago verificado y orden confirmada exitosamente',
                 'data' => [
                     'sell_id' => $sell->id,
-                    'payment_status' => PaymentStatus::REJECTED->value,
+                    'pickup_code' => $sell->pickup_code,
+                    'payment_status' => PaymentStatus::APPROVED->value,
+                    'max_pickup_datetime' => $sell->max_pickup_datetime,
                 ],
-            ], 422);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], 500);
+            ], 200);
         }
+
+        $paymentId = $request->validated('payment_id');
+        $status = $request->validated('status');
+
+        $isApproved = false;
+        $paymentMethod = null;
+
+        if ($paymentId) {
+            $details = $this->paymentService->getPaymentDetails($paymentId);
+            $isApproved = ($details['status'] === 'approved');
+            $paymentMethod = $details['payment_method_id'] ?? null;
+        } elseif ($status === 'approved') {
+            $isApproved = true;
+        }
+
+        if ($isApproved) {
+            $sell->update([
+                'payment_status' => PaymentStatus::APPROVED->value,
+                'payment_id' => $paymentId ?: ($sell->payment_id ?: 'approved_direct'),
+                'payment_method' => $paymentMethod ?: 'mercadopago',
+                'state' => SellState::PENDING->value,
+            ]);
+
+            // Transicionar carrito a comprado
+            $activeCart = app(CartController::class)->getActiveCartByEstablishment(
+                Auth::id(),
+                $sell->sold_by
+            );
+            if ($activeCart) {
+                $activeCart->update(['state' => CartState::PURCHASED->value]);
+            }
+
+            PurchaseCompleted::dispatch($sell);
+
+            return response()->json([
+                'message' => 'Pago confirmado exitosamente',
+                'data' => [
+                    'sell_id' => $sell->id,
+                    'pickup_code' => $sell->pickup_code,
+                    'payment_status' => PaymentStatus::APPROVED->value,
+                    'max_pickup_datetime' => $sell->max_pickup_datetime,
+                ],
+            ], 200);
+        }
+
+        // Si el pago fue rechazado o cancelado, revertir reserva de stock
+        DB::transaction(function () use ($sell, $paymentId) {
+            $sell->update([
+                'payment_status' => PaymentStatus::REJECTED->value,
+                'payment_id' => $paymentId,
+                'state' => SellState::CANCELLED->value,
+                'cancelled_by' => 'system',
+                'cancellation_reason' => 'Pago no aprobado en Mercado Pago',
+            ]);
+
+            foreach ($sell->sellDetails as $detail) {
+                if ($detail->offer_id && $detail->offer_quantity > 0) {
+                    $this->restoreOfferStockAction->execute(
+                        (int) $detail->offer_id,
+                        (int) $detail->offer_quantity
+                    );
+                }
+            }
+        });
+
+        $requestId = AssignRequestId::resolveRequestId($request);
+
+        return response()->json([
+            'message' => 'El pago no fue aprobado en Mercado Pago.',
+            'error' => 'El pago no fue aprobado en Mercado Pago.',
+            'error_code' => 'PAYMENT_NOT_APPROVED',
+            'errors' => null,
+            'data' => [
+                'sell_id' => $sell->id,
+                'payment_status' => PaymentStatus::REJECTED->value,
+            ],
+            'context' => [
+                'request_id' => $requestId,
+                'sell_id' => $sell->id,
+                'payment_status' => PaymentStatus::REJECTED->value,
+            ],
+        ], 422, [
+            AssignRequestId::HEADER_NAME => $requestId,
+        ]);
     }
 }

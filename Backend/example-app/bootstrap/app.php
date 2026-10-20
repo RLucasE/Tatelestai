@@ -1,8 +1,11 @@
 <?php
 
+use App\Exceptions\ApiErrorRenderer;
+use App\Http\Middleware\AssignRequestId;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->api(prepend: [
+            AssignRequestId::class,
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
@@ -34,11 +38,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+        $exceptions->dontReportDuplicates();
+
+        $exceptions->context(fn () => array_filter([
+            'request_id' => AssignRequestId::resolveRequestId(),
+            'user_id' => auth()?->id(),
+            'route' => request()?->path(),
+            'method' => request()?->method(),
+        ], fn ($value) => $value !== null));
+
+        $exceptions->render(function (\Throwable $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Unauthenticated.',
-                ], 401);
+                return ApiErrorRenderer::render($e, $request);
             }
+
+            return null;
         });
     })->create();

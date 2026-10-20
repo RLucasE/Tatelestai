@@ -14,3 +14,4 @@ Seguimos el estándar **MADR** (Markdown Architectural Decision Records).
 | ADR-0002 | Elección de Typesense sobre Elasticsearch para Geobúsqueda | *En redacción* | — |
 | ADR-0003 | Desacoplamiento de Lógica de Negocio mediante Actions y DTOs | *En redacción* | — |
 | [ADR-0004](./0004-transicion-a-modelo-bolsas-sorpresa.md) | Transición al Modelo Operativo de Bolsas Sorpresa (Packs) | **Aceptado** | 2026-09-18 |
+| [ADR-0005](./0005-estandarizacion-manejo-de-errores-y-trazabilidad.md) | Estandarización de Errores, Doble Perspectiva y Trazabilidad con Request ID | **Aceptado** | 2026-10-20 |

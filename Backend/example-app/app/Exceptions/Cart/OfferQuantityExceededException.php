@@ -2,10 +2,14 @@
 
 namespace App\Exceptions\Cart;
 
-use Exception;
+use App\Exceptions\ApiException;
 
-class OfferQuantityExceededException extends Exception
+class OfferQuantityExceededException extends ApiException
 {
+    protected int $httpStatus = 400;
+
+    protected string $errorCode = 'OFFER_QUANTITY_EXCEEDED';
+
     protected $offerId;
 
     protected $requestedQuantity;
@@ -17,6 +21,35 @@ class OfferQuantityExceededException extends Exception
     public function __construct($message = 'La cantidad solicitada excede la disponible ', $code = 400)
     {
         parent::__construct($message, $code);
+    }
+
+    /**
+     * Contexto público seguro expuesto en response.data.context.
+     *
+     * @return array<string, mixed>
+     */
+    public function publicContext(): array
+    {
+        return [
+            'offer_id' => $this->offerId,
+            'requested_quantity' => $this->requestedQuantity,
+            'available_quantity' => $this->availableQuantity,
+            'already_in_cart' => $this->alreadyInCart,
+        ];
+    }
+
+    /**
+     * Campos en el nivel raíz del JSON por retrocompatibilidad con clientes previos.
+     *
+     * @return array<string, mixed>
+     */
+    public function rootFields(): array
+    {
+        return [
+            'requested_quantity' => $this->requestedQuantity,
+            'available_quantity' => $this->availableQuantity,
+            'already_in_cart' => $this->alreadyInCart,
+        ];
     }
 
     /**

@@ -3,6 +3,7 @@ export default [
     path: "/adm",
     name: "admin",
     component: () => import("@/components/layouts/admin/AdminLayout.vue"),
+    redirect: { name: "admin-dashboard" },
     children: [
         {
             path: "dashboard",

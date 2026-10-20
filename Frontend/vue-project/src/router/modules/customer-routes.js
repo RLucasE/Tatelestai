@@ -3,6 +3,7 @@ export default [
     path: "/customer",
     name: "customer",
     component: () => import("@/components/layouts/customer/CustomerLayout.vue"),
+    redirect: { name: "customer-offers" },
     children: [
       {
         path: "offers",

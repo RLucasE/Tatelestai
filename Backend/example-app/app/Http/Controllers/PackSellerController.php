@@ -8,14 +8,17 @@ use App\Actions\Packs\PublishPackAction;
 use App\Actions\Packs\UpdatePackAction;
 use App\DTOs\PackDTO;
 use App\Enums\OfferState;
-use App\Exceptions\Pack\PackTemplateOwnershipException;
+use App\Exceptions\ApiException;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Requests\StorePackRequest;
 use App\Http\Requests\UpdatePackRequest;
 use App\Http\Resources\PackOfferResource;
 use App\Models\Offer;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class PackSellerController extends Controller
@@ -38,15 +41,14 @@ class PackSellerController extends Controller
                 'message' => 'Pack publicado exitosamente',
                 'data' => new PackOfferResource($pack),
             ], 201);
-        } catch (PackTemplateOwnershipException $exception) {
-            return response()->json([
-                'message' => $exception->getMessage(),
-                'context' => $exception->context(),
-            ], $exception->getCode());
+        } catch (ApiException|ValidationException|QueryException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
-            return response()->json([
-                'message' => $exception->getMessage(),
-            ], $exception->getCode() ?: 422);
+            $status = (is_int($exception->getCode()) && $exception->getCode() >= 400 && $exception->getCode() < 600)
+                ? $exception->getCode()
+                : 422;
+
+            throw new BusinessRuleException($exception->getMessage(), $status, 'PACK_PUBLISH_FAILED');
         }
     }
 
@@ -55,9 +57,7 @@ class PackSellerController extends Controller
         $establishment = $this->getUserEstablishmentAction->execute();
 
         if (! $establishment) {
-            return response()->json([
-                'message' => 'No se encontró un establecimiento asociado al usuario',
-            ], 404);
+            throw BusinessRuleException::notFound('No se encontró un establecimiento asociado al usuario', 'ESTABLISHMENT_NOT_FOUND');
         }
 
         $packs = Offer::where('food_establishment_id', $establishment->id)
@@ -76,15 +76,11 @@ class PackSellerController extends Controller
         $pack = Offer::find($id);
 
         if (! $pack) {
-            return response()->json([
-                'message' => 'Pack no encontrado',
-            ], 404);
+            throw BusinessRuleException::notFound('Pack no encontrado', 'PACK_NOT_FOUND');
         }
 
         if (! $this->validateOfferOwnership->execute($pack, Auth::user())) {
-            return response()->json([
-                'message' => 'No tienes permiso para acceder a este pack',
-            ], 403);
+            throw BusinessRuleException::forbidden('No tienes permiso para acceder a este pack', 'PACK_OWNERSHIP_ERROR');
         }
 
         return response()->json([
@@ -98,15 +94,11 @@ class PackSellerController extends Controller
         $pack = Offer::find($id);
 
         if (! $pack) {
-            return response()->json([
-                'message' => 'Pack no encontrado',
-            ], 404);
+            throw BusinessRuleException::notFound('Pack no encontrado', 'PACK_NOT_FOUND');
         }
 
         if (! $this->validateOfferOwnership->execute($pack, Auth::user())) {
-            return response()->json([
-                'message' => 'No tienes permiso para modificar este pack',
-            ], 403);
+            throw BusinessRuleException::forbidden('No tienes permiso para modificar este pack', 'PACK_OWNERSHIP_ERROR');
         }
 
         try {
@@ -119,14 +111,10 @@ class PackSellerController extends Controller
                 'message' => 'Pack actualizado exitosamente',
                 'data' => new PackOfferResource($pack),
             ], 200);
-        } catch (InvalidArgumentException $exception) {
-            return response()->json([
-                'message' => $exception->getMessage(),
-            ], 422);
-        } catch (Exception $exception) {
-            return response()->json([
-                'message' => $exception->getMessage(),
-            ], 422);
+        } catch (ApiException|ValidationException|QueryException $exception) {
+            throw $exception;
+        } catch (InvalidArgumentException|Exception $exception) {
+            throw BusinessRuleException::unprocessable($exception->getMessage(), 'PACK_UPDATE_FAILED');
         }
     }
 
@@ -135,15 +123,11 @@ class PackSellerController extends Controller
         $pack = Offer::find($id);
 
         if (! $pack) {
-            return response()->json([
-                'message' => 'Pack no encontrado',
-            ], 404);
+            throw BusinessRuleException::notFound('Pack no encontrado', 'PACK_NOT_FOUND');
         }
 
         if (! $this->validateOfferOwnership->execute($pack, Auth::user())) {
-            return response()->json([
-                'message' => 'No tienes permiso para eliminar este pack',
-            ], 403);
+            throw BusinessRuleException::forbidden('No tienes permiso para eliminar este pack', 'PACK_OWNERSHIP_ERROR');
         }
 
         $pack->state = OfferState::INACTIVE->value;

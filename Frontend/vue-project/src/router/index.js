@@ -1,122 +1,118 @@
-import {createRouter, createWebHistory} from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import customerRoutes from "./modules/customer-routes";
 import noAuthRoutes from "./modules/no-auth-routes";
 import sellerRoutes from "./modules/seller-routes";
 import otherRoutes from "./modules/other-routes";
 import adminRoutes from "./modules/admin-route";
-import {useAuthStore} from "@/stores/auth";
+import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes: [...noAuthRoutes, ...customerRoutes, ...sellerRoutes, ...adminRoutes, ...otherRoutes],
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    ...noAuthRoutes,
+    ...customerRoutes,
+    ...sellerRoutes,
+    ...adminRoutes,
+    ...otherRoutes,
+  ],
 });
 
-function redirectByRole(authStore) {
-    // Si no está logueado, no redirige.
-    if (!authStore.isLoggedIn()) return null;
+/**
+ * Valida los permisos de rol y sub-estados requeridos por la ruta.
+ * Retorna true para permitir la navegación o un descriptor de ruta para redirigir.
+ */
+function checkRouteAccess(to, authStore) {
+  const hasMeta = (key) => to.matched.some((record) => Boolean(record.meta?.[key]));
 
-    // Cliente
-    if (authStore.isCustomer()) return {name: "customer-offers"};
+  // 1. Si la cuenta está inactiva, solo puede acceder a /inactive
+  if (authStore.inactive()) {
+    return hasMeta("requiresInactive") ? true : { name: "inactive" };
+  }
 
-    // Vendedor
-    if (authStore.isSeller()) {
-        if (authStore.registeringEstablishment())
-            return {name: "register-establishment"};
-        if (authStore.waitingConfirmation())
-            return {name: "waiting-confirmation"};
-        if (authStore.deniedConfirmation())
-            return {name: "denied-confirmation"};
-        if (authStore.inactive()) return {name: "inactive"};
-        return {name: "seller-dashboard"};
+  // 2. Si no está inactivo pero navega a /inactive, enviarlo a su pantalla de trabajo
+  if (hasMeta("requiresInactive")) {
+    return authStore.getDefaultRoute();
+  }
+
+  // 3. Rutas de Administrador
+  if (hasMeta("requiresAdmin")) {
+    return authStore.isAdmin() ? true : authStore.getDefaultRoute();
+  }
+
+  // 4. Rutas de Comprador (Customer)
+  if (hasMeta("requiresCustomer")) {
+    return authStore.isCustomer() ? true : authStore.getDefaultRoute();
+  }
+
+  // 5. Rutas de Vendedor (Seller)
+  if (hasMeta("requiresSeller")) {
+    if (!authStore.isSeller()) {
+      return authStore.getDefaultRoute();
     }
 
-    if (authStore.isAdmin()) {
-        return {name: "admin"};
+    if (hasMeta("requiresRegisteringEstablishment")) {
+      return authStore.registeringEstablishment() ? true : authStore.getDefaultRoute();
+    }
+    if (hasMeta("requiresWaitingConfirmation")) {
+      return authStore.waitingConfirmation() ? true : authStore.getDefaultRoute();
+    }
+    if (hasMeta("requiresDeniedConfirmation")) {
+      return authStore.deniedConfirmation() ? true : authStore.getDefaultRoute();
+    }
+    if (hasMeta("requiresActive")) {
+      return authStore.active() ? true : authStore.getDefaultRoute();
     }
 
-    // Rol por defecto
-    if (authStore.isDefaultRole()) {
-        if (authStore.selectingRole()) return {name: "select-role"};
-        return {path: "/"};
-    }
+    // Por defecto las rutas de vendedor requieren estado activo
+    return authStore.active() ? true : authStore.getDefaultRoute();
+  }
 
-    // Fallback
-    return {path: "/"};
+  // 6. Rutas de Rol por defecto (selección de rol)
+  if (hasMeta("requiresDefault")) {
+    if (authStore.isDefaultRole() && hasMeta("requiresSelectingRole") && authStore.selectingRole()) {
+      return true;
+    }
+    return authStore.getDefaultRoute();
+  }
+
+  // Si la ruta protegida no tiene requerimientos específicos de rol
+  return true;
 }
 
-router.beforeEach(async (to, from, next) => {
-    const authStore = useAuthStore();
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore();
 
-    if (!to.meta.requiresAuth) {
-        try {
-            await authStore.heavyVerifySession();
-            const dest = redirectByRole(authStore);
-            if (dest) return next(dest);
-            return next();
-        } catch (error) {
-            return next();
-        }
+  // Asegura la verificación de sesión (0ms si RAM está presente o si no hay pista de sesión en localStorage)
+  await authStore.ensureSessionVerified();
+
+  const isExplicitPublicRoute = to.matched.every((record) => record.meta?.requiresAuth === false);
+  const isLoggedIn = authStore.isLoggedIn();
+
+  // Caso A: Ruta pública (ej: /login, /register)
+  if (isExplicitPublicRoute) {
+    if (isLoggedIn) {
+      const target = authStore.getDefaultRoute();
+      if (target && target.name !== to.name) {
+        return target;
+      }
     }
+    return true;
+  }
 
-    if (to.meta.requiresAuth) {
-        try {
-            await authStore.verifySession();
-        } catch (error) {
-            console.log(error);
-        }
-        if (authStore.isLoggedIn()) {
-            switch (true) {
-                case to.meta.requiresCustomer && authStore.isCustomer():
-                    next();
-                    break;
-                case to.meta.requiresSeller && authStore.isSeller():
-                    // Manage seller-specific states
-                    switch (true) {
-                        case to.meta.requiresRegisteringEstablishment &&
-                        authStore.registeringEstablishment():
-                            next();
-                            break;
-                        case to.meta.requiresWaitingConfirmation &&
-                        authStore.waitingConfirmation():
-                            next();
-                            break;
-                        case to.meta.requiresDeniedConfirmation &&
-                        authStore.deniedConfirmation():
-                            next();
-                            break;
-                        case to.meta.requiresActive && authStore.active():
-                            next();
-                            break;
-                        default: {
-                            const dest = redirectByRole(authStore);
-                            if (dest) return next(dest);
-                            return next();
-                        }
-                    }
-                    break;
-                case to.meta.requiresDefault && authStore.isDefaultRole():
-                    if (to.meta.requiresSelectingRole && authStore.selectingRole()) {
-                        next();
-                    }
-                    break;
-                case to.meta.requiresAdmin && authStore.isAdmin():
-                    next();
-                    break;
-                case to.meta.requiresInactive && authStore.inactive():
-                    next();
-                    break;
-                default: {
-                    const dest = redirectByRole(authStore);
-                    if (dest) return next(dest);
-                    return next();
-                }
-            }
-        }
+  // Caso B: Ruta protegida
+  if (!isLoggedIn) {
+    return { name: "login" };
+  }
 
-        if (!authStore.isLoggedIn()) {
-            return next({name: "login"});
-        }
-    }
+  // Caso C: Usuario autenticado accediendo a ruta protegida
+  const accessResult = checkRouteAccess(to, authStore);
+
+  // Evitar auto-redirecciones cíclicas si el destino coincide con la ruta actual
+  if (accessResult && typeof accessResult === "object" && accessResult.name === to.name) {
+    return true;
+  }
+
+  return accessResult;
 });
 
 export default router;
