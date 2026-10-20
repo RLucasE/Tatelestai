@@ -7,14 +7,18 @@
 
 ---
 
-## Resumen Ejecutivo
+## Resumen Ejecutivo y Estado Actual
 
-| # | Tarea | Valor (1-10) | Complejidad (1-10) | Ratio | Veredicto | Orden Recomendado |
-|---|---|---|---|---|---|---|
-| 🗺️ | **Búsquedas Geolocalizadas (Frontend)** | 9 | 3 | **3.00** | 🟢 Quick Win | **1º** |
-| 💳 | **Mercado Pago** | 9 | 7 | **1.29** | 🟡 Sprint actual | **2º** |
-| 📦 | **Pack Sorpresa** | 7 | 5 | **1.40** | 🟡 Sprint actual | **3º** |
-| 🎨 | **Refactor UI/UX** | 8 | 7 | **1.14** | 🟡 Sprint actual (incremental) | **4º** |
+| # | Tarea | Valor (1-10) | Complejidad (1-10) | Ratio | Estado |
+|---|---|---|---|---|---|
+| 🗺️ | **Búsquedas Geolocalizadas (Frontend + Mapa)** | 9 | 3 | **3.00** | 🟢 Completado |
+| 💳 | **Mercado Pago Checkout Pro + Reembolsos** | 9 | 7 | **1.29** | 🟢 Completado |
+| 📦 | **Pack Sorpresa + Plantillas** | 7 | 5 | **1.40** | 🟢 Completado |
+| 🔔 | **Notificaciones en Tiempo Real (Reverb + Echo)** | 9 | 6 | **1.50** | 🟢 Completado |
+| ⭐ | **Calificaciones Post-Retiro y Trust Score** | 8 | 6 | **1.33** | 🟢 Completado |
+| 📱 | **Código QR Dinámico y Escáner en Mostrador** | 8 | 4 | **2.00** | ⏳ Pendiente |
+| 🛡️ | **Excepciones de Dominio y Manejo de Excepciones API** | 8 | 4 | **2.00** | ⏳ Pendiente |
+| 🎨 | **Actualización Grande del Frontend** | 8 | 7 | **1.14** | 🗓️ Planeada para más adelante |
 
 ---
 
@@ -118,70 +122,12 @@ El backend ya está **100% implementado**:
 
 ---
 
-## 4. 🎨 Refactor UI/UX y Arquitectura Frontend
+## 4. 🎨 Actualización Grande del Frontend (Planeada para más adelante)
 
-**Valor: 8 / 10** · **Complejidad: 7 / 10** · **Ratio: 1.14**
+**Estado: 🗓️ Planeada para una fase futura** · **Valor: 8 / 10** · **Complejidad: 7 / 10**
 
-### Justificación de Valor (8/10)
-- Para la evaluación de tesis, la legibilidad, mantenibilidad y modularidad del código frontend es un criterio calificador.
-- Eliminar el acoplamiento directo de llamadas HTTP (`axiosInstance.get/post`) dentro de los componentes demuestra dominio de patrones modernos en Vue 3 (Composables, Services, Separation of Concerns).
-- La experiencia visual (loading states, skeletons, transiciones, empty states) transmite solidez en la presentación.
+Se planifica una actualización integral y modernización profunda del frontend de forma consolidada una vez cerradas todas las funcionalidades operativas de backend y retiro (código QR y manejo de excepciones de dominio en API).
 
-### Justificación de Complejidad (7/10)
-- Existen más de 45 componentes distribuidos en carpetas de layouts por rol.
-- Mover archivos y renombrar rutas sin tests de frontend puede introducir errores de navegación.
-- Intentar un rediseño completo de una sola vez ("Big Bang") compromete los plazos de entrega.
-
-### Estrategia de Ejecución: Refactorización Incremental por Fases
-
-| Fase | Subtarea | Valor | Complejidad | Ratio | Momento Óptimo |
-|---|---|---|---|---|---|
-| **A** | Composables reutilizables de API (`useOffers()`, `useCart()`, `useSells()`) | 8 | 4 | **2.00** ✅ | Acompañando cada feature |
-| **B** | Store dedicado `useCartStore` en Pinia | 7 | 3 | **2.33** ✅ | Junto con Mercado Pago |
-| **C** | Skeletons de carga y Empty States | 7 | 3 | **2.33** ✅ | Junto con la geolocalización |
-| **D** | Reorganizar vistas desde `components/layouts/` hacia `views/` | 6 | 5 | **1.20** | Post implementación de features |
-| **E** | Migración a biblioteca de UI (ej. Shadcn-vue / Radix) | 5 | 7 | **0.71** ⚠️ | Opcional / Fuera de alcance |
-
-> [!TIP]
-> **Regla de oro**: Las fases **A**, **B** y **C** deben ejecutarse *en paralelo* mientras se construyen las features funcionales. Por ejemplo: al implementar Mercado Pago, se extrae la lógica del carrito a `useCartStore` y se usa un composable `usePayment()`.
-
----
-
-## Plan de Ejecución Integrado (Cronograma Recomendado)
-
-```mermaid
-gantt
-    title Cronograma de Implementación — Tesis Tatelestai
-    dateFormat  YYYY-MM-DD
-    axisFormat  %d/%m
-
-    section 1. Búsqueda y Geo (Frontend)
-    Navigator Geolocation + Filtros en SearchBar :a1, 2026-09-08, 2d
-    Skeletons y Empty States en Catálogo        :a2, after a1, 1d
-    Componente Mapa Leaflet + Marcadores Proximidad :a3, after a1, 3d
-
-    section 2. Pasarela Mercado Pago
-    PaymentService + Adapter + Credenciales Sandbox :b1, after a3, 3d
-    Preferencia Checkout Pro + Webhooks IPN         :b2, after b1, 3d
-    useCartStore en Pinia + Adaptación Transaccional :b3, after b2, 3d
-    UI de Pago + Pantallas de Callback/Resultado    :b4, after b3, 3d
-    Tests Pest PHP (Mocks de Pago)                 :b5, after b4, 2d
-
-    section 3. Pack Sorpresa
-    Migración BD + Enum OfferType + DTOs           :c1, after b5, 2d
-    CreateOfferAction + Validaciones Backend       :c2, after c1, 3d
-    Formulario Vendedor + Badge Catálogo           :c3, after c2, 3d
-    Tests Pest PHP del Flujo de Packs              :c4, after c3, 2d
-
-    section 4. Refactor Estructural Frontend
-    Composables API (continuo en desarrollo)       :d1, 2026-09-08, 25d
-    Reorganización de vistas en views/             :d2, after c4, 3d
-```
-
----
-
-## Preguntas Abiertas para Definición Técnica
-
-1. **Mapa de Geolocalización**: ¿Avanzamos con **Leaflet + OpenStreetMap** (100% gratuito, sin límites de cuota de API, ideal para tesis) o prefieres Google Maps JS API?
-2. **Modelo del Pack Sorpresa (✅ Resuelta)**: Formalizada a favor de **Bolsas Sorpresa con cupos diarios** (sin catálogo individual, con valor mínimo garantizado y precio bonificado fijado por el comercio). Ver [Lógica de Negocio: Packs Sorpresa](../explanation/logica-negocio-packs-sorpresa.md) y [ADR-0004](../explanation/adrs/0004-transicion-a-modelo-bolsas-sorpresa.md).
-3. **Librería de Componentes**: ¿Mantenemos Tailwind CSS v4 puro estandarizando componentes propios, o evaluamos incorporar Shadcn-Vue / PrimeVue?
+### Alcance de la Actualización Futura:
+- **Reestructuración arquitectónica**: Estandarización de vistas, componentes, stores de Pinia y composables de consumo de API.
+- **Pulido integral de UI/UX**: Unificación total bajo el sistema de diseño *Dark Violet & Plum* (`DESIGN.md`), estados de carga, micro-interacciones y experiencia móvil.

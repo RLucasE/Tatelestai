@@ -205,9 +205,14 @@
 
         <div class="pickup-code-box">
             <h2>Código de Retiro</h2>
+            @if(!empty($qrBinary))
+                <div style="background: #ffffff; padding: 12px; display: inline-block; border-radius: 12px; margin: 12px auto; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+                    <img src="{{ $message->embedData($qrBinary, 'pickup-qr.png', 'image/png') }}" alt="Código QR de retiro" width="160" height="160" style="display: block; margin: 0 auto;" />
+                </div>
+            @endif
             <div class="pickup-code">{{ $sell->pickup_code }}</div>
             <p style="margin: 8px 0 0; font-size: 13px; opacity: 0.9;">
-                Presenta este código al retirar tu pedido
+                Presenta este código o escanea el QR al retirar tu pedido
             </p>
         </div>
 

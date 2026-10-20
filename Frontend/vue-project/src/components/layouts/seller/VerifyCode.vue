@@ -1,363 +1,324 @@
-<template>
-  <div class="verify-code-container">
-    <div class="verify-code-card">
-      <h1 class="title">Verificar Código de Cliente</h1>
-      <p class="subtitle">Ingresa el código de pickup del cliente para ver los detalles del pedido</p>
-
-      <!-- Formulario para ingresar el código -->
-      <form @submit.prevent="verifyCode" class="code-form">
-        <div class="input-group">
-          <label for="pickup-code" class="input-label">Código de Pickup</label>
-          <input
-            id="pickup-code"
-            v-model="pickupCode"
-            type="text"
-            placeholder="XXXX-XXXX-XXXX"
-            class="code-input"
-            :disabled="loading"
-            @input="formatCode"
-            maxlength="14"
-          />
-          <span v-if="error" class="error-message">{{ error }}</span>
-        </div>
-
-        <button type="submit" class="verify-button" :disabled="loading || !pickupCode">
-          <span v-if="!loading">Verificar Código</span>
-          <span v-else>Verificando...</span>
-        </button>
-      </form>
-
-      <!-- Mensaje de éxito -->
-      <div v-if="successMessage" class="success-notification">
-        {{ successMessage }}
-      </div>
-
-      <!-- Datos del pedido -->
-      <div v-if="orderData" class="order-details">
-        <div class="order-header">
-          <h2 class="order-title">Detalles del Pedido</h2>
-          <span class="pickup-code-badge">{{ orderData.pickup_code }}</span>
-        </div>
-
-        <!-- Información del cliente -->
-        <div class="customer-info">
-          <h3 class="section-title">Cliente</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Nombre:</span>
-              <span class="info-value">{{ orderData.customer.name }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Email:</span>
-              <span class="info-value">{{ orderData.customer.email }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bolsas sorpresa del pedido -->
-        <div class="offers-section">
-          <h3 class="section-title">Bolsas Sorpresa</h3>
-          <div v-for="(offer, index) in orderData.offers" :key="index" class="offer-card">
-            <div class="offer-header">
-              <span class="offer-title">{{ offer.pack_name || offer.offer_title }}</span>
-              <span class="offer-quantity">x{{ offer.offer_quantity }}</span>
-            </div>
-            <div class="product-details">
-              <div class="product-info">
-                <span v-if="offer.pack_description" class="product-description">{{ offer.pack_description }}</span>
-              </div>
-              <div class="product-meta">
-                <span class="product-price">${{ Number(offer.pack_price).toLocaleString('es-AR') }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Total -->
-        <div class="order-total">
-          <span class="total-label">Total:</span>
-          <span class="total-amount">${{ calculateOrderTotal(orderData) }}</span>
-        </div>
-
-        <!-- Fecha -->
-        <div class="order-date">
-          <span class="date-label">Fecha del pedido:</span>
-          <span class="date-value">{{ formatDate(orderData.created_at) }}</span>
-        </div>
-
-        <!-- Botón de confirmar -->
-        <div class="actions">
-          <button
-            class="confirm-button"
-            @click="confirmDelivery"
-            :disabled="confirmingDelivery"
-          >
-            <span v-if="!confirmingDelivery">Confirmar Entrega</span>
-            <span v-else>Confirmando...</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref } from 'vue';
-import axiosInstance from "@/lib/axios.js";
+import { shallowRef } from 'vue';
+import { useFormatters } from '@/composables/useFormatters';
+import { usePickupRedemption } from '@/composables/usePickupRedemption';
+import QrScannerModal from '@/components/layouts/seller/QrScannerModal.vue';
 
-const pickupCode = ref('');
-const orderData = ref(null);
-const loading = ref(false);
-const error = ref('');
-const confirmingDelivery = ref(false);
-const successMessage = ref('');
+const { formatCurrency } = useFormatters();
 
-const calculateOrderTotal = (data) => {
-  if (!data) return '0.00';
-  if (data.total_price != null) return Number(data.total_price).toFixed(2);
-  if (!data.offers) return '0.00';
-  return data.offers.reduce((total, offer) => {
-    return total + (Number(offer.offer_quantity || 0) * Number(offer.pack_price || 0));
-  }, 0).toFixed(2);
+const {
+  pickupCode,
+  isVerifying,
+  verifyError,
+  verifiedOrder,
+  isConfirming,
+  successMessage,
+  setAndFormatCode,
+  verifyCode,
+  handleQrScanned,
+  confirmDelivery,
+  clearOrder,
+  calculateTotal,
+} = usePickupRedemption();
+
+const showScannerModal = shallowRef(false);
+
+const onInputCode = (event) => {
+  setAndFormatCode(event.target.value);
 };
 
-const formatCode = (event) => {
-  // Formatear el código mientras se escribe (agregar guiones automáticamente)
-  let value = event.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-
-  if (value.length > 4) {
-    value = value.slice(0, 4) + '-' + value.slice(4);
-  }
-  if (value.length > 9) {
-    value = value.slice(0, 9) + '-' + value.slice(9);
-  }
-
-  pickupCode.value = value;
+const onQrScanned = async (decodedText) => {
+  await handleQrScanned(decodedText);
 };
 
-const verifyCode = async () => {
-  if (!pickupCode.value) {
-    error.value = 'Por favor, ingresa un código de pickup';
-    return;
-  }
-
-  loading.value = true;
-  error.value = '';
-  successMessage.value = '';
-  orderData.value = null;
-
-  try {
-    const response = await axiosInstance.post('/check-customer-code', {
-      pickup_code: pickupCode.value
-    });
-
-    orderData.value = response.data.data;
-  } catch (err) {
-    if (err.response) {
-      if (err.response.status === 404) {
-        error.value = 'Código de pickup no encontrado';
-      } else if (err.response.status === 403) {
-        error.value = 'No tienes permiso para verificar este código';
-      } else if (err.response.status === 422) {
-        error.value = 'Código de pickup inválido';
-      } else {
-        error.value = err.response.data.error || 'Error al verificar el código';
-      }
-    } else {
-      error.value = 'Error de conexión. Por favor, intenta nuevamente';
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
-const confirmDelivery = async () => {
-  if (!orderData.value || !orderData.value.sell_id) {
-    error.value = 'No hay datos del pedido para confirmar';
-    return;
-  }
-
-  confirmingDelivery.value = true;
-  error.value = '';
-  successMessage.value = '';
-
-  try {
-    await axiosInstance.post(`/complete-sell/${orderData.value.sell_id}`, {
-      pick_up_code: orderData.value.pickup_code
-    });
-
-    successMessage.value = 'Entrega confirmada exitosamente';
-
-    // Limpiar los datos después de 2 segundos
-    setTimeout(() => {
-      orderData.value = null;
-      pickupCode.value = '';
-      successMessage.value = '';
-    }, 2000);
-
-  } catch (err) {
-    if (err.response) {
-      if (err.response.status === 404) {
-        error.value = 'Venta no encontrada';
-      } else if (err.response.status === 403) {
-        error.value = 'No tienes permiso para completar esta venta';
-      } else if (err.response.status === 422) {
-        error.value = err.response.data.error || 'Datos inválidos';
-      } else {
-        error.value = err.response.data.error || 'Error al confirmar la entrega';
-      }
-    } else {
-      error.value = 'Error de conexión. Por favor, intenta nuevamente';
-    }
-  } finally {
-    confirmingDelivery.value = false;
-  }
+const onConfirmDelivery = () => {
+  confirmDelivery();
 };
 
 const formatDate = (dateString) => {
+  if (!dateString) return '';
   const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
+  return date.toLocaleDateString('es-AR', {
     day: 'numeric',
+    month: 'long',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 </script>
 
+<template>
+  <div class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 text-[#E8EAF6]">
+    
+    <!-- Encabezado de la Sección -->
+    <div class="space-y-1">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-[#A78BFA] block">
+        Mostrador de Entrega
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+        Verificar y Canjear Pedido
+      </h1>
+      <p class="text-xs sm:text-sm text-[#A5A8C2]">
+        Escaneá el código QR del cliente o ingresá su código alfanumérico para revisar los packs y confirmar la entrega.
+      </p>
+    </div>
+
+    <!-- Tarjeta Principal de Validación -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-[#2D2438] border border-white/[0.08] shadow-xl space-y-6">
+      
+      <!-- Opciones Rápidas: Escáner QR o Teclado -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6 border-b border-white/[0.08]">
+        
+        <!-- Opción A: Escanear con Cámara -->
+        <button
+          type="button"
+          class="p-5 rounded-2xl bg-[#1A1625] border border-white/[0.08] hover:border-[#10B981]/50 text-left transition-all hover:scale-[1.01] active:scale-98 cursor-pointer group flex items-start gap-4"
+          @click="showScannerModal = true"
+        >
+          <div class="w-12 h-12 rounded-2xl bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 flex items-center justify-center shrink-0 group-hover:bg-[#10B981]/25 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div class="space-y-1 min-w-0">
+            <span class="text-sm font-bold text-white group-hover:text-[#34D399] transition-colors block">
+              Escanear con Cámara
+            </span>
+            <p class="text-xs text-[#A5A8C2] leading-relaxed">
+              Lectura automática del código QR que el cliente exhibe en su pantalla.
+            </p>
+          </div>
+        </button>
+
+        <!-- Opción B: Ingreso Manual -->
+        <div class="p-5 rounded-2xl bg-[#1A1625] border border-white/[0.08] space-y-2">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="text-xs font-bold text-white">Ingreso por Código</span>
+          </div>
+          <p class="text-[11px] text-[#A5A8C2]">
+            Si la cámara no está disponible, ingresá los 12 caracteres alfanuméricos.
+          </p>
+        </div>
+      </div>
+
+      <!-- Formulario de Entrada Manual -->
+      <form @submit.prevent="verifyCode()" class="space-y-3">
+        <label for="pickup-code-input" class="text-xs font-semibold text-[#A5A8C2] block">
+          Código de Retiro del Cliente
+        </label>
+        
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <input
+              id="pickup-code-input"
+              type="text"
+              v-model="pickupCode"
+              placeholder="XXXX-XXXX-XXXX"
+              maxlength="14"
+              class="w-full px-4 py-3 rounded-2xl bg-[#1A1625] border border-white/[0.12] text-white font-mono text-lg font-black tracking-widest text-center uppercase focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition-colors placeholder:text-white/20 placeholder:font-sans placeholder:tracking-normal disabled:opacity-50"
+              :disabled="isVerifying || isConfirming"
+              @input="onInputCode"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="px-6 py-3 rounded-2xl text-xs font-bold bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-lg shadow-[#7C3AED]/25 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shrink-0"
+            :disabled="isVerifying || isConfirming || !pickupCode.trim()"
+          >
+            <svg
+              v-if="isVerifying"
+              class="w-4 h-4 animate-spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <svg
+              v-else
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span>{{ isVerifying ? 'Verificando...' : 'Verificar Código' }}</span>
+          </button>
+        </div>
+
+        <!-- Alerta de Error -->
+        <div
+          v-if="verifyError"
+          class="p-3.5 rounded-2xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-xs text-[#F87171] font-semibold flex items-center gap-2"
+        >
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ verifyError }}</span>
+        </div>
+
+        <!-- Alerta de Éxito -->
+        <div
+          v-if="successMessage"
+          class="p-3.5 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 text-xs text-[#34D399] font-bold flex items-center gap-2"
+        >
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>{{ successMessage }}</span>
+        </div>
+      </form>
+
+      <!-- Ficha del Pedido Verificado (Paso 1 -> Paso 2) -->
+      <div
+        v-if="verifiedOrder"
+        class="pt-6 border-t border-white/[0.08] space-y-6 animate-fadeIn"
+      >
+        <!-- Encabezado del Pedido -->
+        <div class="flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#A78BFA] block">
+              Detalles de la Reserva
+            </span>
+            <h2 class="text-xl font-black text-white mt-0.5">
+              Pedido #{{ verifiedOrder.sell_id }}
+            </h2>
+            <span class="text-xs text-[#A5A8C2] block">
+              Emitido el {{ formatDate(verifiedOrder.created_at) }} hs
+            </span>
+          </div>
+
+          <span class="px-3.5 py-1.5 rounded-xl font-mono text-sm font-black bg-[#7C3AED]/20 border border-[#7C3AED]/35 text-[#C4B5FD]">
+            {{ verifiedOrder.pickup_code }}
+          </span>
+        </div>
+
+        <!-- Información del Cliente -->
+        <div class="p-4 rounded-2xl bg-[#1A1625] border border-white/[0.06] space-y-2">
+          <span class="text-[10px] font-bold text-[#A5A8C2] uppercase tracking-wider block">
+            Datos del Comprador
+          </span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-[#A5A8C2] block text-[11px]">Nombre y Apellido</span>
+              <strong class="text-white font-bold text-sm">{{ verifiedOrder.customer?.name || 'Cliente' }}</strong>
+            </div>
+            <div>
+              <span class="text-[#A5A8C2] block text-[11px]">Email</span>
+              <span class="text-[#E8EAF6]">{{ verifiedOrder.customer?.email }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bolsas Sorpresa a Entregar -->
+        <div class="space-y-2.5">
+          <span class="text-xs font-bold text-[#A5A8C2] uppercase tracking-wider block">
+            Bolsas sorpresa incluidas en este pedido
+          </span>
+
+          <div class="space-y-2">
+            <div
+              v-for="(offer, idx) in verifiedOrder.offers"
+              :key="idx"
+              class="p-4 rounded-2xl bg-[#1A1625] border border-white/[0.06] flex items-center justify-between gap-4"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="px-2.5 py-1 rounded-lg bg-[#7C3AED]/25 border border-[#7C3AED]/35 text-white font-bold text-xs shrink-0">
+                  x{{ offer.offer_quantity }}
+                </span>
+                <div class="min-w-0">
+                  <h4 class="text-sm font-bold text-white truncate">
+                    {{ offer.pack_name || offer.offer_title }}
+                  </h4>
+                  <p v-if="offer.pack_description" class="text-xs text-[#A5A8C2] line-clamp-1 mt-0.5">
+                    {{ offer.pack_description }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0">
+                <span class="text-sm font-black text-white">
+                  ${{ formatCurrency(offer.pack_price * offer.offer_quantity) }}
+                </span>
+                <span class="block text-[10px] text-[#A5A8C2]">
+                  ${{ formatCurrency(offer.pack_price) }} c/u
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total y Acciones Finales (Paso 2) -->
+        <div class="pt-4 border-t border-white/[0.08] flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <span class="text-xs text-[#A5A8C2] uppercase font-semibold block">Total Abonado</span>
+            <span class="text-2xl font-black text-white tracking-tight">
+              ${{ formatCurrency(calculateTotal(verifiedOrder)) }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#A5A8C2] hover:text-white bg-white/[0.06] hover:bg-white/[0.1] transition-colors cursor-pointer"
+              :disabled="isConfirming"
+              @click="clearOrder"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-bold bg-[#10B981] hover:bg-[#059669] text-white shadow-lg shadow-[#10B981]/25 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 cursor-pointer"
+              :disabled="isConfirming"
+              @click="onConfirmDelivery"
+            >
+              <svg
+                v-if="isConfirming"
+                class="w-4 h-4 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <svg
+                v-else
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{{ isConfirming ? 'Confirmando entrega...' : 'Confirmar Entrega' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal de Escáner QR con Cámara -->
+    <QrScannerModal
+      :show="showScannerModal"
+      @close="showScannerModal = false"
+      @scanned="onQrScanned"
+    />
+  </div>
+</template>
+
 <style scoped>
-.verify-code-container {
-  min-height: 100vh;
-  padding: 2rem;
-  background: var(--color-bg);
-}
-
-.verify-code-card {
-  max-width: 800px;
-  margin: 0 auto;
-  background: var(--color-darkest);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  color: var(--color-primary);
-  margin-bottom: 2rem;
-  font-size: 0.95rem;
-}
-
-.code-form {
-  margin-bottom: 2rem;
-}
-
-.input-group {
-  margin-bottom: 1.5rem;
-}
-
-.input-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--color-text);
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.code-input {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-align: center;
-  border: 2px solid var(--color-secondary);
-  border-radius: 8px;
-  background: var(--color-focus);
-  color: var(--color-text);
-  transition: border-color 0.2s ease;
-  text-transform: uppercase;
-}
-
-.code-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.code-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.error-message {
-  display: block;
-  margin-top: 0.5rem;
-  color: #ef4444;
-  font-size: 0.875rem;
-}
-
-.verify-button {
-  width: 100%;
-  padding: 0.875rem 1.5rem;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.verify-button:hover:not(:disabled) {
-  background: var(--color-primary);
-  transform: translateY(-1px);
-}
-
-.verify-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.success-notification {
-  padding: 1rem;
-  background: #10b981;
-  color: white;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  font-weight: 600;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.order-details {
-  border-top: 2px solid var(--color-secondary);
-  padding-top: 2rem;
-  animation: fadeIn 0.3s ease;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -365,231 +326,7 @@ const formatDate = (dateString) => {
   }
 }
 
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.order-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.pickup-code-badge {
-  padding: 0.5rem 1rem;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border-radius: 6px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  font-size: 0.9rem;
-}
-
-.customer-info, .offers-section {
-  margin-bottom: 2rem;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-secondary);
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.info-label {
-  color: var(--color-primary);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.info-value {
-  color: var(--color-text);
-  font-size: 1rem;
-}
-
-.offer-card {
-  background: var(--color-focus);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--color-secondary);
-}
-
-.offer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.offer-title {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 1.05rem;
-}
-
-.offer-quantity {
-  background: var(--color-secondary);
-  color: var(--color-text);
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.product-details {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.product-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.product-name {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-.product-description {
-  color: var(--color-primary);
-  font-size: 0.875rem;
-}
-
-.product-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-}
-
-.product-quantity {
-  color: var(--color-primary);
-  font-size: 0.875rem;
-}
-
-.product-price {
-  color: var(--color-text);
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.order-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: var(--color-focus);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.total-label {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.total-amount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.order-date {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  background: var(--color-secondary);
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-}
-
-.date-label {
-  color: var(--color-primary);
-  font-size: 0.9rem;
-}
-
-.date-value {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-.actions {
-  margin-top: 2rem;
-}
-
-.confirm-button {
-  width: 100%;
-  padding: 1rem 1.5rem;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.confirm-button:hover:not(:disabled) {
-  background: var(--color-primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.confirm-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-@media (max-width: 640px) {
-  .verify-code-container {
-    padding: 1rem;
-  }
-
-  .verify-code-card {
-    padding: 1.5rem;
-  }
-
-  .title {
-    font-size: 1.5rem;
-  }
-
-  .order-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-
-  .product-details {
-    flex-direction: column;
-  }
-
-  .product-meta {
-    align-items: flex-start;
-  }
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 </style>

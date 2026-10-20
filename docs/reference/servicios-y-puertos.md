@@ -13,6 +13,7 @@
 | `tatelestai-nginx` | `nginx:alpine` | `8000` *(o `${NGINX_PORT}`)* | `80` | Proxy inverso web para Laravel API. |
 | `tatelestai-php-fpm` | `php:8.3-fpm-alpine` | N/A | `9000` | Backend API Laravel 12 (FastCGI). Incluye Composer 2. |
 | `tatelestai-queue` | `php:8.3-fpm-alpine` | N/A | N/A | Worker para colas en segundo plano (`queue:work`). |
+| `tatelestai-reverb` | `php:8.3-fpm-alpine` | `8080` *(o `${REVERB_PORT}`)* | `8080` | Servidor WebSocket en tiempo real para notificaciones y carritos. |
 | `tatelestai-postgres` | `postgres:16-alpine` | `5432` | `5432` | Base de datos relacional principal. |
 | `tatelestai-typesense`| `typesense/typesense:30.1`| `8108` | `8108` | Motor de búsqueda instantánea y geocodificación. |
 
@@ -34,7 +35,12 @@ Los contenedores de Tatelestai están diseñados para inicializarse de forma com
 * **Sincronización con `php-fpm`**: Espera de forma activa (hasta 180s) a que el contenedor `php-fpm` finalice la instalación de Composer y elimine el archivo `.composer_installing`.
 * **Espera activa de base de datos**: Confirma la conectividad con PostgreSQL antes de ejecutar el comando `php artisan queue:work --sleep=3 --tries=3 --timeout=90`.
 
-### 3. Frontend (`tatelestai-vue`)
+### 3. Servidor WebSocket Reverb (`tatelestai-reverb`)
+* **Sincronización y dependencias**: Comparte la imagen base de backend y monta `/var/www`.
+* **Ejecución del servicio**: Inicia el demonio de Reverb escuchando en todas las interfaces mediante `php artisan reverb:start --host=0.0.0.0 --port=8080 --hostname=0.0.0.0`.
+* **Dependencias**: Espera que `postgres` se encuentre saludable (*healthy*) y que `php-fpm` haya iniciado.
+
+### 4. Frontend (`tatelestai-vue`)
 * **Dependencias de Node**: Si falta `node_modules` o si cambiaron `package.json`/`package-lock.json`, ejecuta `npm install` automáticamente.
 * **Permisos**: Ajusta los permisos de `package-lock.json` al usuario host `${UID}:${GID}` para evitar conflictos en Git.
 * **Servidor Vite**: Lanza `npm run dev -- --host 0.0.0.0` para permitir acceso externo con recarga en caliente (HMR).

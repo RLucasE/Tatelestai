@@ -96,3 +96,39 @@ El progreso se mide por cumplimiento de objetivos de calidad arquitectónica y c
 | **7.3** | Patrones de Diseño y Diagramado (Modelo C4) | Documentar patrones aplicados (Strategy, Adapter, Observer, Action) y generar diagramas de arquitectura. |
 | **7.4** | Portal de Documentación (Diátaxis) | Elaborar guía completa de instalación, arquitectura, referencia de servicios y comandos de testing. |
 | **7.5** | Preparación y Justificación Académica | Mapear cada decisión técnica con su fundamento teórico para la defensa del proyecto/tesis. |
+
+---
+
+## Fase 8: Pasarela de Pagos y Split de Comisiones (Mercado Pago)
+
+| Hito | Conceptos a Estudiar | Auditar y Aplicar en Tatelestai |
+|---|---|---|
+| **8.1** | Patrón Adapter y Desacoplamiento de Terceros | Diseñar `PaymentServiceInterface` e implementar `MercadoPagoPaymentAdapter`. |
+| **8.2** | Creación de Preferencias y Checkout Pro | Integrar endpoint de preferencias y enlace de pago para compras de bolsas sorpresa. |
+| **8.3** | Webhooks e Idempotencia Transaccional | Implementar `POST /api/webhooks/mercadopago` con verificación oficial y bloqueo pesimista. |
+| **8.4** | Modelo de Comisiones de Marketplace | Calcular y retener el 15% de comisión de plataforma y liquidar neto al comerciante. |
+| **8.5** | Reembolsos Automáticos y Restitución de Stock | Automatizar llamadas de reembolso ante cancelaciones y retornar stock a la oferta. |
+
+---
+
+## Fase 9: Confianza, Verificación y Reputación (Trust Score y Doble Media)
+
+| Hito | Conceptos a Estudiar | Auditar y Aplicar en Tatelestai |
+|---|---|---|
+| **9.1** | Auditoría Documental y Cumplimiento Bromatológico | Modelar `EstablishmentVerificationFile` con soft deletes y soporte multiformato. |
+| **9.2** | Patrón Ledger para Auditoría Inmutable | Implementar `EstablishmentTrustLog` y matriz de puntos `TrustScoreCriterion`. |
+| **9.3** | Panel de Auditoría de Administrador | Crear flujos de revisión individual, por lotes, llamadas telefónicas y Google Places. |
+| **9.4** | Políticas de Calificación Post-Retiro | Asegurar que solo órdenes `PICKED_UP` puedan calificarse dentro de los 14 días. |
+| **9.5** | Algoritmo de Doble Media de Reputación | Calcular y persistir media histórica y media reciente (30 días) asíncronamente con Job. |
+
+---
+
+## Fase 10: Tiempo Real, Notificaciones y Dashboard Operativo
+
+| Hito | Conceptos a Estudiar | Auditar y Aplicar en Tatelestai |
+|---|---|---|
+| **10.1** | Arquitectura WebSocket y Laravel Reverb | Orquestar contenedor `tatelestai-reverb` (8080) e integrar Laravel Echo en Vue 3. |
+| **10.2** | Canales Privados y Descarte de Broadcast Masivo | Migrar de canal público `offers` a `private-App.Models.User.{id}` con Sanctum. |
+| **10.3** | Interrupción Focalizada de Carritos | Implementar `NotifyCartStockDisruptionAction` para alertar solo a clientes afectados. |
+| **10.4** | Patrón de Plantillas de Ofertas (`PackTemplate`) | Diseñar módulo de plantillas para publicación de excedentes con 1 solo clic. |
+| **10.5** | Dashboard Operativo de Mostrador | Construir consola en vivo para vendedores con métricas del día y validación de retiros. |

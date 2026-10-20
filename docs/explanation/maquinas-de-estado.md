@@ -60,17 +60,20 @@ stateDiagram-v2
 
 La venta representa el compromiso de compra y el contrato de retiro físico en el local gastronómico.
 
-### Diagrama de Estados
+### Diagrama de Estados y Flujo de Pago
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: Customer confirma compra
-    PENDING --> CONFIRMED: Stock validado y reservado
-    CONFIRMED --> READY: Seller prepara el paquete
-    READY --> PICKED_UP: Customer retira con código/QR
+    [*] --> PENDING: Customer confirma reserva de carrito
+    PENDING --> CONFIRMED: Stock validado y bloqueado pesimistamente
+    
+    CONFIRMED --> READY: Pago acreditado en Mercado Pago (PaymentStatus::APPROVED)
+    CONFIRMED --> CANCELLED: Pago rechazado o expirado (PaymentStatus::REJECTED)
+    
+    READY --> PICKED_UP: Customer retira con código/QR en mostrador
     
     CONFIRMED --> CANCELLED: Seller o Admin cancela por fuerza mayor
-    READY --> CANCELLED: Cancelación justificada
+    READY --> CANCELLED: Cancelación voluntaria dentro de plazo (reembolso automático en MP)
     
     CONFIRMED --> EXPIRED: Vence horario límite de retiro
     READY --> EXPIRED: Vence horario límite de retiro
@@ -85,6 +88,7 @@ stateDiagram-v2
 1. **Ventana de Retiro**: Cada venta calcula su fecha y hora máxima de retiro (`max_pickup_datetime`) basada en la fecha de vencimiento más temprana de los productos contenidos.
 2. **Retiro Verificado**: Para pasar a `PICKED_UP`, el comprador debe presentar el código alfanumérico generado por `GeneratePickupCodeAction`, validado por el vendedor en el sistema.
 3. **Expiración de Paquetes no Retirados**: Si la hora actual supera la ventana de retiro sin que el pedido haya sido retirado, la venta transiciona a `EXPIRED`.
+4. **Coordinación con Pasarela de Pago (`PaymentStatus`)**: Cuando una compra es cancelada en estado reembolsable (`CONFIRMED` o `READY`), el sistema despacha automáticamente el reembolso a Mercado Pago y marca `payment_status` como `REFUNDED`.
 
 ---
 
@@ -105,14 +109,34 @@ stateDiagram-v2
 
 ---
 
-## 5. Implementación en Código
+## 5. Ciclo de Vida de Verificación y Confianza del Comercio
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING_REVIEW: Registro inicial + Carga de documentación
+    
+    PENDING_REVIEW --> AUDITING: Administrador evalúa archivos y ficha
+    
+    AUDITING --> APPROVED: Trust Score suficiente + Documentos validados
+    AUDITING --> REJECTED: Inconsistencias graves o documentos apócrifos
+    
+    APPROVED --> ACTIVE: Establecimiento habilitado para publicar ofertas
+    REJECTED --> PENDING_REVIEW: Comercio subsana documentación y reenvía
+```
+
+---
+
+## 6. Implementación en Código
 
 Para garantizar consistencia y evitar cadenas mágicas (*string literals*), todos los estados se modelan mediante **PHP 8 Backed Enums**:
 
-* `App\Enums\UserState`: Estados del vendedor (`selecting`, `registering`, `waiting_for_confirmation`, `active`, `denied_confirmation`, `inactive`).
+* `App\Enums\UserState`: Estados del usuario/vendedor (`selecting`, `registering`, `waiting_for_confirmation`, `active`, `denied_confirmation`, `inactive`).
 * `App\Enums\OfferState`: Estados de la oferta (`verifying`, `active`, `purchased`, `inactive`).
-* `App\Enums\SellState`: Estados de la venta (`pending`, `confirmed`, `ready`, `picked_up`, `cancelled`, `expired`).
+* `App\Enums\SellState`: Estados operacionales de la venta (`pending`, `confirmed`, `ready`, `picked_up`, `cancelled`, `expired`).
+* `App\Enums\PaymentStatus`: Estados financieros de la pasarela de pago (`pending`, `approved`, `rejected`, `refunded`).
 * `App\Enums\CartState`: Estados del carrito (`active`, `purchased`).
 * `App\Enums\ReportStatus`: Estados de reclamos (`pending`, `reviewing`, `resolved`, `dismissed`).
+* `App\Enums\TrustScoreCriterion`: Criterios probatorios y matriz de puntos de confianza (`tax_certificate`, `municipal_permit`, `phone_call_verification`, etc.).
+* `App\Enums\VerificationFileType`: Extensiones permitidas de documentación probatoria (`pdf`, `jpg`, `png`).
 
-Las transiciones válidas y verificaciones están encapsuladas en **Actions de Dominio** de responsabilidad única (ej. `IsSellerActivableAction`, `makeSellAction`, `AddToCartAction`).
+Las transiciones válidas y verificaciones están encapsuladas en **Actions de Dominio** de responsabilidad única (ej. `IsSellerActivableAction`, `makeSellAction`, `AddToCartAction`, `CancelPurchaseAction`, `ReviewVerificationFileAction`).
