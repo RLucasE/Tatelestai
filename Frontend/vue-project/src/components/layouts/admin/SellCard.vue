@@ -67,9 +67,10 @@ export default {
 
 <style scoped>
 .sell-card {
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 

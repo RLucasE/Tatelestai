@@ -156,16 +156,17 @@ onMounted(fetchUser);
   justify-content: center;
   padding: 3rem;
   text-align: center;
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border-radius: var(--border-radius);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
 }
 
 .spinner {
   width: 50px;
   height: 50px;
   border: 4px solid var(--color-secondary);
-  border-top-color: var(--color-primary);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -184,17 +185,17 @@ onMounted(fetchUser);
 .retry-btn {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background-color: var(--color-primary);
-  color: var(--color-text);
+  background-color: var(--color-accent);
+  color: #ffffff;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   transition: background-color 0.2s;
 }
 
 .retry-btn:hover {
-  background-color: var(--color-focus);
+  background-color: var(--color-accent-hover);
 }
 
 .content {
@@ -204,11 +205,11 @@ onMounted(fetchUser);
 }
 
 .card {
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border-radius: var(--border-radius);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   padding: 1.5rem;
 }
 
@@ -255,8 +256,8 @@ onMounted(fetchUser);
 }
 
 .role-chip {
-  background-color: color-mix(in oklab, var(--color-darkest), var(--color-bg) 10%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--color-surface-sunken-base, #F2ECE4);
+  border: 1px solid var(--color-border);
   border-radius: 9999px;
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
@@ -267,14 +268,14 @@ onMounted(fetchUser);
 }
 
 .role-chip:hover {
-  background-color: color-mix(in oklab, var(--color-darkest), var(--color-bg) 15%);
-  border-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--color-secondary);
+  border-color: var(--color-accent);
 }
 
 .role-chip.active {
-  background-color: var(--color-primary);
+  background-color: var(--color-accent);
   border-color: var(--color-accent);
-  color: var(--color-text);
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {

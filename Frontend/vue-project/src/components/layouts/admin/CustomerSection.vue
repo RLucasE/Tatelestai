@@ -62,8 +62,9 @@ const verCompras = () => {
 }
 
 .customer-info {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-focus);
+  background: var(--color-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
   border-radius: 12px;
   padding: 16px;
 }
@@ -81,7 +82,7 @@ const verCompras = () => {
 }
 
 .label {
-  opacity: 0.7;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
   margin-bottom: 4px;
 }
@@ -94,7 +95,7 @@ const verCompras = () => {
 .sub-title {
   margin: 0 0 12px 0;
   font-size: 1rem;
-  color: var(--color-text);
+  color: var(--color-heading);
 }
 
 .actions-grid {
@@ -104,18 +105,21 @@ const verCompras = () => {
 }
 
 .action-btn {
-  background: var(--color-primary);
-  border: 1px solid var(--color-focus);
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-text);
   padding: 8px 12px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.2s;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .action-btn:hover {
-  background: var(--color-focus);
+  background: var(--color-surface-sunken-base, #F2ECE4);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 @media (max-width: 640px) {

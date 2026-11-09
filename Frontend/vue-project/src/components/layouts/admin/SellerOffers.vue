@@ -136,30 +136,32 @@ onMounted(() => {
   position: absolute;
   left: 0;
   top: 0;
-  background: var(--color-focus);
+  background: var(--color-primary);
   color: var(--color-text);
-  border: none;
+  border: 1px solid var(--color-border);
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .back-btn:hover {
-  background: var(--color-focus, #6b7280);
+  background: var(--color-surface-sunken-base, #F2ECE4);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .page-title {
   font-size: 2.5em;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-heading);
   margin: 0 0 10px 0;
 }
 
 .page-subtitle {
   font-size: 1.2em;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   opacity: 0.8;
   margin: 0;
 }
@@ -167,7 +169,9 @@ onMounted(() => {
 .loading-container, .error-container, .empty-container {
   text-align: center;
   padding: 40px;
-  background: var(--color-secondary);
+  background: var(--color-primary);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
   border-radius: 12px;
   margin: 20px 0;
 }
@@ -175,8 +179,8 @@ onMounted(() => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid var(--color-focus);
-  border-top: 4px solid var(--color-primary);
+  border: 4px solid var(--color-secondary);
+  border-top: 4px solid var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
@@ -188,17 +192,19 @@ onMounted(() => {
 }
 
 .retry-btn {
-  background: var(--color-primary);
+  background: var(--color-accent);
   color: white;
   border: none;
   padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
+  font-weight: 600;
   margin-top: 16px;
+  transition: background-color 0.2s ease;
 }
 
 .retry-btn:hover {
-  background: var(--color-primary);
+  background: var(--color-accent-hover);
 }
 
 @media (max-width: 768px) {

@@ -158,9 +158,10 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;

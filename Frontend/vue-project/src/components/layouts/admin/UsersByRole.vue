@@ -64,9 +64,10 @@ const usersCount = computed(() => (Array.isArray(props.users) ? props.users.leng
 
 <style scoped>
 .role-section {
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
 }
 
 .role-header {
@@ -85,7 +86,7 @@ const usersCount = computed(() => (Array.isArray(props.users) ? props.users.leng
 }
 
 .role-count {
-  background: var(--color-primary);
+  background: var(--color-surface-sunken-base, #F2ECE4);
   border: 1px solid var(--color-border);
   padding: 0.25rem 0.75rem;
   border-radius: var(--border-radius);
@@ -132,7 +133,7 @@ const usersCount = computed(() => (Array.isArray(props.users) ? props.users.leng
 }
 
 .user-row:hover {
-  background: var(--color-primary);
+  background: var(--color-secondary);
 }
 
 .user-row td {
