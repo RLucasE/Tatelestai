@@ -17,12 +17,13 @@ const emit = defineEmits(["update:modelValue", "published"]);
 
 const isSubmitting = ref(false);
 const formError = ref("");
+const activeShortcut = ref("today-afternoon");
 const validationErrors = reactive({});
 
 const form = reactive({
-  quantity: 3,
-  price: 3000,
-  minimum_value: 9000,
+  quantity: 5,
+  price: 3500,
+  minimum_value: 8000,
   pickup_start_datetime: "",
   pickup_end_datetime: "",
   visibility_mode: "now",
@@ -43,8 +44,8 @@ const savingsAmount = computed(() => {
   return m - p;
 });
 
-// Atajos de horario
 const applyScheduleShortcut = (type) => {
+  activeShortcut.value = type;
   const today = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -68,16 +69,15 @@ const applyScheduleShortcut = (type) => {
   }
 };
 
-// Reset al abrir modal
 watch(
   () => props.modelValue,
   (isOpen) => {
     if (isOpen) {
       formError.value = "";
       Object.keys(validationErrors).forEach((k) => delete validationErrors[k]);
-      form.quantity = 3;
-      form.price = 3000;
-      form.minimum_value = 9000;
+      form.quantity = 5;
+      form.price = props.template?.suggested_price ?? 3500;
+      form.minimum_value = props.template?.minimum_value ?? 8000;
       form.visibility_mode = "now";
       form.visible_from = "";
       applyScheduleShortcut("today-afternoon");
@@ -182,275 +182,239 @@ const handlePublish = async () => {
 <template>
   <div
     v-if="modelValue"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-content/50 backdrop-blur-xs"
     @click.self="closeModal"
   >
     <div
-      class="w-full max-w-xl rounded-2xl bg-[#2D2438] border border-white/[0.1] shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+      class="w-full max-w-[540px] rounded-[22px] bg-surface border border-border-subtle p-7 sm:p-8 shadow-card flex flex-col gap-6 max-h-[92vh] overflow-y-auto text-content"
     >
-      <!-- Cabecera -->
-      <header
-        class="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-[#1A1625]/50"
-      >
-        <div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-[#A78BFA] block mb-0.5">
-            Lanzamiento en 1 Clic
-          </span>
-          <h2 class="text-base sm:text-lg font-bold text-white tracking-tight">
-            Publicar Oferta Diaria
-          </h2>
-          <p class="text-xs text-[#A5A8C2] truncate max-w-sm sm:max-w-md mt-0.5">
-            Modelo base: <strong class="text-white">{{ template?.title }}</strong>
-          </p>
-        </div>
-        <button
-          type="button"
-          class="p-1.5 rounded-lg text-[#A5A8C2] hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
-          @click="closeModal"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </header>
+      <!-- Header -->
+      <div class="flex flex-col gap-1">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-brand">
+          LANZAMIENTO EN 1 CLIC
+        </span>
+        <h2 class="text-[22px] font-extrabold text-content leading-tight">
+          Publicar Oferta Diaria
+        </h2>
+        <p class="text-[13px] font-medium text-content-secondary truncate">
+          Plantilla base: {{ template?.title || "Bolsa Sorpresa" }}
+        </p>
+      </div>
 
-      <!-- Formulario -->
-      <form @submit.prevent="handlePublish" class="p-6 space-y-4 overflow-y-auto flex-1">
-        <!-- Error global -->
+      <!-- Form -->
+      <form class="flex flex-col gap-5" @submit.prevent="handlePublish">
+        <!-- Global error -->
         <div
           v-if="formError"
-          class="p-3 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#F87171] text-xs font-medium flex items-center gap-2"
+          class="p-3 rounded-[12px] bg-danger/12 border border-danger/30 text-danger text-xs font-semibold"
         >
-          <svg class="w-4 h-4 shrink-0 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{{ formError }}</span>
+          {{ formError }}
         </div>
 
-        <!-- Precios y Cupos en 3 columnas -->
+        <!-- 3 Columns: Precio Cliente, Valor Real Mín., Stock / Cupos -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <!-- Precio -->
-          <div class="space-y-1">
-            <label class="text-xs font-semibold text-[#E8EAF6] block">
-              Precio al Cliente <span class="text-[#EF4444]">*</span>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-content">
+              Precio Cliente *
             </label>
-            <div class="relative">
-              <span class="absolute left-3 top-2.5 text-xs text-[#787596] font-medium">$</span>
+            <div class="relative flex items-center">
+              <span class="absolute left-3.5 text-[13.5px] font-semibold text-content-secondary">$</span>
               <input
                 v-model.number="form.price"
                 type="number"
                 min="1"
                 step="50"
-                class="w-full pl-7 pr-3 py-2 rounded-xl bg-[#1A1625] border text-sm text-white font-semibold focus:outline-none focus:border-[#7C3AED] transition"
-                :class="validationErrors.price ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+                class="w-full pl-7 pr-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13.5px] font-semibold text-content focus:outline-none focus:border-brand"
+                :class="validationErrors.price ? 'border-danger' : 'border-transparent'"
               />
             </div>
-            <p v-if="validationErrors.price" class="text-[11px] text-[#EF4444]">
+            <p v-if="validationErrors.price" class="text-[11px] text-danger">
               {{ validationErrors.price }}
             </p>
           </div>
 
-          <!-- Valor Mínimo -->
-          <div class="space-y-1">
-            <label class="text-xs font-semibold text-[#E8EAF6] block">
-              Valor Real Estimado <span class="text-[#EF4444]">*</span>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-content">
+              Valor Real Mín. *
             </label>
-            <div class="relative">
-              <span class="absolute left-3 top-2.5 text-xs text-[#787596] font-medium">$</span>
+            <div class="relative flex items-center">
+              <span class="absolute left-3.5 text-[13.5px] font-semibold text-content-secondary">$</span>
               <input
                 v-model.number="form.minimum_value"
                 type="number"
                 min="1"
                 step="50"
-                class="w-full pl-7 pr-3 py-2 rounded-xl bg-[#1A1625] border text-sm text-white focus:outline-none focus:border-[#7C3AED] transition"
-                :class="validationErrors.minimum_value ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+                class="w-full pl-7 pr-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13.5px] font-semibold text-content focus:outline-none focus:border-brand"
+                :class="validationErrors.minimum_value ? 'border-danger' : 'border-transparent'"
               />
             </div>
-            <p v-if="validationErrors.minimum_value" class="text-[11px] text-[#EF4444]">
+            <p v-if="validationErrors.minimum_value" class="text-[11px] text-danger">
               {{ validationErrors.minimum_value }}
             </p>
           </div>
 
-          <!-- Cantidad de Cupos -->
-          <div class="space-y-1">
-            <label class="text-xs font-semibold text-[#E8EAF6] block">
-              Cupos a Lanzar <span class="text-[#EF4444]">*</span>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-content">
+              Stock / Cupos *
             </label>
             <input
               v-model.number="form.quantity"
               type="number"
               min="1"
               max="50"
-              class="w-full px-3 py-2 rounded-xl bg-[#1A1625] border text-sm text-white font-semibold focus:outline-none focus:border-[#7C3AED] transition"
-              :class="validationErrors.quantity ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+              class="w-full px-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13.5px] font-semibold text-content focus:outline-none focus:border-brand"
+              :class="validationErrors.quantity ? 'border-danger' : 'border-transparent'"
             />
-            <p v-if="validationErrors.quantity" class="text-[11px] text-[#EF4444]">
+            <p v-if="validationErrors.quantity" class="text-[11px] text-danger">
               {{ validationErrors.quantity }}
             </p>
           </div>
         </div>
 
-        <!-- Indicador de Descuento / Ahorro -->
-        <div
-          v-if="discountPercentage > 0"
-          class="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981] text-xs font-medium"
-        >
-          <svg class="w-4 h-4 shrink-0 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>
-            Descuento de rescate: <strong>{{ discountPercentage }}% OFF</strong>
-            (Ahorro de ${{ savingsAmount.toLocaleString("es-AR") }} por bolsa)
-          </span>
-        </div>
+        <!-- Discount Text -->
+        <p v-if="discountPercentage > 0" class="text-[13px] font-bold text-brand">
+          Descuento aplicado: {{ discountPercentage }}% OFF • El comprador ahorra ${{ savingsAmount.toLocaleString("es-AR") }} por bolsa.
+        </p>
 
-        <!-- Ventana de Retiro con Atajos -->
-        <div class="space-y-2 pt-1">
-          <div class="flex items-center justify-between flex-wrap gap-1">
-            <label class="text-xs font-semibold text-[#E8EAF6] block">
-              Horario de Retiro de Hoy <span class="text-[#EF4444]">*</span>
-            </label>
-            <!-- Atajos rápidos -->
-            <div class="flex gap-1.5">
-              <button
-                type="button"
-                class="px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-white/[0.04] hover:bg-white/[0.1] text-[#A5A8C2] hover:text-white border border-white/[0.06] transition cursor-pointer"
-                @click="applyScheduleShortcut('today-afternoon')"
-              >
-                Tarde (19:00)
-              </button>
-              <button
-                type="button"
-                class="px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-white/[0.04] hover:bg-white/[0.1] text-[#A5A8C2] hover:text-white border border-white/[0.06] transition cursor-pointer"
-                @click="applyScheduleShortcut('today-night')"
-              >
-                Noche (21:00)
-              </button>
-              <button
-                type="button"
-                class="px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-white/[0.04] hover:bg-white/[0.1] text-[#A5A8C2] hover:text-white border border-white/[0.06] transition cursor-pointer"
-                @click="applyScheduleShortcut('tomorrow-lunch')"
-              >
-                Mañana (13:00)
-              </button>
-            </div>
+        <!-- Pickup Window + Shortcuts -->
+        <div class="flex flex-col gap-2.5">
+          <label class="text-[12px] font-semibold text-content">
+            Ventana horaria de retiro *
+          </label>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-full text-[11.5px] transition-colors cursor-pointer"
+              :class="
+                activeShortcut === 'today-afternoon'
+                  ? 'bg-brand/14 text-brand font-bold'
+                  : 'bg-surface-sunken text-content-secondary font-medium hover:text-content'
+              "
+              @click="applyScheduleShortcut('today-afternoon')"
+            >
+              Hoy Tarde (19:00–20:30)
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-full text-[11.5px] transition-colors cursor-pointer"
+              :class="
+                activeShortcut === 'today-night'
+                  ? 'bg-brand/14 text-brand font-bold'
+                  : 'bg-surface-sunken text-content-secondary font-medium hover:text-content'
+              "
+              @click="applyScheduleShortcut('today-night')"
+            >
+              Hoy Noche (21:00–22:30)
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-full text-[11.5px] transition-colors cursor-pointer"
+              :class="
+                activeShortcut === 'tomorrow-lunch'
+                  ? 'bg-brand/14 text-brand font-bold'
+                  : 'bg-surface-sunken text-content-secondary font-medium hover:text-content'
+              "
+              @click="applyScheduleShortcut('tomorrow-lunch')"
+            >
+              Mañana (13:00–14:30)
+            </button>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <span class="text-[11px] text-[#A5A8C2] block mb-1">Inicio de retiro</span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div class="flex flex-col gap-1.5">
+              <span class="text-[12px] font-semibold text-content">Inicio de retiro</span>
               <input
                 v-model="form.pickup_start_datetime"
                 type="datetime-local"
-                class="w-full px-3 py-2 rounded-xl bg-[#1A1625] border text-xs text-white focus:outline-none focus:border-[#7C3AED] transition"
-                :class="validationErrors.pickup_start_datetime ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+                class="w-full px-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13px] font-semibold text-content focus:outline-none focus:border-brand"
+                :class="validationErrors.pickup_start_datetime ? 'border-danger' : 'border-transparent'"
               />
-              <p v-if="validationErrors.pickup_start_datetime" class="text-[11px] text-[#EF4444] mt-0.5">
+              <p v-if="validationErrors.pickup_start_datetime" class="text-[11px] text-danger">
                 {{ validationErrors.pickup_start_datetime }}
               </p>
             </div>
-            <div>
-              <span class="text-[11px] text-[#A5A8C2] block mb-1">Límite de retiro</span>
+
+            <div class="flex flex-col gap-1.5">
+              <span class="text-[12px] font-semibold text-content">Fin de retiro</span>
               <input
                 v-model="form.pickup_end_datetime"
                 type="datetime-local"
-                class="w-full px-3 py-2 rounded-xl bg-[#1A1625] border text-xs text-white focus:outline-none focus:border-[#7C3AED] transition"
-                :class="validationErrors.pickup_end_datetime ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+                class="w-full px-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13px] font-semibold text-content focus:outline-none focus:border-brand"
+                :class="validationErrors.pickup_end_datetime ? 'border-danger' : 'border-transparent'"
               />
-              <p v-if="validationErrors.pickup_end_datetime" class="text-[11px] text-[#EF4444] mt-0.5">
+              <p v-if="validationErrors.pickup_end_datetime" class="text-[11px] text-danger">
                 {{ validationErrors.pickup_end_datetime }}
               </p>
             </div>
           </div>
         </div>
 
-        <!-- Visibilidad de la Oferta (Sprint 1) -->
-        <div class="space-y-2 pt-2 border-t border-white/[0.06]">
-          <label class="text-xs font-semibold text-[#E8EAF6] block">
-            Publicación en Catálogo
-          </label>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer"
-              :class="
-                form.visibility_mode === 'now'
-                  ? 'bg-[#7C3AED]/20 border-[#7C3AED] text-white'
-                  : 'bg-[#1A1625] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'
-              "
-              @click="form.visibility_mode = 'now'"
-            >
-              <svg class="w-3.5 h-3.5 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <span>Inmediata</span>
-            </button>
-            <button
-              type="button"
-              class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer"
-              :class="
-                form.visibility_mode === 'scheduled'
-                  ? 'bg-[#7C3AED]/20 border-[#7C3AED] text-white'
-                  : 'bg-[#1A1625] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'
-              "
-              @click="form.visibility_mode = 'scheduled'"
-            >
-              <svg class="w-3.5 h-3.5 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Programar</span>
-            </button>
+        <!-- Optional Visibility Mode -->
+        <div class="flex flex-col gap-2 pt-1 border-t border-border-subtle">
+          <div class="flex items-center justify-between">
+            <span class="text-[12px] font-semibold text-content">Visibilidad en catálogo</span>
+            <div class="inline-flex rounded-full bg-surface-sunken p-0.5 text-[11.5px]">
+              <button
+                type="button"
+                class="px-3 py-1 rounded-full transition-colors cursor-pointer"
+                :class="
+                  form.visibility_mode === 'now'
+                    ? 'bg-surface text-content font-bold shadow-2xs'
+                    : 'text-content-secondary font-medium'
+                "
+                @click="form.visibility_mode = 'now'"
+              >
+                Inmediata
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1 rounded-full transition-colors cursor-pointer"
+                :class="
+                  form.visibility_mode === 'scheduled'
+                    ? 'bg-surface text-content font-bold shadow-2xs'
+                    : 'text-content-secondary font-medium'
+                "
+                @click="form.visibility_mode = 'scheduled'"
+              >
+                Programar
+              </button>
+            </div>
           </div>
 
-          <div
-            v-if="form.visibility_mode === 'scheduled'"
-            class="pt-1.5 space-y-1"
-          >
-            <span class="text-[11px] text-[#A5A8C2] block">
-              Visible en catálogo a partir de:
-            </span>
+          <div v-if="form.visibility_mode === 'scheduled'" class="flex flex-col gap-1">
             <input
               v-model="form.visible_from"
               type="datetime-local"
-              class="w-full px-3 py-2 rounded-xl bg-[#1A1625] border text-xs text-white focus:outline-none focus:border-[#7C3AED] transition"
-              :class="validationErrors.visible_from ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+              class="w-full px-3.5 py-2 rounded-[12px] bg-surface-sunken border text-[13px] font-semibold text-content focus:outline-none focus:border-brand"
+              :class="validationErrors.visible_from ? 'border-danger' : 'border-transparent'"
             />
-            <p v-if="validationErrors.visible_from" class="text-[11px] text-[#EF4444]">
+            <p v-if="validationErrors.visible_from" class="text-[11px] text-danger">
               {{ validationErrors.visible_from }}
-            </p>
-            <p class="text-[11px] text-[#787596]">
-              Los clientes no podrán ver ni comprar la bolsa hasta que llegue este horario.
             </p>
           </div>
         </div>
-      </form>
 
-      <!-- Pie del Modal -->
-      <footer
-        class="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-white/[0.08] bg-[#1A1625]/50"
-      >
-        <button
-          type="button"
-          class="px-4 py-2 rounded-xl text-xs font-semibold text-[#A5A8C2] hover:text-white hover:bg-white/[0.06] transition cursor-pointer"
-          :disabled="isSubmitting"
-          @click="closeModal"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#7C3AED] hover:bg-[#6D28D9] shadow-sm shadow-purple-900/30 transition cursor-pointer disabled:opacity-50"
-          :disabled="isSubmitting"
-          @click="handlePublish"
-        >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span v-if="isSubmitting">Publicando...</span>
-          <span v-else>Confirmar y Publicar</span>
-        </button>
-      </footer>
+        <!-- Actions Row -->
+        <div class="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            class="text-[13.5px] font-semibold text-content-secondary hover:text-content cursor-pointer"
+            :disabled="isSubmitting"
+            @click="closeModal"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="px-[22px] py-3 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-[13.5px] font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? "Publicando..." : "Publicar Oferta Ahora" }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

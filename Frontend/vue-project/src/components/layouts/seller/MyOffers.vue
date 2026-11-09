@@ -33,10 +33,9 @@ const handleOfferClick = (offer) => {
 };
 
 const goToCreateOffer = () => {
-  router.push({ name: "create-offer" });
+  router.push({ name: "pack-templates" });
 };
 
-// Sincronización en vivo: refrescar ofertas ante nuevas ventas o cancelaciones
 watch(
   () => notificationStore.lastOrderEvent,
   (event) => {
@@ -52,243 +51,75 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="my-offers-container">
+  <div class="seller-content-container w-full max-w-[1420px] mx-auto px-4 sm:px-6 lg:px-8 seller:px-0 min-[1420px]:px-0 pt-9 pb-14 space-y-6 text-content">
     <!-- Header -->
-    <div class="header-section">
-      <div class="header-titles">
-        <h1 class="page-title">Mis Ofertas de Packs</h1>
-        <p class="page-subtitle">
-          Gestiona y supervisa tus bolsas sorpresa activas y pasadas.
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-[22px] font-extrabold text-content tracking-tight">
+          Mis Ofertas de Packs
+        </h1>
+        <p class="text-[13.5px] text-content-secondary">
+          Gestioná y supervisá tus bolsas sorpresa activas y pasadas.
         </p>
       </div>
-      <button @click="goToCreateOffer" class="create-pack-cta">
-        <span class="cta-icon">+</span>
-        <span>Publicar Oferta</span>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-[13px] font-bold transition cursor-pointer self-start sm:self-auto"
+        @click="goToCreateOffer"
+      >
+        <span>+ Gestionar Packs y Plantillas</span>
       </button>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Cargando tus ofertas...</p>
+    <div v-if="loading" class="py-16 text-center space-y-3">
+      <div class="w-10 h-10 border-3 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="text-xs text-content-secondary">Cargando tus ofertas...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="error-container">
-      <p>{{ error }}</p>
-      <button @click="fetchOffers" class="retry-btn">Reintentar</button>
+    <div
+      v-else-if="error"
+      class="p-6 rounded-[18px] bg-surface border border-danger text-center space-y-3"
+    >
+      <p class="text-sm font-semibold text-danger">{{ error }}</p>
+      <button
+        type="button"
+        class="px-4 py-2 rounded-[10px] bg-brand text-surface text-xs font-bold cursor-pointer"
+        @click="fetchOffers"
+      >
+        Reintentar
+      </button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="offers.length === 0" class="empty-container">
-      <div class="empty-icon">🛍️</div>
-      <h3>No tienes ofertas creadas</h3>
-      <p>Comienza publicando tu primera bolsa sorpresa para rescatar excedentes y captar clientes.</p>
-      <button @click="goToCreateOffer" class="empty-cta-btn">
-        + Crear Mi Primera Oferta
+    <div
+      v-else-if="offers.length === 0"
+      class="p-12 rounded-[22px] bg-surface border border-dashed border-border-subtle text-center space-y-3"
+    >
+      <div class="text-3xl">🛍️</div>
+      <h3 class="text-base font-bold text-content">No tenés ofertas creadas</h3>
+      <p class="text-xs text-content-secondary max-w-md mx-auto">
+        Comenzá publicando tu primera bolsa sorpresa desde tus Plantillas Maestras para rescatar excedentes.
+      </p>
+      <button
+        type="button"
+        class="px-5 py-2.5 rounded-[10px] bg-brand text-surface text-xs font-bold cursor-pointer"
+        @click="goToCreateOffer"
+      >
+        + Ir a Packs y Plantillas
       </button>
     </div>
 
     <!-- Offers Grid -->
-    <div v-else class="offers-grid">
-      <OfferSellerCard 
-        v-for="offer in offers" 
-        :key="offer.id" 
-        :offer="offer" 
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <OfferSellerCard
+        v-for="offer in offers"
+        :key="offer.id"
+        :offer="offer"
+        class="cursor-pointer"
         @click="handleOfferClick(offer)"
-        class="clickable-card"
       />
     </div>
   </div>
 </template>
-
-<style scoped>
-.my-offers-container {
-  padding: 1.5rem 2rem;
-  max-width: 1300px;
-  margin: 0 auto;
-  color: var(--color-text, #e8eaf6);
-  min-height: 100vh;
-}
-
-/* Header Section */
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.header-titles {
-  display: flex;
-  flex-direction: column;
-}
-
-.page-title {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0 0 0.35rem 0;
-  letter-spacing: -0.02em;
-}
-
-.page-subtitle {
-  font-size: 1.05rem;
-  color: #b3acc0;
-  margin: 0;
-}
-
-.create-pack-cta {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.85rem 1.6rem;
-  background: #7c3aed;
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
-}
-
-.create-pack-cta:hover {
-  background: #6d28d9;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
-}
-
-.cta-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
-/* Offers Grid */
-.offers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.clickable-card {
-  cursor: pointer;
-}
-
-/* Loading State */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  color: #b3acc0;
-}
-
-.loading-spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid #3d3450;
-  border-top: 4px solid #7c3aed;
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Error State */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 50px 20px;
-  background: #2d2438;
-  border-radius: 12px;
-  border: 1px solid #ef4444;
-  color: #fca5a5;
-  text-align: center;
-}
-
-.retry-btn {
-  margin-top: 1rem;
-  padding: 0.6rem 1.4rem;
-  background: #7c3aed;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Empty State */
-.empty-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  text-align: center;
-  background: #2d2438;
-  border-radius: 16px;
-  border: 2px dashed #4a4058;
-}
-
-.empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-}
-
-.empty-container h3 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 0.5rem 0;
-}
-
-.empty-container p {
-  color: #b3acc0;
-  max-width: 440px;
-  line-height: 1.5;
-  margin: 0 0 1.5rem 0;
-}
-
-.empty-cta-btn {
-  padding: 0.85rem 1.6rem;
-  background: #7c3aed;
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
-}
-
-.empty-cta-btn:hover {
-  background: #6d28d9;
-  transform: translateY(-2px);
-}
-
-@media (max-width: 640px) {
-  .my-offers-container {
-    padding: 1rem;
-  }
-
-  .header-section {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .create-pack-cta {
-    justify-content: center;
-  }
-}
-</style>

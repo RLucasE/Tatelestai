@@ -175,13 +175,13 @@ export default {
   left: 0;
   width: 280px;
   height: 100vh;
-  background: var(--color-darkest);
+  background: var(--color-primary);
   color: var(--color-text);
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   z-index: 1000;
   border-right: 1px solid var(--color-border);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.02), 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(70, 51, 79, 0.05), 0 10px 30px rgba(70, 51, 79, 0.15);
 }
 
 .sidebar.open {
@@ -211,7 +211,7 @@ export default {
   border-radius: var(--border-radius);
 }
 .sidebar__close:hover {
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .sidebar__nav {
@@ -266,10 +266,10 @@ export default {
 
 .logout-button:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .logout-button:hover .icon {
-  fill: #ef4444;
+  fill: var(--color-danger);
 }
 </style>

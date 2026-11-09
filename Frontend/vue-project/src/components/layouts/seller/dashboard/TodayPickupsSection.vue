@@ -1,6 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, shallowRef } from 'vue';
 import PickupCard from './PickupCard.vue';
+import QrScannerModal from '@/components/layouts/seller/QrScannerModal.vue';
+import ScannedOrderModal from './ScannedOrderModal.vue';
+import { usePickupRedemption } from '@/composables/usePickupRedemption';
 
 const props = defineProps({
   pickups: {
@@ -9,12 +12,30 @@ const props = defineProps({
   },
 });
 
-defineEmits(['redeem', 'reload']);
+const emit = defineEmits(['redeem', 'reload']);
 
-const currentFilter = ref('all'); // 'all', 'pending', 'picked_up', 'cancelled'
+const currentFilter = ref('all'); // 'all' | 'pending' | 'picked_up' | 'cancelled'
+const searchOrCodeQuery = ref('');
+const expandedPickupId = ref(null);
+const showQrScanner = shallowRef(false);
+const showScannedOrderModal = ref(false);
+const selectedModalPickup = ref(null);
+
+const {
+  isVerifying,
+  verifyError,
+  verifiedOrder,
+  isConfirming,
+  successMessage,
+  verifyCode,
+  handleQrScanned,
+  confirmDelivery,
+  clearOrder,
+  calculateTotal,
+} = usePickupRedemption();
 
 const countPending = computed(() => {
-  return props.pickups.filter((p) => !p.is_picked_up && p.status !== 'cancelled').length;
+  return props.pickups.filter((p) => !p.is_picked_up && p.status !== 'picked_up' && p.status !== 'cancelled').length;
 });
 
 const countDelivered = computed(() => {
@@ -25,17 +46,61 @@ const countCancelled = computed(() => {
   return props.pickups.filter((p) => p.status === 'cancelled').length;
 });
 
+const normalizedVerifiedPickup = computed(() => {
+  if (!verifiedOrder.value) return null;
+  const vo = verifiedOrder.value;
+  const sellId = vo.sell_id ?? vo.id;
+  const existing = props.pickups.find((p) => Number(p.id) === Number(sellId));
+  if (existing) {
+    return {
+      ...existing,
+      pickup_code: vo.pickup_code || existing.pickup_code,
+      customer_email: vo.customer?.email || existing.customer_email,
+    };
+  }
+  const packs = (vo.offers || []).map((item) => ({
+    quantity: item.offer_quantity || 1,
+    pack_name: item.pack_name || item.offer_title || 'Bolsa Sorpresa',
+    description: item.pack_description || '',
+    unit_price: item.pack_price || 0,
+    subtotal: (item.offer_quantity || 1) * (item.pack_price || 0),
+  }));
+  return {
+    id: sellId,
+    customer_name: vo.customer?.name || 'Cliente',
+    customer_email: vo.customer?.email || '',
+    status: 'ready',
+    is_picked_up: false,
+    pickup_code: vo.pickup_code,
+    total_price: calculateTotal(vo),
+    packs,
+  };
+});
+
 const filteredPickups = computed(() => {
+  let list = props.pickups;
+
   if (currentFilter.value === 'pending') {
-    return props.pickups.filter((p) => !p.is_picked_up && p.status !== 'cancelled');
+    list = list.filter((p) => !p.is_picked_up && p.status !== 'picked_up' && p.status !== 'cancelled');
+  } else if (currentFilter.value === 'picked_up') {
+    list = list.filter((p) => p.is_picked_up || p.status === 'picked_up');
+  } else if (currentFilter.value === 'cancelled') {
+    list = list.filter((p) => p.status === 'cancelled');
   }
-  if (currentFilter.value === 'picked_up') {
-    return props.pickups.filter((p) => p.is_picked_up || p.status === 'picked_up');
+
+  const q = searchOrCodeQuery.value.trim().toLowerCase();
+  if (q && !q.includes('-')) {
+    const matched = list.filter((p) => {
+      const nameMatch = (p.customer_name || '').toLowerCase().includes(q);
+      const idMatch = String(p.id).includes(q);
+      return nameMatch || idMatch;
+    });
+    if (matched.length > 0) {
+      return matched;
+    }
   }
-  if (currentFilter.value === 'cancelled') {
-    return props.pickups.filter((p) => p.status === 'cancelled');
-  }
-  return props.pickups;
+
+  return list;
 });
 
 const emptyStateMessage = computed(() => {
@@ -43,90 +108,283 @@ const emptyStateMessage = computed(() => {
     return 'No hay pedidos cancelados registrados para el día de hoy.';
   }
   if (currentFilter.value === 'pending') {
-    return 'No hay pedidos pendientes de entrega para el día de hoy.';
+    return 'No hay pedidos pendientes de retiro para el día de hoy.';
   }
   if (currentFilter.value === 'picked_up') {
     return 'Aún no se han completado entregas durante la jornada.';
   }
   return 'No se han registrado ventas para retirar en el día de hoy.';
 });
+
+const handleToolbarVerify = async () => {
+  const raw = searchOrCodeQuery.value.trim();
+  if (!raw) return;
+
+  const ok = await verifyCode(raw.toUpperCase());
+  if (ok && verifiedOrder.value) {
+    const sellId = verifiedOrder.value.sell_id ?? verifiedOrder.value.id;
+    expandedPickupId.value = Number(sellId);
+    selectedModalPickup.value = normalizedVerifiedPickup.value;
+    showScannedOrderModal.value = true;
+  }
+};
+
+const handleQrSuccess = async (decodedText) => {
+  const ok = await handleQrScanned(decodedText);
+  if (ok && verifiedOrder.value) {
+    const sellId = verifiedOrder.value.sell_id ?? verifiedOrder.value.id;
+    expandedPickupId.value = Number(sellId);
+    selectedModalPickup.value = normalizedVerifiedPickup.value;
+    showScannedOrderModal.value = true;
+  }
+};
+
+const handleCardRedeemClick = (pickup) => {
+  if (
+    verifiedOrder.value &&
+    Number(verifiedOrder.value.sell_id ?? verifiedOrder.value.id) === Number(pickup.id)
+  ) {
+    expandedPickupId.value = Number(pickup.id);
+    selectedModalPickup.value = normalizedVerifiedPickup.value;
+    showScannedOrderModal.value = true;
+    return;
+  }
+
+  clearOrder();
+  selectedModalPickup.value = pickup;
+  showScannedOrderModal.value = true;
+};
+
+const handleModalVerifyCode = async (codeStr) => {
+  const ok = await verifyCode(codeStr);
+  if (ok && verifiedOrder.value) {
+    const sellId = verifiedOrder.value.sell_id ?? verifiedOrder.value.id;
+    expandedPickupId.value = Number(sellId);
+    selectedModalPickup.value = normalizedVerifiedPickup.value;
+  }
+};
+
+const handleConfirmDeliveryAction = async () => {
+  await confirmDelivery(() => {
+    showScannedOrderModal.value = false;
+    expandedPickupId.value = null;
+    searchOrCodeQuery.value = '';
+    emit('reload');
+  });
+};
+
+const handleCollapseCard = () => {
+  expandedPickupId.value = null;
+  clearOrder();
+};
 </script>
 
 <template>
-  <section class="space-y-4">
-    <!-- Header de Sección y Filtros -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div>
-        <h2 class="text-base sm:text-lg font-bold text-white tracking-tight">
+  <section class="flex flex-col gap-5">
+    <!-- PickupsSectionHeader -->
+    <div class="flex flex-col gap-4">
+      <!-- PickupsTitleAndTabsRow -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h2 class="text-[22px] font-extrabold text-content leading-tight">
           Retiros de Hoy
         </h2>
-        <p class="text-xs text-[#A5A8C2]">
-          Gestión de pedidos agendados para entrega física durante la jornada.
-        </p>
+
+        <!-- PickupFilterPills -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'all'
+                ? 'bg-brand text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'all'"
+          >
+            Todos ({{ pickups.length }})
+          </button>
+
+          <button
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'pending'
+                ? 'bg-brand text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'pending'"
+          >
+            Pendientes ({{ countPending }})
+          </button>
+
+          <button
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'picked_up'
+                ? 'bg-brand text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'picked_up'"
+          >
+            Entregados ({{ countDelivered }})
+          </button>
+
+          <button
+            v-if="countCancelled > 0"
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'cancelled'
+                ? 'bg-danger text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'cancelled'"
+          >
+            Cancelados ({{ countCancelled }})
+          </button>
+        </div>
       </div>
 
-      <!-- Segmented Buttons / Tabs -->
-      <div class="inline-flex p-1 rounded-xl bg-[#2D2438] border border-white/[0.08] self-start sm:self-center flex-wrap gap-1">
+      <!-- IntegratedCodeAndQrToolbar (6005:2411) -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        <form
+          class="flex-1 flex items-center justify-between gap-2 rounded-full bg-surface border border-border-subtle pl-4 pr-3.5 py-[9px] shadow-2xs focus-within:border-brand transition-colors"
+          @submit.prevent="handleToolbarVerify"
+        >
+          <div class="flex items-center gap-2.5 flex-1 min-w-0">
+            <svg class="w-4 h-4 text-content-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              v-model="searchOrCodeQuery"
+              type="text"
+              placeholder="Ingresar código de retiro (XXXX-XXXX-XXXX) o buscar cliente..."
+              class="w-full bg-transparent text-[13px] text-content placeholder:text-content-secondary focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="text-[12px] font-bold text-brand hover:text-brand-hover shrink-0 cursor-pointer disabled:opacity-40"
+            :disabled="isVerifying || !searchOrCodeQuery.trim()"
+          >
+            {{ isVerifying ? 'Verificando...' : 'Verificar ↵' }}
+          </button>
+        </form>
+
+        <!-- Btn_EscanearQR -->
         <button
           type="button"
-          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-          :class="currentFilter === 'all' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
-          @click="currentFilter = 'all'"
+          class="inline-flex items-center justify-center gap-2 px-[18px] py-[9px] rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-[13px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+          @click="showQrScanner = true"
         >
-          Todos ({{ pickups.length }})
-        </button>
-        <button
-          type="button"
-          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-          :class="currentFilter === 'pending' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
-          @click="currentFilter = 'pending'"
-        >
-          Pendientes ({{ countPending }})
-        </button>
-        <button
-          type="button"
-          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-          :class="currentFilter === 'picked_up' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
-          @click="currentFilter = 'picked_up'"
-        >
-          Entregados ({{ countDelivered }})
-        </button>
-        <button
-          type="button"
-          class="px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-          :class="currentFilter === 'cancelled' ? 'bg-[#EF4444] text-white shadow-sm' : 'text-[#A5A8C2] hover:text-white'"
-          @click="currentFilter = 'cancelled'"
-        >
-          Cancelados ({{ countCancelled }})
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+            />
+          </svg>
+          <span>Escanear QR</span>
         </button>
       </div>
+
+      <!-- Verification feedback alerts -->
+      <div
+        v-if="verifyError && !showScannedOrderModal"
+        class="px-4 py-2.5 rounded-[12px] bg-danger/15 border border-danger/30 text-danger text-xs font-semibold flex items-center justify-between"
+      >
+        <span>{{ verifyError }}</span>
+        <button type="button" class="text-xs font-bold underline cursor-pointer" @click="clearOrder">
+          Cerrar
+        </button>
+      </div>
+
+      <div
+        v-if="successMessage"
+        class="px-4 py-2.5 rounded-[12px] bg-success/15 border border-success/30 text-success text-xs font-bold"
+      >
+        {{ successMessage }}
+      </div>
     </div>
+
+    <!-- If a verified order wasn't in the current filtered list, show it expanded at the top -->
+    <PickupCard
+      v-if="
+        normalizedVerifiedPickup &&
+        expandedPickupId === Number(normalizedVerifiedPickup.id) &&
+        !filteredPickups.some((p) => Number(p.id) === Number(normalizedVerifiedPickup.id))
+      "
+      :pickup="normalizedVerifiedPickup"
+      :expanded="true"
+      :verified-code="verifiedOrder?.pickup_code"
+      :confirming="isConfirming"
+      @collapse="handleCollapseCard"
+      @confirm-delivery="handleConfirmDeliveryAction"
+      @cancelled="emit('reload')"
+    />
 
     <!-- Empty State -->
     <div
       v-if="filteredPickups.length === 0"
-      class="p-8 rounded-2xl bg-[#2D2438] border border-dashed border-white/[0.1] text-center space-y-2 flex flex-col items-center justify-center"
+      class="p-10 rounded-[18px] bg-surface border border-dashed border-border-subtle text-center flex flex-col items-center justify-center gap-2 shadow-card"
     >
-      <div class="w-10 h-10 rounded-xl bg-white/[0.04] text-[#A5A8C2] flex items-center justify-center">
+      <div class="w-11 h-11 rounded-[14px] bg-canvas text-content-secondary flex items-center justify-center">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       </div>
-      <h3 class="text-sm font-bold text-white">Sin pedidos para mostrar</h3>
-      <p class="text-xs text-[#A5A8C2] max-w-xs">
+      <h3 class="text-sm font-bold text-content">Sin pedidos para mostrar</h3>
+      <p class="text-xs text-content-secondary max-w-xs">
         {{ emptyStateMessage }}
       </p>
     </div>
 
-    <!-- Lista de Retiros con scroll contenido estilizado -->
-    <div v-else class="max-h-[460px] overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+    <!-- PickupsCardsList -->
+    <div v-else class="flex flex-col gap-4">
       <PickupCard
         v-for="pickup in filteredPickups"
         :key="pickup.id"
-        :pickup="pickup"
-        @redeem="$emit('redeem', $event)"
-        @cancelled="$emit('reload')"
+        :pickup="
+          normalizedVerifiedPickup && Number(normalizedVerifiedPickup.id) === Number(pickup.id)
+            ? normalizedVerifiedPickup
+            : pickup
+        "
+        :expanded="expandedPickupId === Number(pickup.id)"
+        :verified-code="verifiedOrder?.pickup_code"
+        :confirming="isConfirming"
+        @redeem="handleCardRedeemClick"
+        @collapse="handleCollapseCard"
+        @confirm-delivery="handleConfirmDeliveryAction"
+        @cancelled="emit('reload')"
       />
     </div>
+
+    <!-- Modal de Escáner QR con Cámara -->
+    <QrScannerModal
+      :show="showQrScanner"
+      @close="showQrScanner = false"
+      @scanned="handleQrSuccess"
+    />
+
+    <!-- Modal Pedido Escaneado / Confirmar Entrega (6003:2159) -->
+    <ScannedOrderModal
+      v-model="showScannedOrderModal"
+      :order="
+        normalizedVerifiedPickup &&
+        selectedModalPickup &&
+        Number(normalizedVerifiedPickup.id) === Number(selectedModalPickup.id)
+          ? normalizedVerifiedPickup
+          : null
+      "
+      :pickup="selectedModalPickup"
+      :loading="isVerifying"
+      :confirming="isConfirming"
+      :error-message="verifyError"
+      @verify-code="handleModalVerifyCode"
+      @confirm-delivery="handleConfirmDeliveryAction"
+    />
   </section>
 </template>

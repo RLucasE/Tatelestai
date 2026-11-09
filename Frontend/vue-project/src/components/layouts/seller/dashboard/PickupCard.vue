@@ -8,17 +8,31 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  expanded: {
+    type: Boolean,
+    default: false,
+  },
+  verifiedCode: {
+    type: String,
+    default: '',
+  },
+  confirming: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['redeem', 'cancelled']);
+const emit = defineEmits(['redeem', 'cancelled', 'collapse', 'confirm-delivery']);
 
-const { formatCurrency, formatTime, getInitials } = useFormatters();
+const { formatCurrency, formatTime } = useFormatters();
 
 const isCancelling = ref(false);
 const showCancelConfirm = ref(false);
 const cancelErrorMessage = ref('');
 
-const isPickedUp = computed(() => Boolean(props.pickup.is_picked_up) || props.pickup.status === 'picked_up');
+const isPickedUp = computed(
+  () => Boolean(props.pickup.is_picked_up) || props.pickup.status === 'picked_up'
+);
 const isCancelled = computed(() => props.pickup.status === 'cancelled');
 
 const isExpired = computed(() => {
@@ -34,45 +48,51 @@ const statusLabel = computed(() => {
   if (isExpired.value) return 'Expirado (No-Show)';
   if (props.pickup.status === 'ready') return 'Listo para retirar';
   if (props.pickup.status === 'confirmed') return 'Confirmado';
-  return 'Pendiente';
+  return 'Pendiente de retiro';
 });
 
 const statusPillClass = computed(() => {
-  if (isCancelled.value) {
-    return 'bg-[#EF4444]/15 border-[#EF4444]/30 text-[#F87171]';
+  if (isCancelled.value || isExpired.value) {
+    return 'bg-danger/15 text-danger';
   }
   if (isPickedUp.value) {
-    return 'bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]';
+    return 'bg-success/15 text-success';
   }
-  if (isExpired.value) {
-    return 'bg-[#EF4444]/15 border-[#EF4444]/30 text-[#F87171]';
-  }
-  if (props.pickup.status === 'ready') {
-    return 'bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]';
-  }
-  if (props.pickup.status === 'confirmed') {
-    return 'bg-[#7C3AED]/15 border-[#7C3AED]/30 text-[#C4B5FD]';
-  }
-  return 'bg-[#F59E0B]/15 border-[#F59E0B]/30 text-[#FBBF24]';
+  return 'bg-brand-light/15 text-brand';
 });
 
 const canRedeem = computed(() => {
-  return props.pickup.status === 'pending' && !isPickedUp.value && !isExpired.value && !isCancelled.value;
+  return (
+    ['ready', 'confirmed', 'pending'].includes(props.pickup.status) &&
+    !isPickedUp.value &&
+    !isExpired.value &&
+    !isCancelled.value
+  );
 });
 
 const grossAmount = computed(() => {
   return props.pickup.gross_amount ?? props.pickup.total_price ?? 0;
 });
 
-const commissionAmount = computed(() => {
-  if (props.pickup.commission_amount !== undefined) return props.pickup.commission_amount;
-  const rate = props.pickup.commission_percentage ?? 15;
-  return (grossAmount.value * (rate / 100));
+const packsSummaryText = computed(() => {
+  const packs = props.pickup.packs || [];
+  if (packs.length === 0) return 'Bolsa Sorpresa';
+  return packs
+    .map((p) => `${p.quantity}× ${p.pack_name || p.name || 'Bolsa Sorpresa'}`)
+    .join(' • ');
 });
 
-const netAmount = computed(() => {
-  if (props.pickup.net_amount !== undefined) return props.pickup.net_amount;
-  return grossAmount.value - commissionAmount.value;
+const packsDescriptionText = computed(() => {
+  const packs = props.pickup.packs || [];
+  const firstDesc = packs.find((p) => p.description)?.description;
+  return (
+    firstDesc ||
+    'Selección variada de excedentes gastronómicos frescos elaborados en la jornada.'
+  );
+});
+
+const displayCode = computed(() => {
+  return props.verifiedCode || props.pickup.pickup_code || `PED-${props.pickup.id}`;
 });
 
 const handleCancelAndRefund = async () => {
@@ -88,7 +108,8 @@ const handleCancelAndRefund = async () => {
     emit('cancelled', props.pickup.id);
   } catch (error) {
     console.error('Error al cancelar pedido:', error);
-    cancelErrorMessage.value = error.response?.data?.error || 'No se pudo cancelar el pedido.';
+    cancelErrorMessage.value =
+      error.response?.data?.error || 'No se pudo cancelar el pedido.';
   } finally {
     isCancelling.value = false;
   }
@@ -96,106 +117,166 @@ const handleCancelAndRefund = async () => {
 </script>
 
 <template>
+  <!-- EXPANDED STATE (6005:2455 — QR / Código Verificado) -->
   <div
-    class="p-4 rounded-2xl bg-[#2D2438] border border-white/[0.08] space-y-3 transition-all hover:bg-[#3D3450]/60"
-    :class="{ 'opacity-70 border-white/[0.04]': isPickedUp }"
+    v-if="expanded"
+    class="rounded-[18px] bg-surface border-2 border-brand p-6 shadow-card flex flex-col gap-[22px] transition-all"
   >
-    <!-- Fila Superior: Cliente y Estado -->
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-8 h-8 rounded-full bg-[#1A1625] border border-white/[0.1] text-xs font-bold text-[#A78BFA] flex items-center justify-center shrink-0">
-          {{ getInitials(pickup.customer_name) }}
-        </div>
-        <div class="min-w-0">
-          <h4 class="text-sm font-bold text-white truncate">
-            {{ pickup.customer_name || 'Cliente' }}
-          </h4>
-          <span class="text-[11px] font-medium text-[#A5A8C2]">
-            Pedido #{{ pickup.id }}
-          </span>
-        </div>
+    <!-- Header Row -->
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <h4 class="text-[17px] font-extrabold text-content leading-snug truncate">
+          {{ pickup.customer_name || 'Cliente' }}
+        </h4>
+        <p class="text-[12.5px] font-medium text-content-secondary">
+          Pedido #{{ pickup.id }}
+          <template v-if="pickup.customer_email"> • {{ pickup.customer_email }}</template>
+          <template v-if="pickup.pickup_start_datetime || pickup.max_pickup_datetime">
+            • Retiro hoy {{ formatTime(pickup.pickup_start_datetime) }} a
+            {{ formatTime(pickup.max_pickup_datetime) }} hs
+          </template>
+        </p>
       </div>
 
       <span
-        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shrink-0"
-        :class="statusPillClass"
+        class="inline-flex items-center px-3 py-1 rounded-full text-[11.5px] font-bold bg-brand/15 text-brand shrink-0"
       >
-        <svg v-if="isPickedUp" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <svg v-else-if="isExpired || isCancelled" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>{{ statusLabel }}</span>
+        ✓ Código {{ displayCode }} Verificado
       </span>
     </div>
 
-    <!-- Franja Horaria de Retiro -->
-    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1A1625] border border-white/[0.04] text-xs text-[#E8EAF6]">
-      <svg class="w-3.5 h-3.5 text-[#A78BFA] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span class="text-[#A5A8C2]">Horario:</span>
-      <strong class="font-semibold text-white">
-        {{ formatTime(pickup.pickup_start_datetime) }} a {{ formatTime(pickup.max_pickup_datetime) }} hs
-      </strong>
-    </div>
-
-    <!-- Lista de Packs -->
-    <div class="space-y-1 text-xs pt-1">
-      <div
-        v-for="(pack, idx) in pickup.packs"
-        :key="idx"
-        class="flex items-center justify-between text-[#A5A8C2]"
-      >
-        <div class="flex items-center gap-1.5 truncate">
-          <span class="font-bold text-[#A78BFA]">x{{ pack.quantity }}</span>
-          <span class="truncate text-[#E8EAF6]">{{ pack.pack_name }}</span>
-        </div>
-        <span class="font-medium text-white shrink-0 ml-2">
-          ${{ formatCurrency(pack.subtotal) }}
+    <!-- Content to deliver -->
+    <div class="flex flex-col gap-2">
+      <span class="text-[10.5px] font-bold uppercase tracking-wider text-content-secondary">
+        CONTENIDO A ENTREGAR AL CLIENTE
+      </span>
+      <div class="flex items-center justify-between gap-4">
+        <span class="text-[14.5px] font-semibold text-content">
+          {{ packsSummaryText }}
+        </span>
+        <span class="text-[16px] font-extrabold text-content tabular-nums shrink-0">
+          ${{ formatCurrency(grossAmount) }}
         </span>
       </div>
+      <p class="text-[12.5px] text-content-secondary leading-relaxed">
+        {{ packsDescriptionText }}
+      </p>
     </div>
 
-    <!-- Desglose Financiero: Total Cliente, Comisión y Neto Comercio -->
-    <div class="p-2.5 rounded-xl bg-[#1A1625]/60 border border-white/[0.04] grid grid-cols-3 gap-2 text-[11px]">
+    <!-- Actions Row -->
+    <div class="flex items-center justify-between gap-3 pt-0.5 flex-wrap">
       <div>
-        <span class="text-[#A5A8C2] block text-[10px]">Total Venta</span>
-        <strong class="text-white font-bold">${{ formatCurrency(grossAmount) }}</strong>
+        <button
+          v-if="canRedeem && !showCancelConfirm"
+          type="button"
+          class="text-[12.5px] font-semibold text-danger hover:underline cursor-pointer"
+          @click="showCancelConfirm = true"
+        >
+          Sin merma / Reembolsar
+        </button>
+
+        <div v-else-if="showCancelConfirm" class="flex items-center gap-2">
+          <span class="text-xs text-danger font-semibold">¿Reembolsar 100%?</span>
+          <button
+            type="button"
+            class="px-2.5 py-1 rounded-lg bg-danger hover:bg-danger/90 text-surface font-bold text-xs cursor-pointer disabled:opacity-50"
+            :disabled="isCancelling"
+            @click="handleCancelAndRefund"
+          >
+            {{ isCancelling ? 'Reembolsando...' : 'Sí, reembolsar' }}
+          </button>
+          <button
+            type="button"
+            class="px-2.5 py-1 rounded-lg bg-canvas text-content font-semibold text-xs cursor-pointer"
+            @click="showCancelConfirm = false"
+          >
+            No
+          </button>
+        </div>
       </div>
-      <div>
-        <span class="text-[#F87171]/80 block text-[10px]">Comisión (15%)</span>
-        <span class="text-[#F87171] font-semibold">-${{ formatCurrency(commissionAmount) }}</span>
-      </div>
-      <div>
-        <span class="text-[#34D399] block text-[10px]">Tu Neto (85%)</span>
-        <strong class="text-[#10B981] font-extrabold">${{ formatCurrency(netAmount) }}</strong>
+
+      <div class="flex items-center gap-4">
+        <button
+          type="button"
+          class="text-[13px] font-semibold text-content-secondary hover:text-content cursor-pointer"
+          @click="emit('collapse')"
+        >
+          Cerrar ▴
+        </button>
+
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-[13px] font-bold transition-all cursor-pointer disabled:opacity-50"
+          :disabled="confirming"
+          @click="emit('confirm-delivery', pickup)"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>{{ confirming ? 'Confirmando...' : 'Confirmar Entrega' }}</span>
+        </button>
       </div>
     </div>
 
-    <!-- Acciones -->
-    <div class="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-      <!-- Botón de Cancelación / Falta de Merma -->
+    <p v-if="cancelErrorMessage" class="text-xs text-danger">{{ cancelErrorMessage }}</p>
+  </div>
+
+  <!-- DEFAULT COLLAPSED STATE (6002:1851 — SellerPickupRowCard) -->
+  <div
+    v-else
+    class="rounded-[18px] bg-surface border border-border-subtle px-6 py-[22px] shadow-card flex flex-col gap-4 transition-all hover:border-brand/40"
+    :class="{ 'opacity-75': isPickedUp }"
+  >
+    <!-- PickupHeaderRow -->
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex flex-col gap-0.5 min-w-0">
+        <h4 class="text-[15px] font-bold text-content truncate">
+          {{ pickup.customer_name || 'Cliente' }}
+        </h4>
+        <span class="text-[12.5px] font-medium text-content-secondary">
+          Pedido #{{ pickup.id }}
+          <template v-if="pickup.pickup_start_datetime || pickup.max_pickup_datetime">
+            • Retiro hoy de {{ formatTime(pickup.pickup_start_datetime) }} a
+            {{ formatTime(pickup.max_pickup_datetime) }} hs
+          </template>
+        </span>
+      </div>
+
+      <span
+        class="inline-flex items-center px-3 py-[5px] rounded-full text-[11.5px] font-bold shrink-0"
+        :class="statusPillClass"
+      >
+        {{ statusLabel }}
+      </span>
+    </div>
+
+    <!-- PickupItemsAndTotalRow -->
+    <div class="flex items-center justify-between gap-4">
+      <span class="text-[13.5px] font-semibold text-content truncate">
+        {{ packsSummaryText }}
+      </span>
+      <span class="text-[15px] font-extrabold text-content tabular-nums shrink-0">
+        ${{ formatCurrency(grossAmount) }}
+      </span>
+    </div>
+
+    <!-- PickupActionsRow -->
+    <div class="flex items-center justify-between gap-3 pt-0.5">
       <div v-if="canRedeem && !showCancelConfirm">
         <button
           type="button"
-          class="text-[11px] font-semibold text-[#F87171] hover:text-[#EF4444] transition-colors cursor-pointer"
+          class="text-[12.5px] font-semibold text-danger hover:underline transition-colors cursor-pointer"
           @click="showCancelConfirm = true"
         >
           Sin merma / Reembolsar
         </button>
       </div>
 
-      <!-- Confirmación rápida de cancelación -->
       <div v-else-if="showCancelConfirm" class="flex items-center gap-2">
-        <span class="text-[11px] text-[#F87171] font-medium">¿Reembolsar 100%?</span>
+        <span class="text-xs text-danger font-semibold">¿Reembolsar 100%?</span>
         <button
           type="button"
-          class="px-2 py-0.5 rounded-md bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-[10px] cursor-pointer disabled:opacity-50"
+          class="px-2.5 py-1 rounded-lg bg-danger hover:bg-danger/90 text-surface font-bold text-xs cursor-pointer disabled:opacity-50"
           :disabled="isCancelling"
           @click="handleCancelAndRefund"
         >
@@ -203,7 +284,7 @@ const handleCancelAndRefund = async () => {
         </button>
         <button
           type="button"
-          class="px-2 py-0.5 rounded-md bg-white/[0.08] text-white font-semibold text-[10px] cursor-pointer"
+          class="px-2.5 py-1 rounded-lg bg-canvas text-content font-semibold text-xs cursor-pointer"
           @click="showCancelConfirm = false"
         >
           No
@@ -211,21 +292,30 @@ const handleCancelAndRefund = async () => {
       </div>
 
       <div v-else>
-        <span v-if="pickup.payment_status === 'refunded'" class="text-[11px] text-[#F87171] font-medium">
-          Reembolso emitido en MP
+        <span
+          v-if="pickup.payment_status === 'refunded' || isCancelled"
+          class="text-xs text-danger font-medium"
+        >
+          Reembolsado al comprador
+        </span>
+        <span v-else-if="isPickedUp" class="text-xs text-success font-semibold">
+          Entregado en mostrador
+        </span>
+        <span v-else class="text-xs text-content-secondary">
+          Ventana finalizada
         </span>
       </div>
 
       <button
         v-if="canRedeem"
         type="button"
-        class="text-xs font-semibold text-[#A78BFA] hover:text-white transition-colors cursor-pointer"
-        @click="$emit('redeem', pickup)"
+        class="text-[13px] font-bold text-brand hover:text-brand-hover transition-colors cursor-pointer"
+        @click="emit('redeem', pickup)"
       >
-        Verificar código &rarr;
+        Validar y entregar ▾
       </button>
     </div>
 
-    <p v-if="cancelErrorMessage" class="text-[10px] text-[#F87171] mt-1">{{ cancelErrorMessage }}</p>
+    <p v-if="cancelErrorMessage" class="text-xs text-danger">{{ cancelErrorMessage }}</p>
   </div>
 </template>

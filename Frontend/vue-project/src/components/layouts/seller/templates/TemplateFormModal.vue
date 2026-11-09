@@ -20,8 +20,8 @@ const commonAllergens = [
   "Lácteos",
   "Huevo",
   "Frutos secos",
-  "Maní",
   "Soja",
+  "Maní",
   "Pescado",
   "Mariscos",
   "Sulfitos",
@@ -40,10 +40,9 @@ const form = reactive({
   estimated_weight_kg: null,
 });
 
-// Sincronizar datos al abrir o cambiar de plantilla
 watch(
-  () => props.template,
-  (newVal) => {
+  () => [props.template, props.modelValue],
+  ([newVal]) => {
     formError.value = "";
     Object.keys(validationErrors).forEach((k) => delete validationErrors[k]);
     if (newVal) {
@@ -54,7 +53,7 @@ watch(
     } else {
       form.title = "";
       form.description = "";
-      form.allergens = [];
+      form.allergens = ["Gluten", "Lácteos", "Huevo"];
       form.estimated_weight_kg = null;
     }
   },
@@ -140,117 +139,101 @@ const handleSave = async () => {
 <template>
   <div
     v-if="modelValue"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-content/50 backdrop-blur-xs"
     @click.self="closeModal"
   >
     <div
-      class="w-full max-w-lg rounded-2xl bg-[#2D2438] border border-white/[0.1] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+      class="w-full max-w-[520px] rounded-[22px] bg-surface border border-border-subtle p-7 sm:p-8 shadow-card flex flex-col gap-[22px] max-h-[92vh] overflow-y-auto text-content"
     >
-      <!-- Cabecera del Modal -->
-      <header
-        class="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-[#1A1625]/50"
-      >
-        <div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-[#A78BFA] block mb-0.5">
-            Plantillas Maestras
-          </span>
-          <h2 class="text-base sm:text-lg font-bold text-white tracking-tight">
-            {{ template?.id ? "Editar Plantilla" : "Nueva Plantilla" }}
-          </h2>
-        </div>
-        <button
-          type="button"
-          class="p-1.5 rounded-lg text-[#A5A8C2] hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
-          @click="closeModal"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </header>
+      <!-- Header -->
+      <div class="flex flex-col gap-1">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-brand">
+          PLANTILLAS MAESTRAS
+        </span>
+        <h2 class="text-[22px] font-extrabold text-content leading-tight">
+          {{ template?.id ? "Editar Plantilla de Pack" : "Nueva Plantilla de Pack" }}
+        </h2>
+      </div>
 
-      <!-- Formulario con scroll suave -->
-      <form @submit.prevent="handleSave" class="p-6 space-y-4 overflow-y-auto flex-1">
-        <!-- Error global si ocurre -->
+      <!-- Form -->
+      <form class="flex flex-col gap-5" @submit.prevent="handleSave">
+        <!-- Global error -->
         <div
           v-if="formError"
-          class="p-3 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#F87171] text-xs font-medium flex items-center gap-2"
+          class="p-3 rounded-[12px] bg-danger/12 border border-danger/30 text-danger text-xs font-semibold"
         >
-          <svg class="w-4 h-4 shrink-0 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{{ formError }}</span>
+          {{ formError }}
         </div>
 
-        <!-- Título -->
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-[#E8EAF6] block">
-            Nombre de la Plantilla <span class="text-[#EF4444]">*</span>
+        <!-- Nombre de la Plantilla -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-content">
+            Nombre de la Plantilla *
           </label>
           <input
             v-model="form.title"
             type="text"
             maxlength="100"
-            placeholder="Ej: Bolsa Sorpresa Panadería y Bollería"
-            class="w-full px-3.5 py-2.5 rounded-xl bg-[#1A1625] border text-sm text-white placeholder-[#787596] focus:outline-none focus:border-[#7C3AED] transition"
-            :class="validationErrors.title ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+            placeholder="Bolsa Sorpresa Panadería y Facturas"
+            class="w-full px-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13.5px] font-semibold text-content placeholder-content-secondary focus:outline-none focus:border-brand"
+            :class="validationErrors.title ? 'border-danger' : 'border-transparent'"
           />
-          <p v-if="validationErrors.title" class="text-xs text-[#EF4444]">
+          <p v-if="validationErrors.title" class="text-[11px] text-danger">
             {{ validationErrors.title }}
           </p>
         </div>
 
-        <!-- Descripción -->
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-[#E8EAF6] block">
-            Descripción habitual del contenido <span class="text-[#EF4444]">*</span>
+        <!-- Descripción habitual del contenido -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-content">
+            Descripción habitual del contenido *
           </label>
           <textarea
             v-model="form.description"
             rows="3"
             maxlength="1000"
-            placeholder="Ej: Selección variada de panes de masa madre, facturas y medialunas elaboradas en la jornada."
-            class="w-full px-3.5 py-2.5 rounded-xl bg-[#1A1625] border text-sm text-white placeholder-[#787596] focus:outline-none focus:border-[#7C3AED] transition resize-none leading-relaxed"
-            :class="validationErrors.description ? 'border-[#EF4444]' : 'border-white/[0.1]'"
+            placeholder="Selección variada de panes de masa madre, facturas y medialunas del día."
+            class="w-full px-3.5 py-[11px] rounded-[12px] bg-surface-sunken border text-[13.5px] font-semibold text-content placeholder-content-secondary focus:outline-none focus:border-brand resize-none leading-relaxed"
+            :class="validationErrors.description ? 'border-danger' : 'border-transparent'"
           ></textarea>
-          <p v-if="validationErrors.description" class="text-xs text-[#EF4444]">
+          <p v-if="validationErrors.description" class="text-[11px] text-danger">
             {{ validationErrors.description }}
           </p>
         </div>
 
-        <!-- Peso Estimado -->
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-[#E8EAF6] block">
+        <!-- Peso estimado aproximado -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-content">
             Peso estimado aproximado (opcional)
           </label>
-          <div class="relative">
+          <div class="relative flex items-center">
             <input
               v-model="form.estimated_weight_kg"
               type="number"
               step="0.05"
               min="0.1"
-              placeholder="Ej: 1.2"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-[#1A1625] border border-white/[0.1] text-sm text-white placeholder-[#787596] focus:outline-none focus:border-[#7C3AED] transition"
+              placeholder="1.2"
+              class="w-full px-3.5 py-[11px] rounded-[12px] bg-surface-sunken border border-transparent text-[13.5px] font-semibold text-content placeholder-content-secondary focus:outline-none focus:border-brand"
             />
-            <span class="absolute right-3.5 top-2.5 text-xs text-[#787596] font-medium">kg</span>
+            <span class="absolute right-3.5 text-xs font-semibold text-content-secondary">kg</span>
           </div>
         </div>
 
-        <!-- Alérgenos -->
-        <div class="space-y-2 pt-1">
-          <label class="text-xs font-semibold text-[#E8EAF6] block">
+        <!-- Alérgenos habituales -->
+        <div class="flex flex-col gap-2">
+          <label class="text-[12px] font-semibold text-content">
             Alérgenos habituales
           </label>
-          <div class="flex flex-wrap gap-1.5">
+          <div class="flex flex-wrap gap-2">
             <button
               v-for="allergen in commonAllergens"
               :key="allergen"
               type="button"
-              class="px-2.5 py-1 rounded-lg text-xs font-medium border transition cursor-pointer"
+              class="px-3 py-1.5 rounded-full text-[12px] transition-colors cursor-pointer"
               :class="
                 form.allergens.includes(allergen)
-                  ? 'bg-[#7C3AED]/20 border-[#7C3AED]/60 text-[#DDD6FE]'
-                  : 'bg-[#1A1625] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'
+                  ? 'bg-brand text-surface font-bold'
+                  : 'bg-surface-sunken text-content font-medium hover:bg-canvas'
               "
               @click="toggleAllergen(allergen)"
             >
@@ -258,25 +241,25 @@ const handleSave = async () => {
             </button>
           </div>
 
-          <!-- Alérgeno personalizado -->
-          <div class="flex gap-2 pt-1.5">
+          <!-- Custom Allergen Input -->
+          <div class="flex gap-2 pt-1">
             <input
               v-model="customAllergenInput"
               type="text"
               placeholder="Otro alérgeno..."
-              class="flex-1 px-3 py-1.5 rounded-lg bg-[#1A1625] border border-white/[0.1] text-xs text-white placeholder-[#787596] focus:outline-none focus:border-[#7C3AED]"
+              class="flex-1 px-3 py-1.5 rounded-[10px] bg-surface-sunken border border-transparent text-xs font-medium text-content placeholder-content-secondary focus:outline-none focus:border-brand"
               @keydown.enter.prevent="addCustomAllergen"
             />
             <button
               type="button"
-              class="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-xs font-semibold text-white transition cursor-pointer"
+              class="px-3 py-1.5 rounded-[10px] bg-surface-sunken hover:bg-canvas text-xs font-semibold text-content transition cursor-pointer"
               @click="addCustomAllergen"
             >
               + Agregar
             </button>
           </div>
 
-          <!-- Tags activos adicionales que no estén en la lista rápida -->
+          <!-- Extra custom allergen chips -->
           <div
             v-if="form.allergens.some((a) => !commonAllergens.includes(a))"
             class="flex flex-wrap gap-1.5 pt-1"
@@ -284,12 +267,12 @@ const handleSave = async () => {
             <span
               v-for="(customA, idx) in form.allergens.filter((a) => !commonAllergens.includes(a))"
               :key="idx"
-              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs bg-[#7C3AED]/15 border border-[#7C3AED]/30 text-[#C4B5FD]"
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-brand text-surface"
             >
               {{ customA }}
               <button
                 type="button"
-                class="hover:text-white cursor-pointer"
+                class="hover:opacity-80 cursor-pointer"
                 @click="removeAllergen(form.allergens.indexOf(customA))"
               >
                 ×
@@ -297,30 +280,27 @@ const handleSave = async () => {
             </span>
           </div>
         </div>
-      </form>
 
-      <!-- Pie del Modal -->
-      <footer
-        class="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-white/[0.08] bg-[#1A1625]/50"
-      >
-        <button
-          type="button"
-          class="px-4 py-2 rounded-xl text-xs font-semibold text-[#A5A8C2] hover:text-white hover:bg-white/[0.06] transition cursor-pointer"
-          :disabled="isSubmitting"
-          @click="closeModal"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#7C3AED] hover:bg-[#6D28D9] shadow-sm shadow-purple-900/30 transition cursor-pointer disabled:opacity-50"
-          :disabled="isSubmitting"
-          @click="handleSave"
-        >
-          <span v-if="isSubmitting">Guardando...</span>
-          <span v-else>{{ template?.id ? "Guardar Cambios" : "Crear Plantilla" }}</span>
-        </button>
-      </footer>
+        <!-- Actions Row -->
+        <div class="flex items-center justify-between pt-1">
+          <button
+            type="button"
+            class="text-[13.5px] font-semibold text-content-secondary hover:text-content cursor-pointer"
+            :disabled="isSubmitting"
+            @click="closeModal"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="px-[22px] py-3 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-[13.5px] font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? "Guardando..." : "Guardar Plantilla" }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
