@@ -39,40 +39,43 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <main class="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4 py-10">
+  <main class="min-h-screen flex items-center justify-center bg-canvas px-4 py-10 font-sans">
     <section
-      class="w-full max-w-2xl bg-[var(--color-background)] text-[var(--color-heading)] rounded-xl shadow-lg border border-[var(--color-border)] p-8"
+      class="w-full max-w-2xl bg-surface text-content rounded-[22px] shadow-card border border-border-subtle p-8"
     >
       <div class="flex items-start gap-4">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          class="w-10 h-10 text-red-500 shrink-0"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
-            clip-rule="evenodd"
-          />
-        </svg>
+        <div class="p-3 bg-danger/10 text-danger rounded-2xl shrink-0">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            class="w-8 h-8"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </div>
         <div>
-          <h1 class="text-2xl font-semibold mb-1 text-red-500">Cuenta Desactivada</h1>
-          <p class="text-[var(--color-heading)]/80 mb-4">
+          <h1 class="text-2xl font-black mb-1.5 text-content-strong">Cuenta Desactivada</h1>
+          <p class="text-sm text-content-secondary leading-relaxed mb-5">
             Tu cuenta ha sido desactivada temporalmente por un administrador. Si consideras que se trata
             de un error, por favor ponte en contacto con nuestro equipo de soporte.
           </p>
-          <div class="bg-red-950/40 border-l-4 border-red-500 p-4 rounded text-sm text-red-200">
-            <strong>Estado:</strong> Suspensión temporal de cuenta. Comunícate con soporte para mayor detalle sobre la reactivación.
+          <div class="bg-danger/10 border-l-4 border-danger p-4 rounded-xl text-xs text-content-strong font-medium">
+            <strong class="text-danger">Estado:</strong> Suspensión temporal de cuenta. Comunícate con soporte para mayor detalle sobre la reactivación.
           </div>
         </div>
       </div>
 
-      <div class="mt-8 flex items-center justify-between flex-wrap gap-4 pt-4 border-t border-[var(--color-border)]">
+      <div class="mt-8 flex items-center justify-between flex-wrap gap-4 pt-5 border-t border-border-subtle">
         <button
           type="button"
           :disabled="checking"
           @click="handleCheckStatus"
-          class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)] disabled:opacity-60 cursor-pointer"
+          class="inline-flex items-center justify-center rounded-[10px] bg-brand text-surface px-5 py-2.5 font-bold text-sm hover:bg-brand-hover shadow-btn transition cursor-pointer disabled:opacity-50"
         >
           {{ checking ? "Comprobando..." : "Comprobar estado" }}
         </button>
@@ -80,14 +83,14 @@ const handleLogout = async () => {
         <div class="flex items-center gap-4">
           <a
             href="mailto:soporte@tatelestai.com"
-            class="text-sm text-[var(--color-heading)]/70 hover:text-[var(--color-heading)] underline"
+            class="text-sm text-content-secondary hover:text-content-strong underline transition"
           >
             Contactar soporte
           </a>
           <button
             type="button"
             @click="handleLogout"
-            class="text-sm text-red-400 hover:text-red-300 underline cursor-pointer"
+            class="text-sm text-danger hover:text-danger/80 font-semibold underline cursor-pointer transition"
           >
             Cerrar sesión
           </button>
