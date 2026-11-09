@@ -1,100 +1,59 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* ==========================================================================
+   Tatelestai Base Styles & Legacy Token Aliases (Sunset Anime Light)
+   ========================================================================== */
+
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
-
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
-
-  --vt-c-indigo: #2c3e50;
-
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
-
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
-}
-
-/* semantic color variables for this project */
-:root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
-
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
-
-  --color-heading: var(--vt-c-text-light-1);
-  
-
   --section-gap: 160px;
 
-  --color-text: #e8eaf6;
-  --color-bg: #1a1625;
-  --color-primary: #2d2438;
-  --color-secondary: #3d3450;
-  --color-focus: #4a4058;
-  --color-darkest: #0f0d15;
+  /* Legacy aliases mapped to tokens.css */
+  --color-text: var(--color-content-base, #46334F);
+  --color-bg: var(--color-canvas-base, #F5EFEA);
+  --color-background: var(--color-canvas-base, #F5EFEA);
+  --color-background-soft: var(--color-surface-base, #FFFFFF);
+  --color-background-mute: var(--color-surface-sunken-base, #F2ECE4);
 
-  --color-accent: #7c3aed;
-  --color-accent-hover: #6d28d9;
-  --color-accent-light: #a78bfa;
+  --color-primary: var(--color-surface-base, #FFFFFF);
+  --color-secondary: var(--color-surface-elevated-base, #FFF8F3);
+  --color-focus: var(--color-border-subtle-base, #DDD8E5);
+  --color-darkest: var(--color-surface-darkest-base, #46334F);
 
-  --color-success: #10b981;
-  --color-success-hover: #059669;
-  --color-danger: #ef4444;
-  --color-danger-hover: #dc2626;
-  --color-warning: #f59e0b;
-  --color-warning-text: #78350f;
+  --color-border: var(--color-border-subtle-base, #DDD8E5);
+  --color-border-hover: var(--color-brand-base, #F24F13);
 
-  --color-info: #3b82f6;
-  --color-info-hover: #2563eb;
+  --color-heading: var(--color-content-strong-base, #46334F);
+  --color-text-secondary: var(--color-content-secondary-base, #8082A6);
+  --color-text-muted: var(--color-content-muted-base, #9D9EB8);
+
+  --color-accent: var(--color-brand-base, #F24F13);
+  --color-accent-hover: var(--color-brand-hover-base, #D83F0A);
+  --color-accent-light: var(--color-brand-light-base, #F2921D);
+
+  --color-success: var(--color-success-base, #1F9D6B);
+  --color-success-hover: #178055;
+  --color-danger: var(--color-danger-base, #F24F13);
+  --color-danger-hover: #D83F0A;
+  --color-warning: var(--color-warning-base, #F2921D);
+  --color-warning-text: #46334F;
+
+  --color-info: var(--color-info-base, #8082A6);
+  --color-info-hover: #46334F;
 
   --border-radius: 0.5rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-   
-  }
 }
 
 body {
   min-height: 100vh;
   color: var(--color-text);
-  background: var(--color-background);
+  background-color: var(--color-bg);
   margin: 0;
-  transition:
-    color 0.5s,
-    background-color 0.5s;
   line-height: 1.6;
   font-family:
-    'Plus Jakarta Sans',
     Inter,
+    'Plus Jakarta Sans',
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
     Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
     sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
@@ -102,10 +61,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar utility for dashboard scrollable containers */
+/* Custom scrollbar utility for dashboard and scrollable containers */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #4A4058 transparent;
+  scrollbar-color: #DDD8E5 transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -118,10 +77,10 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #4A4058;
+  background: #DDD8E5;
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #7C3AED;
+  background: #F24F13;
 }
