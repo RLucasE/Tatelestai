@@ -10,16 +10,17 @@
     >
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
         @click.self="close"
       >
         <div
-          class="bg-[#2D2438] border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl relative text-[#E8EAF6] animate-in fade-in zoom-in-95 duration-200"
+          class="bg-surface border border-border-subtle rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-elevated relative text-content animate-in fade-in zoom-in-95 duration-200"
         >
           <!-- Botón de Cerrar -->
           <button
+            type="button"
             @click="close"
-            class="absolute top-4 right-4 text-[#A5A8C2] hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
+            class="absolute top-4 right-4 text-content-secondary hover:text-content p-1.5 rounded-full hover:bg-canvas transition-colors cursor-pointer"
             aria-label="Cerrar modal"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,17 +29,17 @@
           </button>
 
           <!-- Ícono de Estrellas Superior -->
-          <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#F59E0B]/15 border border-[#F59E0B]/30 flex items-center justify-center text-[#F59E0B]">
+          <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-warning/10 border border-warning/25 flex items-center justify-center text-warning">
             <svg class="w-8 h-8 fill-current" viewBox="0 0 24 24">
               <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
             </svg>
           </div>
 
           <!-- Título y Subtítulo -->
-          <h3 class="text-lg font-bold text-white tracking-tight">
+          <h3 class="text-lg font-bold text-content-strong tracking-tight font-heading">
             ¿Qué te pareció tu rescate?
           </h3>
-          <p v-if="establishmentName" class="text-xs text-[#A5A8C2] mt-1 truncate">
+          <p v-if="establishmentName" class="text-xs text-content-secondary mt-1 truncate">
             {{ establishmentName }}
           </p>
 
@@ -48,14 +49,14 @@
               v-for="star in 5"
               :key="star"
               type="button"
-              class="p-1 focus:outline-none transition-transform hover:scale-125 duration-150"
+              class="p-1 focus:outline-none transition-transform hover:scale-125 duration-150 cursor-pointer"
               @mouseenter="hoverRating = star"
               @mouseleave="hoverRating = 0"
               @click="selectedRating = star"
             >
               <svg
                 class="w-8 h-8 sm:w-9 sm:h-9 transition-colors duration-150"
-                :class="isStarActive(star) ? 'text-[#F59E0B] fill-current drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-[#787596]/40 fill-none stroke-current stroke-2'"
+                :class="isStarActive(star) ? 'text-warning fill-current drop-shadow-sm' : 'text-border-subtle fill-none stroke-current stroke-2'"
                 viewBox="0 0 24 24"
               >
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -64,12 +65,12 @@
           </div>
 
           <!-- Feedback de Texto sutil según estrella -->
-          <p class="text-xs font-semibold h-4 text-[#A78BFA] transition-opacity">
+          <p class="text-xs font-semibold h-4 text-brand-light transition-opacity">
             {{ ratingLabel }}
           </p>
 
           <!-- Mensaje de Error si ocurre -->
-          <div v-if="errorMessage" class="mt-3 p-2.5 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 text-xs text-[#F87171]">
+          <div v-if="errorMessage" class="mt-3 p-2.5 rounded-xl bg-danger/10 border border-danger/30 text-xs text-danger">
             {{ errorMessage }}
           </div>
 
@@ -78,12 +79,12 @@
             type="button"
             :disabled="selectedRating === 0 || isSubmitting"
             @click="submitRating"
-            class="w-full mt-5 py-3 px-4 rounded-xl font-bold text-sm tracking-wide text-white transition-all duration-200 flex items-center justify-center gap-2 shadow-lg"
-            :class="selectedRating === 0 ? 'bg-[#3D3450] text-[#787596] cursor-not-allowed opacity-60' : 'bg-[#7C3AED] hover:bg-[#6D28D9] shadow-[#7C3AED]/30 active:scale-[0.98]'"
+            class="w-full mt-5 py-3 px-4 rounded-[10px] font-bold text-sm tracking-wide text-surface transition-all duration-200 flex items-center justify-center gap-2 shadow-md cursor-pointer select-none"
+            :class="selectedRating === 0 ? 'bg-canvas text-content-muted cursor-not-allowed border border-border-subtle opacity-70' : 'bg-brand hover:bg-brand-hover shadow-brand/25 active:scale-[0.98]'"
           >
             <svg
               v-if="isSubmitting"
-              class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              class="animate-spin -ml-1 mr-2 h-4 w-4 text-surface"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -99,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import axiosInstance from '@/lib/axios';
 
 const props = defineProps({
@@ -109,20 +110,40 @@ const props = defineProps({
   },
   sellId: {
     type: [Number, String],
-    required: true,
+    default: null,
   },
   establishmentName: {
     type: String,
     default: '',
   },
+  initialRating: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const emit = defineEmits(['update:modelValue', 'reviewed']);
 
-const selectedRating = ref(0);
+const selectedRating = ref(props.initialRating || 0);
 const hoverRating = ref(0);
 const isSubmitting = ref(false);
 const errorMessage = ref('');
+
+watch(
+  () => props.initialRating,
+  (val) => {
+    if (val) selectedRating.value = val;
+  }
+);
+
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val && props.initialRating) {
+      selectedRating.value = props.initialRating;
+    }
+  }
+);
 
 const isStarActive = (star) => {
   if (hoverRating.value > 0) {
@@ -158,7 +179,7 @@ const close = () => {
 };
 
 const submitRating = async () => {
-  if (selectedRating.value === 0 || isSubmitting.value) return;
+  if (!props.sellId || selectedRating.value === 0 || isSubmitting.value) return;
 
   isSubmitting.value = true;
   errorMessage.value = '';

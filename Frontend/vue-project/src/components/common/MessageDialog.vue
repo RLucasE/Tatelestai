@@ -47,10 +47,11 @@ export default {
 }
 
 .message-container {
-  background-color: var(--color-bg);
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px var(--color-darkest);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px -6px rgba(70, 51, 79, 0.15);
   max-width: 400px;
   width: 90%;
 }
@@ -58,27 +59,30 @@ export default {
 .message-content {
   margin-bottom: 20px;
   text-align: center;
-  color: var(--color-text);
+  color: var(--color-content);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .accept-button {
-  background-color: var(--color-primary);
-  color: var(--color-text);
+  background-color: var(--color-brand);
+  color: var(--color-surface);
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 10px 24px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s;
+  width: 100%;
 }
 
 .accept-button:hover {
-  background-color: var(--color-secondary);
+  background-color: var(--color-brand-hover);
 }
 
 .accept-button:focus {
   outline: none;
-  background-color: var(--color-focus);
-  box-shadow: 0 0 0 2px var(--color-darkest);
+  box-shadow: 0 0 0 3px rgba(242, 79, 19, 0.3);
 }
 </style>

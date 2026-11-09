@@ -6,13 +6,13 @@ const notificationStore = useNotificationStore();
 const getBorderColor = (type) => {
   switch (type) {
     case 'success':
-      return 'border-[#10B981]/60 bg-[#10B981]/10 text-[#34D399]';
+      return 'border-success/40 bg-surface text-success';
     case 'error':
-      return 'border-[#EF4444]/60 bg-[#EF4444]/10 text-[#F87171]';
+      return 'border-danger/40 bg-surface text-danger';
     case 'warning':
-      return 'border-[#F59E0B]/60 bg-[#F59E0B]/10 text-[#FBBF24]';
+      return 'border-warning/50 bg-surface text-brand';
     default:
-      return 'border-[#7C3AED]/60 bg-[#7C3AED]/10 text-[#A78BFA]';
+      return 'border-brand/40 bg-surface text-brand';
   }
 };
 </script>
@@ -32,7 +32,7 @@ const getBorderColor = (type) => {
       <div
         v-for="toast in notificationStore.toasts"
         :key="toast.id"
-        class="pointer-events-auto p-4 rounded-2xl bg-[#2D2438] border shadow-2xl backdrop-blur-md flex items-start gap-3 transition-all"
+        class="pointer-events-auto p-4 rounded-2xl border shadow-card flex items-start gap-3 transition-all"
         :class="getBorderColor(toast.type)"
       >
         <!-- Icono según tipo -->
@@ -77,12 +77,12 @@ const getBorderColor = (type) => {
 
         <!-- Contenido del Toast -->
         <div class="flex-1 min-w-0">
-          <h4 class="text-xs font-bold text-white tracking-wide">{{ toast.title }}</h4>
-          <p class="text-xs text-[#E8EAF6]/90 mt-0.5 leading-relaxed break-words">{{ toast.message }}</p>
+          <h4 class="text-xs font-bold text-content tracking-wide">{{ toast.title }}</h4>
+          <p class="text-xs text-content-secondary mt-0.5 leading-relaxed break-words">{{ toast.message }}</p>
           <RouterLink
             v-if="toast.actionUrl"
             :to="toast.actionUrl"
-            class="inline-block mt-2 text-[11px] font-bold text-[#A78BFA] hover:text-white transition-colors underline"
+            class="inline-block mt-2 text-[11px] font-bold text-brand hover:text-brand-hover transition-colors underline"
             @click="notificationStore.removeToast(toast.id)"
           >
             Ver detalles →
@@ -92,7 +92,7 @@ const getBorderColor = (type) => {
         <!-- Botón de Cerrar -->
         <button
           type="button"
-          class="shrink-0 p-1 text-[#A5A8C2] hover:text-white rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer"
+          class="shrink-0 p-1 text-content-secondary hover:text-content rounded-lg hover:bg-canvas transition-colors cursor-pointer"
           @click="notificationStore.removeToast(toast.id)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
