@@ -11,7 +11,8 @@ const notificationStore = useNotificationStore();
 const establishments = ref([]);
 const loading = ref(true);
 const error = ref(null);
-const selectedEstablishmentId = ref(null);
+const selectedEstablishmentIds = ref([]);
+const hasInitializedSelection = ref(false);
 
 const checkoutLoading = ref(false);
 const checkoutError = ref("");
@@ -21,49 +22,95 @@ const formatPrice = (val) => {
   return Number(val || 0).toLocaleString("es-AR");
 };
 
-// Cantidad total de packs en todo el carrito
+const getScheduleKey = (offer) => {
+  const start = offer?.pickup_start_datetime ? new Date(offer.pickup_start_datetime).toISOString().slice(0, 16) : "no-start";
+  const endRaw = offer?.offer_expiration_datetime || offer?.expiration_datetime;
+  const end = endRaw ? new Date(endRaw).toISOString().slice(0, 16) : "no-end";
+  return `${start}|${end}`;
+};
+
+// Control de selección de carritos
+const getEstablishmentId = (offers) => {
+  if (!Array.isArray(offers) || !offers.length) return null;
+  return offers[0]?.establishment_id ?? offers[0]?.food_establishment_id ?? null;
+};
+
+const isEstablishmentSelected = (id) => {
+  if (id == null) return false;
+  return selectedEstablishmentIds.value.some((item) => Number(item) === Number(id));
+};
+
+const areAllSelected = computed(() => {
+  if (!establishments.value.length) return false;
+  return establishments.value.every((g) => isEstablishmentSelected(getEstablishmentId(g)));
+});
+
+const selectAll = () => {
+  const allIds = establishments.value
+    .map((g) => getEstablishmentId(g))
+    .filter((id) => id != null)
+    .map(Number);
+  selectedEstablishmentIds.value = allIds;
+};
+
+const deselectAll = () => {
+  selectedEstablishmentIds.value = [];
+};
+
+const toggleSelectAll = () => {
+  if (areAllSelected.value) {
+    deselectAll();
+  } else {
+    selectAll();
+  }
+};
+
+const toggleEstablishmentSelection = (id) => {
+  if (id == null) return;
+  const numId = Number(id);
+  const current = selectedEstablishmentIds.value.map(Number);
+  const exists = current.includes(numId);
+  if (exists) {
+    selectedEstablishmentIds.value = current.filter((item) => item !== numId);
+  } else {
+    selectedEstablishmentIds.value = [...current, numId];
+  }
+};
+
+// Establecimientos y ofertas seleccionadas activas
+const selectedEstablishments = computed(() => {
+  return establishments.value.filter(
+    (group) => Array.isArray(group) && isEstablishmentSelected(getEstablishmentId(group))
+  );
+});
+
+const selectedOffers = computed(() => {
+  return selectedEstablishments.value.flat().filter(Boolean);
+});
+
+// Cantidad de packs seleccionados
 const totalItemsCount = computed(() => {
-  return establishments.value.reduce((total, group) => {
-    return total + (Array.isArray(group) ? group.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0) : 0);
-  }, 0);
+  return selectedOffers.value.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
 });
 
 const totalPacksCount = computed(() => totalItemsCount.value);
 
-// Establecimiento activo para checkout
-const selectedEstablishmentOffers = computed(() => {
-  if (!establishments.value.length) return [];
-  if (!selectedEstablishmentId.value) {
-    return establishments.value[0] || [];
-  }
-  const found = establishments.value.find(
-    (group) => Array.isArray(group) && group[0]?.establishment_id === selectedEstablishmentId.value
-  );
-  return found || establishments.value[0] || [];
-});
-
-// Totales de la reserva consolidada (Figma: OrderSummaryCard)
+// Totales de la reserva de carritos seleccionados (Figma: OrderSummaryCard)
 const totalOriginalPrice = computed(() => {
-  return establishments.value.reduce((total, group) => {
-    if (!Array.isArray(group)) return total;
-    return total + group.reduce((sum, offer) => {
-      let orig = Number(offer.minimum_value || 0);
-      if (!orig || orig <= 0) {
-        const price = offer.offer_price != null ? Number(offer.offer_price) : Number(offer.price || 0);
-        orig = price > 0 ? Math.round(price * 2.5) : 0;
-      }
-      return sum + orig * Number(offer.quantity || 1);
-    }, 0);
+  return selectedOffers.value.reduce((sum, offer) => {
+    let orig = Number(offer.minimum_value || 0);
+    if (!orig || orig <= 0) {
+      const price = offer.offer_price != null ? Number(offer.offer_price) : Number(offer.price || 0);
+      orig = price > 0 ? Math.round(price * 2.5) : 0;
+    }
+    return sum + orig * Number(offer.quantity || 1);
   }, 0);
 });
 
 const totalToPay = computed(() => {
-  return establishments.value.reduce((total, group) => {
-    if (!Array.isArray(group)) return total;
-    return total + group.reduce((sum, offer) => {
-      const price = offer.offer_price != null ? Number(offer.offer_price) : Number(offer.price || 0);
-      return sum + price * Number(offer.quantity || 1);
-    }, 0);
+  return selectedOffers.value.reduce((sum, offer) => {
+    const price = offer.offer_price != null ? Number(offer.offer_price) : Number(offer.price || 0);
+    return sum + price * Number(offer.quantity || 1);
   }, 0);
 });
 
@@ -71,20 +118,32 @@ const totalSavings = computed(() => {
   return Math.max(0, totalOriginalPrice.value - totalToPay.value);
 });
 
+// Total de pases QR considerando locales y turnos seleccionados
+const totalQrPassesCount = computed(() => {
+  let passes = 0;
+  for (const group of selectedEstablishments.value) {
+    if (!Array.isArray(group) || !group.length) continue;
+    const keys = new Set(group.map((o) => getScheduleKey(o)));
+    passes += Math.max(1, keys.size);
+  }
+  return passes;
+});
+
 // Pases QR de retiro (Figma: Recibirás 2 pases QR de retiro)
 const qrPassesCountText = computed(() => {
-  const count = establishments.value.length;
-  if (count <= 1) return "Recibirás 1 pase QR de retiro";
+  const count = totalQrPassesCount.value;
+  if (count === 0) return "0 pases QR de retiro";
+  if (count === 1) return "Recibirás 1 pase QR de retiro";
   return `Recibirás ${count} pases QR de retiro`;
 });
 
 // Franja horaria combinada de retiro (Figma: "Hoy entre 20:00 y 22:30 hs en 2 locales.")
 const pickupCommitmentText = computed(() => {
-  const count = establishments.value.length;
-  if (!count) return "Hoy en horario comercial";
+  const count = selectedEstablishments.value.length;
+  if (!count) return "Selecciona un carrito para ver horario";
 
-  const allOffers = establishments.value.flat().filter(Boolean);
-  if (!allOffers.length) return "Hoy en horario comercial";
+  const allOffers = selectedOffers.value;
+  if (!allOffers.length) return "Selecciona un carrito para ver horario";
 
   let earliestStart = null;
   let latestEnd = null;
@@ -118,19 +177,18 @@ const pickupCommitmentText = computed(() => {
   return `Hoy en horario comercial en ${localeSuffix}.`;
 });
 
-// Disponibilidad global y stock
-const hasAnyUnavailable = computed(() => {
+const isOfferUnavailable = (offer) => {
   const now = Date.now();
-  return establishments.value.some((group) => {
-    if (!Array.isArray(group)) return false;
-    return group.some((offer) => {
-      const exp = offer.offer_expiration_datetime || offer.expiration_datetime;
-      const isExpired = exp ? new Date(exp).getTime() < now : false;
-      const isSoldOut = offer.offer_state === "purchased" || Number(offer.offer_max_quantity ?? 1) === 0;
-      const exceeds = offer.offer_max_quantity != null && Number(offer.quantity) > Number(offer.offer_max_quantity);
-      return isExpired || isSoldOut || exceeds;
-    });
-  });
+  const exp = offer?.offer_expiration_datetime || offer?.expiration_datetime;
+  const isExpired = exp ? new Date(exp).getTime() < now : false;
+  const isSoldOut = offer?.offer_state === "purchased" || Number(offer?.offer_max_quantity ?? 1) === 0;
+  const exceeds = offer?.offer_max_quantity != null && Number(offer.quantity) > Number(offer.offer_max_quantity);
+  return isExpired || isSoldOut || exceeds;
+};
+
+// Disponibilidad en los carritos seleccionados
+const hasAnyUnavailable = computed(() => {
+  return selectedOffers.value.some((offer) => isOfferUnavailable(offer));
 });
 
 const getCart = async (showLoading = true) => {
@@ -142,11 +200,22 @@ const getCart = async (showLoading = true) => {
     const response = await axiosInstance.get("/customer-cart");
     if (Array.isArray(response.data)) {
       establishments.value = response.data.filter((group) => Array.isArray(group) && group.length > 0);
-      if (establishments.value.length > 0 && !selectedEstablishmentId.value) {
-        selectedEstablishmentId.value = establishments.value[0][0]?.establishment_id;
+      const currentValidIds = establishments.value
+        .map((g) => getEstablishmentId(g))
+        .filter((id) => id != null)
+        .map(Number);
+
+      if (!hasInitializedSelection.value) {
+        selectedEstablishmentIds.value = currentValidIds;
+        hasInitializedSelection.value = true;
+      } else {
+        selectedEstablishmentIds.value = selectedEstablishmentIds.value
+          .map(Number)
+          .filter((id) => currentValidIds.includes(id));
       }
     } else {
       establishments.value = [];
+      selectedEstablishmentIds.value = [];
     }
   } catch (err) {
     if (err.response?.status === 404) {
@@ -219,7 +288,7 @@ const removeEstablishmentOffers = async (establishmentId) => {
 };
 
 const selectEstablishment = (id) => {
-  selectedEstablishmentId.value = id;
+  toggleEstablishmentSelection(id);
 };
 
 // Formato de franja horaria para un comercio
@@ -246,10 +315,14 @@ const formatPickupWindow = (offer) => {
   return "Hoy en horario comercial";
 };
 
-// Checkout centralizado
+// Checkout centralizado (de un turno específico o de todas las ofertas del comercio)
 const handleCheckout = async (offersGroup = null) => {
-  const targetOffers = offersGroup || selectedEstablishmentOffers.value;
-  if (!targetOffers || !targetOffers.length || hasAnyUnavailable.value) return;
+  const rawTarget = Array.isArray(offersGroup) && offersGroup.length > 0
+    ? offersGroup
+    : (selectedEstablishments.value[0] || []);
+
+  const targetOffers = rawTarget.filter((o) => !isOfferUnavailable(o));
+  if (!targetOffers.length) return;
 
   const id = targetOffers[0]?.establishment_id;
   if (!id) return;
@@ -269,12 +342,17 @@ const handleCheckout = async (offersGroup = null) => {
     const response = await axiosInstance.post("/customer/pack-reservations/prepare", purchaseData);
 
     const firstOffer = targetOffers[0];
+    const distinctWindows = Array.from(new Set(targetOffers.map((o) => formatPickupWindow(o))));
+    const schedulesCount = new Set(targetOffers.map((o) => getScheduleKey(o))).size;
+
     const confirmationData = {
       ...response.data.data,
+      schedules_count: schedulesCount,
+      pickup_windows: distinctWindows,
       establishment: {
         ...response.data.data.establishment,
         category: firstOffer?.establishment_category || firstOffer?.category || "Gastronomía",
-        pickup_window: formatPickupWindow(firstOffer),
+        pickup_window: distinctWindows.length > 1 ? distinctWindows.join(" • ") : formatPickupWindow(firstOffer),
       },
       offersDetails: targetOffers.map((o) => {
         const price = o.offer_price != null ? Number(o.offer_price) : Number(o.price || 0);
@@ -289,7 +367,7 @@ const handleCheckout = async (offersGroup = null) => {
           price: price,
           original_price: orig,
           quantity: Number(o.quantity || 1),
-          pickup_window: formatPickupWindow(firstOffer),
+          pickup_window: formatPickupWindow(o),
         };
       }),
     };
@@ -316,6 +394,8 @@ const handleCheckout = async (offersGroup = null) => {
   }
 };
 
+
+
 // Sincronización en vivo ante eventos SSE
 watch(
   () => notificationStore.lastOrderEvent,
@@ -330,6 +410,7 @@ watch(
 onMounted(() => {
   getCart();
 });
+
 </script>
 
 <template>
@@ -453,17 +534,98 @@ onMounted(() => {
       
       <!-- LeftColumn_StoreGroups (Figma node 2013:835) -->
       <div class="w-full lg:flex-1 lg:min-w-0 space-y-6">
+        <!-- CartSelectionToolbar: Guía visual y control de selección múltiple -->
+        <div
+          v-if="establishments.length > 0"
+          class="bg-surface border border-border-subtle rounded-2xl px-5 py-3.5 shadow-card flex flex-wrap items-center justify-between gap-3"
+        >
+          <!-- Master checkbox y estado visual -->
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer border shrink-0"
+              :class="[
+                areAllSelected
+                  ? 'bg-brand border-brand text-surface shadow-xs'
+                  : selectedEstablishmentIds.length > 0
+                    ? 'bg-brand/10 border-brand text-brand'
+                    : 'bg-surface border-border-subtle hover:border-brand/60'
+              ]"
+              :aria-checked="areAllSelected"
+              role="checkbox"
+              title="Alternar selección de todos los carritos"
+              @click="toggleSelectAll"
+            >
+              <svg v-if="areAllSelected" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <svg v-else-if="selectedEstablishmentIds.length > 0" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <rect x="4" y="9" width="12" height="2" rx="1" />
+              </svg>
+            </button>
+
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-content-strong">
+                <template v-if="areAllSelected">
+                  Todos los carritos seleccionados
+                </template>
+                <template v-else-if="selectedEstablishmentIds.length > 0">
+                  {{ selectedEstablishmentIds.length }} de {{ establishments.length }} carritos seleccionados
+                </template>
+                <template v-else>
+                  Ningún carrito seleccionado
+                </template>
+              </span>
+              <span
+                v-if="areAllSelected"
+                class="inline-flex items-center text-[11px] font-semibold text-brand bg-brand/10 px-2 py-0.5 rounded-full"
+              >
+                {{ establishments.length }} locales
+              </span>
+            </div>
+          </div>
+
+          <!-- Botones de Acción directos: Seleccionar todos y Desmarcar todos -->
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer border"
+              :class="[
+                areAllSelected
+                  ? 'bg-brand/10 border-brand/30 text-brand pointer-events-none'
+                  : 'bg-surface hover:bg-surface-sunken border-border-subtle text-content hover:text-content-strong'
+              ]"
+              @click="selectAll"
+            >
+              Seleccionar todos
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer border"
+              :class="[
+                selectedEstablishmentIds.length === 0
+                  ? 'opacity-50 border-border-subtle text-content-secondary pointer-events-none'
+                  : 'bg-surface hover:bg-surface-sunken border-border-subtle text-content-secondary hover:text-danger'
+              ]"
+              @click="deselectAll"
+            >
+              Desmarcar todos
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Carritos de Comercio -->
         <SellerSection
           v-for="(offers, idx) in establishments"
-          :key="offers[0]?.establishment_id ?? idx"
+          :key="getEstablishmentId(offers) ?? idx"
           :offers="offers"
-          :is-selected="selectedEstablishmentId === offers[0]?.establishment_id"
+          :is-selected="isEstablishmentSelected(getEstablishmentId(offers))"
           :establishments-count="establishments.length"
-          :loading="checkoutLoading && selectedEstablishmentId === offers[0]?.establishment_id"
+          :loading="checkoutLoading && isEstablishmentSelected(getEstablishmentId(offers))"
           @offerRemoved="handleRemoveOffer"
           @quantityUpdated="handleQuantityChange"
           @removeAllOffers="removeEstablishmentOffers"
-          @selectEstablishment="selectEstablishment"
+          @toggleSelect="toggleEstablishmentSelection"
         />
       </div>
 
@@ -539,7 +701,7 @@ onMounted(() => {
             <button
               type="button"
               class="w-full h-[50px] rounded-[10px] bg-brand hover:bg-brand-hover text-surface font-semibold text-sm shadow-sm shadow-brand/20 transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="checkoutLoading || !totalPacksCount || hasAnyUnavailable"
+              :disabled="checkoutLoading || !totalPacksCount || hasAnyUnavailable || selectedEstablishments.length === 0"
               @click="handleCheckout()"
             >
               <svg
@@ -554,6 +716,14 @@ onMounted(() => {
               </svg>
               <span v-else>Comprar</span>
             </button>
+
+            <!-- Aclaración si hay múltiples comercios seleccionados -->
+            <p
+              v-if="selectedEstablishments.length > 1"
+              class="text-[11px] text-content-secondary text-center leading-relaxed"
+            >
+              Como cada comercio tiene retiro y pago independiente, abonarás primero en <strong>{{ selectedEstablishments[0][0]?.establishment_name }}</strong>.
+            </p>
 
             <!-- Cancelación gratuita (Figma node 2013:1001) -->
             <p class="text-[11px] text-content-secondary text-center leading-relaxed">
