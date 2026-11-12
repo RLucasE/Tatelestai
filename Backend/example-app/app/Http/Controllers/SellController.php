@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Sell\ProcessExpiredSellsAction;
+use App\Enums\PaymentStatus;
+use App\Enums\SellState;
 use App\Models\Sell;
 use App\Models\User;
 use Carbon\Carbon;
@@ -33,6 +35,11 @@ class SellController extends Controller
                     'establishment_name' => $sell->foodEstablishment->name ?? 'N/A',
                     'seller_id' => $sell->foodEstablishment->user_id ?? 'N/A',
                     'sold_by' => $sell->foodEstablishment->name ?? 'N/A',
+                    'state' => $sell->state?->value ?? $sell->state,
+                    'payment_status' => $sell->payment_status?->value ?? $sell->payment_status ?? PaymentStatus::APPROVED->value,
+                    'gross_amount' => $sell->getGrossAmount(),
+                    'refunded_amount' => $sell->getEffectiveRefundedAmount(),
+                    'refunded_at' => $sell->refunded_at,
                     'sell_details' => $sell->sellDetails->map(function ($detail) {
                         return [
                             'id' => $detail->id,
@@ -99,6 +106,13 @@ class SellController extends Controller
 
         $sells = Sell::whereBetween('created_at', [$startTime, $currentTime])
             ->where('is_picked_up', true)
+            ->where('state', '!=', SellState::CANCELLED->value)
+            ->where(function ($query) {
+                $query->whereIn('payment_status', [
+                    PaymentStatus::APPROVED->value,
+                    PaymentStatus::PARTIALLY_REFUNDED->value,
+                ])->orWhereNull('payment_status');
+            })
             ->get();
 
         $intervals = [];

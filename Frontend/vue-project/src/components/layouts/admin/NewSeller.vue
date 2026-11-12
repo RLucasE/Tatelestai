@@ -592,7 +592,7 @@ onMounted(fetchEstablishment);
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p class="font-semibold text-white mb-1">{{ error }}</p>
+        <p class="font-semibold text-[var(--color-heading)] mb-1">{{ error }}</p>
         <p class="text-xs opacity-60 mb-4">Comprueba tu conexión o intenta recargar la vista.</p>
         <button class="retry-btn" @click="fetchEstablishment">Reintentar carga</button>
       </div>
@@ -663,7 +663,7 @@ onMounted(fetchEstablishment);
           <section class="section">
             <div class="section-header-inline">
               <div class="section-icon-box">
-                <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
@@ -690,7 +690,7 @@ onMounted(fetchEstablishment);
           <section class="section">
             <div class="section-header-inline">
               <div class="section-icon-box">
-                <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
@@ -718,16 +718,16 @@ onMounted(fetchEstablishment);
         <!-- DOCUMENTOS DE VERIFICACIÓN                                   -->
         <!-- ============================================================ -->
         <section class="section mb-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[var(--color-border)]">
             <div class="flex items-start gap-3">
               <div class="section-icon-box mt-0.5">
-                <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div>
                 <h2 class="section-title mb-0">Documentos de Verificación</h2>
-                <p class="text-xs text-[#A5A8C2]/70 mt-0.5">
+                <p class="text-xs text-[var(--color-text-secondary)] mt-0.5">
                   Revisa cada archivo adjunto, reclasifica su categoría si fue subido por error y aprueba o rechaza su validez.
                 </p>
               </div>
@@ -747,12 +747,12 @@ onMounted(fetchEstablishment);
           <!-- Si no hay documentos subidos -->
           <div v-if="!establishment.verification_files || establishment.verification_files.length === 0" class="empty-docs-box">
             <div class="empty-docs-icon">
-              <svg class="w-6 h-6 text-[#A5A8C2]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-6 h-6 text-[var(--color-text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <p class="text-sm text-white font-semibold">Sin documentación adjunta</p>
-            <p class="text-xs text-[#A5A8C2]/60 mt-1">El comercio no subió archivos de respaldo en su solicitud.</p>
+            <p class="text-sm text-[var(--color-heading)] font-semibold">Sin documentación adjunta</p>
+            <p class="text-xs text-[var(--color-text-secondary)] mt-1">El comercio no subió archivos de respaldo en su solicitud.</p>
           </div>
 
           <!-- Lista de documentos -->
@@ -872,7 +872,7 @@ onMounted(fetchEstablishment);
                     title="Abrir documento en pestaña nueva"
                   >
                     <span v-if="openingFileId === file.id" class="btn-loader-small"></span>
-                    <svg v-else class="w-3.5 h-3.5 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-else class="w-3.5 h-3.5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -928,11 +928,11 @@ onMounted(fetchEstablishment);
           <!-- Barra Inferior de Guardado de Documentos -->
           <div class="docs-footer-bar" :class="{ 'docs-footer-bar--unsaved': hasUnsavedChanges }">
             <div class="docs-footer-info">
-              <div v-if="hasUnsavedChanges" class="flex items-center gap-2 text-[#FDE68A] text-xs font-semibold">
+              <div v-if="hasUnsavedChanges" class="flex items-center gap-2 text-[#D97706] text-xs font-semibold">
                 <span class="unsaved-pulse-dot"></span>
                 <span>Hay cambios locales pendientes de guardar en el servidor</span>
               </div>
-              <div v-else class="text-xs text-[#A5A8C2]/70 flex items-center gap-2">
+              <div v-else class="text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
                 <svg class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1073,14 +1073,14 @@ onMounted(fetchEstablishment);
         <!-- Mensaje si NO tiene local en Google Maps -->
         <section v-else class="section mb-6 opacity-80">
           <div class="flex items-center gap-3.5">
-            <div class="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[var(--color-text)]/40 flex-shrink-0">
+            <div class="p-3 rounded-xl bg-[var(--color-surface-sunken-base)] border border-[var(--color-border)] text-[var(--color-text-secondary)] flex-shrink-0">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
             <div>
-              <h3 class="text-sm font-semibold text-white">Sin ficha vinculada en Google Maps</h3>
+              <h3 class="text-sm font-semibold text-[var(--color-heading)]">Sin ficha vinculada en Google Maps</h3>
               <p class="text-xs text-[var(--color-text)]/60 mt-0.5">
                 El comercio opera sin perfil de Google Places vinculado. Los criterios de ficha y llamada telefónica no se contabilizan en el puntaje máximo.
               </p>
@@ -1092,10 +1092,10 @@ onMounted(fetchEstablishment);
         <!-- TABLA DE PUNTUACIÓN DE CONFIANZA                             -->
         <!-- ============================================================ -->
         <section class="section mb-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-white/[0.06]">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[var(--color-border)]">
             <div class="flex items-start gap-3">
               <div class="section-icon-box mt-0.5">
-                <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
@@ -1136,7 +1136,7 @@ onMounted(fetchEstablishment);
                     'row-na': item.notApplicable
                   }"
                 >
-                  <td class="font-medium text-white">
+                  <td class="font-medium text-[var(--color-heading)]">
                     <div class="flex items-center gap-2.5">
                       <span
                         class="table-status-icon"
@@ -1178,7 +1178,7 @@ onMounted(fetchEstablishment);
 
               <tfoot>
                 <tr class="total-row">
-                  <td colspan="3" class="font-bold text-white">
+                  <td colspan="3" class="font-bold text-[var(--color-heading)]">
                     <div class="flex items-center gap-2 flex-wrap">
                       <span>Puntaje Total de Confianza</span>
                       <span v-if="hasUnsavedChanges" class="unsaved-table-tag">
@@ -1234,7 +1234,7 @@ onMounted(fetchEstablishment);
           <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3">
               <div class="section-icon-box">
-                <svg class="w-4 h-4 text-[#A78BFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
               </div>
@@ -1274,8 +1274,8 @@ onMounted(fetchEstablishment);
             <div>
               <h2 class="section-title mb-1">Resolución de la Solicitud</h2>
               <p class="text-xs text-[var(--color-text)]/70">
-                Has verificado <strong class="text-white">{{ verifiedFilesCount }} de {{ totalFilesCount }}</strong> documentos adjuntos ({{ totalCalculatedPoints }} pts).
-                <span v-if="hasUnsavedChanges" class="text-amber-400 font-semibold block sm:inline mt-1 sm:mt-0">
+                Has verificado <strong class="text-[var(--color-heading)]">{{ verifiedFilesCount }} de {{ totalFilesCount }}</strong> documentos adjuntos ({{ totalCalculatedPoints }} pts).
+                <span v-if="hasUnsavedChanges" class="text-amber-600 font-semibold block sm:inline mt-1 sm:mt-0">
                   Recuerda guardar los cambios de documentos antes de activar.
                 </span>
               </p>
@@ -1301,10 +1301,10 @@ onMounted(fetchEstablishment);
         </section>
 
         <div v-else class="info-message">
-          <svg class="w-5 h-5 text-[#A78BFA] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 text-[var(--color-accent)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>Esta solicitud ya fue procesada y se encuentra en estado: <strong class="text-white uppercase">{{ establishment.verification_status }}</strong>.</span>
+          <span>Esta solicitud ya fue procesada y se encuentra en estado: <strong class="text-[var(--color-heading)] uppercase">{{ establishment.verification_status }}</strong>.</span>
         </div>
       </div>
 
@@ -1410,9 +1410,9 @@ onMounted(fetchEstablishment);
               </button>
             </div>
             <div class="modal-body">
-              <div class="p-3 rounded-lg bg-white/[0.03] border border-white/[0.07] mb-3.5 flex items-center justify-between">
+              <div class="p-3 rounded-lg bg-[var(--color-secondary)] border border-[var(--color-border)] mb-3.5 flex items-center justify-between">
                 <span class="text-xs text-[var(--color-text)]/70">Número discado:</span>
-                <strong class="text-sm text-white font-mono">{{ establishment.google_place_data?.formatted_phone_number || establishment.phone || 'No registrado' }}</strong>
+                <strong class="text-sm text-[var(--color-heading)] font-mono">{{ establishment.google_place_data?.formatted_phone_number || establishment.phone || 'No registrado' }}</strong>
               </div>
               <label class="input-label">Notas u observaciones de la llamada</label>
               <textarea
@@ -1476,8 +1476,8 @@ onMounted(fetchEstablishment);
 }
 
 .back-btn:hover {
-  border-color: var(--color-focus);
-  color: #ffffff;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
   transform: translateX(-2px);
 }
 
@@ -1489,7 +1489,7 @@ onMounted(fetchEstablishment);
   border-radius: 9999px;
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.35);
-  color: #fde68a;
+  color: #D97706;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -1528,15 +1528,15 @@ onMounted(fetchEstablishment);
 .title {
   font-size: 1.625rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-heading);
   letter-spacing: -0.015em;
   line-height: 1.2;
 }
 
 .subtitle {
   font-size: 0.8125rem;
-  color: var(--color-text);
-  opacity: 0.75;
+  color: var(--color-text-secondary);
+  opacity: 0.85;
 }
 
 .status-chip {
@@ -1547,9 +1547,9 @@ onMounted(fetchEstablishment);
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
-  background: color-mix(in srgb, var(--color-focus) 18%, transparent);
-  color: #c4b5fd;
-  border: 1px solid rgba(124, 58, 237, 0.45);
+  background: rgba(242, 79, 19, 0.1);
+  color: #F24F13;
+  border: 1px solid rgba(242, 79, 19, 0.3);
   text-transform: capitalize;
 }
 
@@ -1565,15 +1565,15 @@ onMounted(fetchEstablishment);
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-secondary);
   color: var(--color-text);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
 }
 
 /* Widget de puntaje en el Hero */
 .hero-score-widget {
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 0.875rem;
   padding: 1rem 1.25rem;
   min-width: 240px;
@@ -1591,8 +1591,7 @@ onMounted(fetchEstablishment);
 .score-widget-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-text);
-  opacity: 0.75;
+  color: var(--color-text-secondary);
 }
 
 .score-widget-numbers {
@@ -1612,14 +1611,13 @@ onMounted(fetchEstablishment);
 .score-max {
   font-size: 0.8125rem;
   font-family: monospace;
-  color: var(--color-text);
-  opacity: 0.55;
+  color: var(--color-text-secondary);
 }
 
 .score-progress-track {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-border);
   border-radius: 9999px;
   overflow: hidden;
   margin-bottom: 0.45rem;
@@ -1637,8 +1635,7 @@ onMounted(fetchEstablishment);
 
 .score-widget-caption {
   font-size: 0.6875rem;
-  color: var(--color-text);
-  opacity: 0.6;
+  color: var(--color-text-secondary);
 }
 
 .trust-badge-label {
@@ -1650,9 +1647,9 @@ onMounted(fetchEstablishment);
   letter-spacing: 0.05em;
 }
 
-.badge-green { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
-.badge-yellow { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
-.badge-red { background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+.badge-green { background: rgba(16, 185, 129, 0.18); color: #047857; border: 1px solid rgba(16, 185, 129, 0.4); }
+.badge-yellow { background: rgba(245, 158, 11, 0.18); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.4); }
+.badge-red { background: rgba(239, 68, 68, 0.18); color: #B91C1C; border: 1px solid rgba(239, 68, 68, 0.4); }
 
 /* ============================================================ */
 /* SECCIONES Y TARJETAS DE DATOS                                */
@@ -1674,8 +1671,9 @@ onMounted(fetchEstablishment);
   width: 2rem;
   height: 2rem;
   border-radius: 0.5rem;
-  background: rgba(124, 58, 237, 0.12);
-  border: 1px solid rgba(124, 58, 237, 0.25);
+  background: rgba(242, 79, 19, 0.1);
+  border: 1px solid rgba(242, 79, 19, 0.25);
+  color: #F24F13;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1685,7 +1683,7 @@ onMounted(fetchEstablishment);
 .section-title {
   font-size: 1.0625rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-heading);
 }
 
 .info-grid {
@@ -1699,8 +1697,8 @@ onMounted(fetchEstablishment);
   flex-direction: column;
   padding: 0.75rem 0.9rem;
   border-radius: 0.625rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .info-card.span-full {
@@ -1711,15 +1709,14 @@ onMounted(fetchEstablishment);
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-text);
-  opacity: 0.55;
+  color: var(--color-text-secondary);
   margin-bottom: 0.25rem;
   font-weight: 600;
 }
 
 .value {
   font-size: 0.9375rem;
-  color: #ffffff;
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -1729,11 +1726,11 @@ onMounted(fetchEstablishment);
   gap: 0.45rem;
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-sunken-base, #F2ECE4);
+  border: 1px solid var(--color-border);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--color-text-secondary);
 }
 
 /* ============================================================ */
@@ -1748,14 +1745,15 @@ onMounted(fetchEstablishment);
   border: 1px dashed var(--color-border);
   border-radius: 0.875rem;
   text-align: center;
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--color-surface-sunken-base, #F2ECE4);
 }
 
 .empty-docs-icon {
   width: 3rem;
   height: 3rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface-sunken-base, #F2ECE4);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1769,25 +1767,25 @@ onMounted(fetchEstablishment);
 }
 
 .doc-list-item {
-  background-color: #261E32;
-  border: 1px solid #3D3450;
+  background-color: var(--color-primary, #FFFFFF);
+  border: 1px solid var(--color-border, #DDD8E5);
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
   transition: all 0.2s ease;
 }
 
 .doc-list-item:hover {
-  border-color: rgba(124, 58, 237, 0.55);
+  border-color: var(--color-accent, #F24F13);
 }
 
 .doc-list-item--accepted {
-  border-color: rgba(16, 185, 129, 0.4);
-  background: color-mix(in srgb, #10b981 4%, #261E32);
+  border-color: rgba(31, 157, 107, 0.4);
+  background: color-mix(in srgb, #1F9D6B 6%, #FFFFFF);
 }
 
 .doc-list-item--rejected {
   border-color: rgba(239, 68, 68, 0.4);
-  background: color-mix(in srgb, #ef4444 4%, #261E32);
+  background: color-mix(in srgb, #EF4444 6%, #FFFFFF);
 }
 
 .doc-list-main {
@@ -1820,13 +1818,13 @@ onMounted(fetchEstablishment);
 .doc-format-icon--pdf {
   background: rgba(239, 68, 68, 0.14);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  color: #ef4444;
 }
 
 .doc-format-icon--img {
   background: rgba(59, 130, 246, 0.14);
   border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #60a5fa;
+  color: #3b82f6;
 }
 
 .doc-type-control {
@@ -1845,9 +1843,9 @@ onMounted(fetchEstablishment);
 .doc-category-inline-select {
   appearance: none;
   -webkit-appearance: none;
-  background: #1A1424;
-  border: 1px solid #3D3450;
-  color: #ffffff;
+  background: var(--color-primary, #FFFFFF);
+  border: 1px solid var(--color-border, #DDD8E5);
+  color: var(--color-text, #46334F);
   border-radius: 0.5rem;
   padding: 0.4rem 2rem 0.4rem 0.75rem;
   font-size: 0.8125rem;
@@ -1859,27 +1857,27 @@ onMounted(fetchEstablishment);
 
 .doc-category-inline-select:hover,
 .doc-category-inline-select:focus {
-  border-color: #7c3aed;
+  border-color: var(--color-accent, #F24F13);
 }
 
 .doc-category-inline-select option {
-  background: #261E32;
-  color: #ffffff;
+  background: #FFFFFF;
+  color: #46334F;
 }
 
 .select-chevron {
   width: 0.875rem;
   height: 0.875rem;
-  color: #a5a8c2;
+  color: var(--color-text-secondary, #8082A6);
   position: absolute;
   right: 0.65rem;
   pointer-events: none;
 }
 
 .doc-format-badge {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 0.2rem 0.5rem;
@@ -1901,17 +1899,17 @@ onMounted(fetchEstablishment);
 
 .doc-status-pill--accepted {
   background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
+  color: #047857;
 }
 
 .doc-status-pill--rejected {
   background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
+  color: #B91C1C;
 }
 
 .doc-status-pill--pending {
   background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  color: #B45309;
 }
 
 /* Stepper Horizontal Mejorado para puntos manuales */
@@ -1929,13 +1927,13 @@ onMounted(fetchEstablishment);
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #34d399;
+  color: #047857;
 }
 
 .doc-points-horizontal-stepper {
   display: inline-flex;
   align-items: center;
-  background: #1A1424;
+  background: var(--color-primary, #FFFFFF);
   border: 1px solid rgba(16, 185, 129, 0.4);
   border-radius: 0.375rem;
   overflow: hidden;
@@ -1949,14 +1947,14 @@ onMounted(fetchEstablishment);
   justify-content: center;
   background: transparent;
   border: none;
-  color: #a5a8c2;
+  color: var(--color-text-secondary, #8082A6);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .stepper-btn:hover:not(:disabled) {
   background: rgba(16, 185, 129, 0.2);
-  color: #ffffff;
+  color: #047857;
 }
 
 .stepper-btn:disabled {
@@ -1969,9 +1967,9 @@ onMounted(fetchEstablishment);
   height: 1.5rem;
   background: transparent;
   border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  color: var(--color-text);
   font-weight: 700;
   font-size: 0.75rem;
   font-family: monospace;
@@ -1990,7 +1988,7 @@ onMounted(fetchEstablishment);
 .doc-points-unit {
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #34d399;
+  color: #047857;
 }
 
 .doc-list-right {
@@ -2008,7 +2006,7 @@ onMounted(fetchEstablishment);
   .doc-list-right {
     justify-content: space-between;
     padding-top: 0.65rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--color-border);
   }
 }
 
@@ -2020,24 +2018,24 @@ onMounted(fetchEstablishment);
   border-radius: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-open-doc:hover:not(:disabled) {
-  color: #ffffff;
-  background: rgba(124, 58, 237, 0.15);
-  border-color: rgba(124, 58, 237, 0.4);
+  color: var(--color-accent);
+  background: rgba(242, 79, 19, 0.1);
+  border-color: rgba(242, 79, 19, 0.4);
 }
 
 .doc-action-segmented {
   display: inline-flex;
   align-items: center;
-  background: #181324;
-  border: 1px solid #3D3450;
+  background: var(--color-surface-sunken-base, #F2ECE4);
+  border: 1px solid var(--color-border);
   padding: 2px;
   border-radius: 0.5rem;
 }
@@ -2057,12 +2055,12 @@ onMounted(fetchEstablishment);
 
 .doc-seg-btn--idle {
   background: transparent;
-  color: #8e8ba7;
+  color: var(--color-text-secondary);
 }
 
 .doc-seg-btn--idle:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  background: rgba(70, 51, 79, 0.08);
 }
 
 .doc-seg-btn--accepted {
@@ -2127,25 +2125,25 @@ onMounted(fetchEstablishment);
   font-weight: 700;
   padding: 0.55rem 1.1rem;
   border-radius: 0.625rem;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text);
-  border: 1px solid #3d3450;
+  background: var(--color-surface-sunken-base, #F2ECE4);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.6;
   transition: all 0.2s ease;
 }
 
 .btn-save-minimal--active {
-  background: #7c3aed;
+  background: var(--color-accent, #F24F13);
   color: #ffffff;
-  border-color: #7c3aed;
+  border-color: var(--color-accent, #F24F13);
   opacity: 1;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 2px 10px rgba(242, 79, 19, 0.35);
 }
 
 .btn-save-minimal--active:hover:not(:disabled) {
-  background: #6d28d9;
+  background: var(--color-accent-hover, #D83F0A);
 }
 
 .btn-revert-changes {
@@ -2170,7 +2168,7 @@ onMounted(fetchEstablishment);
   border-radius: 0.625rem;
   background: rgba(16, 185, 129, 0.14);
   border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #34d399;
+  color: #047857;
   font-size: 0.8125rem;
   font-weight: 600;
   display: flex;
@@ -2187,7 +2185,7 @@ onMounted(fetchEstablishment);
   font-size: 0.6875rem;
   font-weight: 700;
   background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  color: #2563eb;
   border: 1px solid rgba(59, 130, 246, 0.3);
   text-transform: uppercase;
 }
@@ -2201,7 +2199,7 @@ onMounted(fetchEstablishment);
   font-size: 0.75rem;
   font-weight: 600;
   background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
+  color: #047857;
   border: 1px solid rgba(16, 185, 129, 0.3);
   text-decoration: none;
   transition: all 0.15s ease;
@@ -2220,7 +2218,7 @@ onMounted(fetchEstablishment);
   border-radius: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  background: var(--color-focus);
+  background: var(--color-accent);
   color: #ffffff;
   border: none;
   cursor: pointer;
@@ -2387,7 +2385,7 @@ onMounted(fetchEstablishment);
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: #a78bfa;
+  color: var(--color-accent);
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
@@ -2398,8 +2396,8 @@ onMounted(fetchEstablishment);
 }
 
 .actions-section {
-  border: 1px solid rgba(124, 58, 237, 0.45);
-  background: linear-gradient(180deg, var(--color-primary) 0%, color-mix(in srgb, var(--color-focus) 8%, var(--color-primary)) 100%);
+  border: 1px solid var(--color-border);
+  background: var(--color-primary);
 }
 
 .action-btn {
@@ -2417,7 +2415,7 @@ onMounted(fetchEstablishment);
 
 .reject-btn {
   background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+  color: #B91C1C;
   border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
@@ -2455,7 +2453,7 @@ onMounted(fetchEstablishment);
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(70, 51, 79, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2471,7 +2469,7 @@ onMounted(fetchEstablishment);
   width: 100%;
   max-width: 480px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 40px rgba(70, 51, 79, 0.15);
 }
 
 .modal-header {
@@ -2491,13 +2489,13 @@ onMounted(fetchEstablishment);
   justify-content: center;
 }
 
-.modal-header-icon--danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.modal-header-icon--success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.modal-header-icon--danger { background: rgba(239, 68, 68, 0.15); color: #B91C1C; }
+.modal-header-icon--success { background: rgba(16, 185, 129, 0.15); color: #047857; }
 
 .modal-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-heading);
 }
 
 .modal-close {
@@ -2525,14 +2523,14 @@ onMounted(fetchEstablishment);
   border-radius: 0.625rem;
   background: var(--color-secondary);
   border: 1px solid var(--color-border);
-  color: #ffffff;
+  color: var(--color-text);
   font-size: 0.875rem;
   resize: vertical;
 }
 
 .reject-textarea:focus {
   outline: none;
-  border-color: var(--color-focus);
+  border-color: var(--color-accent);
 }
 
 .modal-footer {
@@ -2541,7 +2539,7 @@ onMounted(fetchEstablishment);
   gap: 0.65rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-primary) 90%, black);
+  background: var(--color-surface-sunken-base, #F2ECE4);
 }
 
 .modal-btn {
@@ -2625,7 +2623,7 @@ onMounted(fetchEstablishment);
   width: 2.25rem;
   height: 2.25rem;
   border: 3px solid var(--color-border);
-  border-top-color: var(--color-focus);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
   margin: 0 auto 1rem;
@@ -2634,7 +2632,7 @@ onMounted(fetchEstablishment);
 .retry-btn {
   padding: 0.5rem 1.15rem;
   border-radius: 0.5rem;
-  background: var(--color-focus);
+  background: var(--color-accent);
   color: #ffffff;
   font-size: 0.8125rem;
   font-weight: 600;

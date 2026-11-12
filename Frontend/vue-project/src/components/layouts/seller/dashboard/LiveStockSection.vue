@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import StockCard from './StockCard.vue';
 
 const props = defineProps({
@@ -9,26 +10,18 @@ const props = defineProps({
   },
 });
 
-defineEmits(['create-offer', 'edit-offer', 'view-all']);
+const emit = defineEmits(['create-offer', 'edit-offer', 'view-all']);
 
-// Filtro de estado: 'all' | 'in_stock' | 'sold_out'
-const currentFilter = ref('all');
+const currentFilter = ref('all'); // 'all' | 'in_stock' | 'sold_out'
 
-// Ofertas con stock vs agotadas
 const inStockOffers = computed(() => {
-  return props.stock.filter((offer) => !offer.is_sold_out && offer.stock_remaining > 0);
+  return props.stock.filter((offer) => !offer.is_sold_out && (offer.stock_remaining ?? offer.quantity ?? 0) > 0);
 });
 
 const soldOutOffers = computed(() => {
-  return props.stock.filter((offer) => offer.is_sold_out || offer.stock_remaining <= 0);
+  return props.stock.filter((offer) => offer.is_sold_out || (offer.stock_remaining ?? offer.quantity ?? 0) <= 0);
 });
 
-// Total de unidades disponibles acumuladas
-const totalUnitsAvailable = computed(() => {
-  return props.stock.reduce((acc, curr) => acc + (Number(curr.stock_remaining) || 0), 0);
-});
-
-// Lista filtrada
 const filteredStock = computed(() => {
   if (currentFilter.value === 'in_stock') {
     return inStockOffers.value;
@@ -41,129 +34,126 @@ const filteredStock = computed(() => {
 </script>
 
 <template>
-  <section class="space-y-3.5">
-    <!-- Header de Sección -->
-    <div class="flex items-start sm:items-center justify-between gap-3 flex-wrap">
-      <div>
-        <div class="flex items-center gap-2">
-          <h2 class="text-base sm:text-lg font-bold text-white tracking-tight">
-            Stock en Vivo
-          </h2>
-          <span
-            v-if="stock.length > 0"
-            class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#7C3AED]/20 text-[#A78BFA] border border-[#7C3AED]/30"
+  <section class="flex flex-col gap-5">
+    <!-- StockSectionHeader (6002:2009) -->
+    <div class="flex flex-col gap-4">
+      <!-- Title and Filter Pills Row (6005:2422) -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h2 class="text-[22px] font-extrabold text-content leading-tight">
+          Stock en Vivo
+        </h2>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'all'
+                ? 'bg-brand text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'all'"
           >
-            {{ totalUnitsAvailable }} {{ totalUnitsAvailable === 1 ? 'unidad' : 'unidades' }}
-          </span>
+            Todas ({{ stock.length }})
+          </button>
+
+          <button
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'in_stock'
+                ? 'bg-brand text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'in_stock'"
+          >
+            Con stock ({{ inStockOffers.length }})
+          </button>
+
+          <button
+            type="button"
+            class="px-3.5 py-[7px] rounded-full text-[12.5px] transition-all cursor-pointer"
+            :class="
+              currentFilter === 'sold_out'
+                ? 'bg-brand text-surface font-bold shadow-xs'
+                : 'text-content-secondary font-semibold hover:text-content hover:bg-surface/60'
+            "
+            @click="currentFilter = 'sold_out'"
+          >
+            Agotadas ({{ soldOutOffers.length }})
+          </button>
         </div>
-        <p class="text-xs text-[#A5A8C2] mt-0.5">
-          {{ stock.length }} {{ stock.length === 1 ? 'bolsa publicada' : 'bolsas publicadas' }} en el local
-        </p>
       </div>
 
-      <div class="flex items-center gap-2">
+      <!-- Subtitle and + Publicar Bolsa Button Row (6005:2431) -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <span class="text-[13.5px] text-content-secondary">
+          {{ stock.length }} {{ stock.length === 1 ? 'bolsa publicada hoy en el local' : 'bolsas publicadas hoy en el local' }}
+        </span>
+
         <button
           type="button"
-          class="text-xs font-semibold text-[#A78BFA] hover:text-white transition-colors cursor-pointer"
-          @click="$emit('view-all')"
+          class="inline-flex items-center justify-center px-[18px] py-[9px] rounded-[10px] bg-surface-darkest hover:bg-surface-darkest/90 text-surface text-[13px] font-bold transition-all active:scale-95 cursor-pointer shrink-0"
+          @click="emit('create-offer')"
         >
-          Gestionar ofertas &rarr;
+          + Publicar Bolsa
         </button>
       </div>
     </div>
 
-    <!-- Pestañas de Filtro (solo si hay más de 1 oferta) -->
-    <div
-      v-if="stock.length > 1"
-      class="flex items-center gap-1.5 p-1 rounded-xl bg-[#2D2438]/80 border border-white/[0.06] overflow-x-auto"
-    >
-      <button
-        type="button"
-        class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
-        :class="
-          currentFilter === 'all'
-            ? 'bg-[#7C3AED] text-white shadow-sm'
-            : 'text-[#A5A8C2] hover:text-white hover:bg-white/[0.04]'
-        "
-        @click="currentFilter = 'all'"
-      >
-        Todas ({{ stock.length }})
-      </button>
-
-      <button
-        type="button"
-        class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
-        :class="
-          currentFilter === 'in_stock'
-            ? 'bg-[#7C3AED] text-white shadow-sm'
-            : 'text-[#A5A8C2] hover:text-white hover:bg-white/[0.04]'
-        "
-        @click="currentFilter = 'in_stock'"
-      >
-        Con stock ({{ inStockOffers.length }})
-      </button>
-
-      <button
-        type="button"
-        class="px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
-        :class="
-          currentFilter === 'sold_out'
-            ? 'bg-[#7C3AED] text-white shadow-sm'
-            : 'text-[#A5A8C2] hover:text-white hover:bg-white/[0.04]'
-        "
-        @click="currentFilter = 'sold_out'"
-      >
-        Agotadas ({{ soldOutOffers.length }})
-      </button>
-    </div>
-
-    <!-- Empty State General (sin ofertas creadas) -->
+    <!-- Empty State -->
     <div
       v-if="stock.length === 0"
-      class="p-8 rounded-2xl bg-[#2D2438] border border-dashed border-white/[0.1] text-center space-y-3 flex flex-col items-center justify-center"
+      class="p-10 rounded-[18px] bg-surface border border-dashed border-border-subtle text-center flex flex-col items-center justify-center gap-3 shadow-card"
     >
-      <div class="w-10 h-10 rounded-xl bg-white/[0.04] text-[#A5A8C2] flex items-center justify-center">
+      <div class="w-11 h-11 rounded-[14px] bg-canvas text-content-secondary flex items-center justify-center">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       </div>
       <div>
-        <h3 class="text-sm font-bold text-white">Sin ofertas activas</h3>
-        <p class="text-xs text-[#A5A8C2] max-w-xs mt-0.5">
-          Publica tus excedentes del día para comenzar a recibir pedidos.
+        <h3 class="text-sm font-bold text-content">Sin ofertas activas</h3>
+        <p class="text-xs text-content-secondary max-w-xs mt-0.5">
+          Publicá tus excedentes del día para comenzar a recibir pedidos.
         </p>
       </div>
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-sm transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
-        @click="$emit('create-offer')"
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-xs font-bold bg-brand hover:bg-brand-hover text-surface transition-all cursor-pointer"
+        @click="emit('create-offer')"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        <span>Publicar Bolsa</span>
+        <span>+ Publicar Bolsa</span>
       </button>
     </div>
 
-    <!-- Empty State del Filtro -->
     <div
       v-else-if="filteredStock.length === 0"
-      class="p-6 rounded-xl bg-[#2D2438]/50 border border-white/[0.06] text-center text-xs text-[#A5A8C2]"
+      class="p-6 rounded-[18px] bg-surface border border-border-subtle text-center text-xs text-content-secondary shadow-card"
     >
       No hay ofertas que coincidan con este filtro.
     </div>
 
-    <!-- Lista de Ofertas con scroll contenido estilizado -->
-    <div
-      v-else
-      class="max-h-[460px] overflow-y-auto pr-1 space-y-2 custom-scrollbar"
-    >
+    <!-- StockCardsList (6002:2020) -->
+    <div v-else class="flex flex-col gap-4">
       <StockCard
         v-for="offer in filteredStock"
-        :key="offer.offer_id"
+        :key="offer.offer_id ?? offer.id"
         :offer="offer"
-        @edit="$emit('edit-offer', $event)"
+        @edit="(offerId, offerObj) => emit('edit-offer', offerId, offerObj)"
       />
+    </div>
+
+    <!-- ManageCatalogLinkRow (6002:2051) -->
+    <div class="flex items-center justify-between gap-3 pt-2 flex-wrap">
+      <span class="text-[13px] font-medium text-content-secondary">
+        ¿Querés lanzar otro lote o editar tus plantillas?
+      </span>
+      <RouterLink
+        to="/seller/templates"
+        class="text-[13.5px] font-bold text-brand hover:text-brand-hover transition-colors"
+      >
+        Ir a Packs y Plantillas →
+      </RouterLink>
     </div>
   </section>
 </template>

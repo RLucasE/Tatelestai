@@ -1,34 +1,24 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axiosInstance from '@/lib/axios';
 import { useNotificationStore } from '@/stores/notifications';
-import DashboardHeader from './dashboard/DashboardHeader.vue';
-import DashboardKpiCards from './dashboard/DashboardKpiCards.vue';
-import QuickRedeemCounter from './dashboard/QuickRedeemCounter.vue';
 import TodayPickupsSection from './dashboard/TodayPickupsSection.vue';
 import LiveStockSection from './dashboard/LiveStockSection.vue';
+import EditActiveOfferModal from './EditActiveOfferModal.vue';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
 
-// Estado del Dashboard
 const dashboardData = ref(null);
 const loading = ref(true);
 const refreshing = ref(false);
 const error = ref(null);
 
-// Formateo de fecha actual
-const currentDateFormatted = computed(() => {
-  const now = new Date();
-  return now.toLocaleDateString('es-AR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
-});
+const showEditOfferModal = ref(false);
+const selectedOfferId = ref(null);
+const selectedOfferObj = ref(null);
 
-// Petición al backend
 const fetchDashboard = async (isManual = false) => {
   if (isManual) {
     refreshing.value = true;
@@ -49,29 +39,16 @@ const fetchDashboard = async (isManual = false) => {
   }
 };
 
-// Navegación
-const goToCreateOffer = () => {
-  router.push({ name: 'create-offer' });
+const goToPacksAndTemplates = () => {
+  router.push({ name: 'pack-templates' });
 };
 
-const goToMyOffers = () => {
-  router.push({ name: 'my-offers' });
+const handleEditOffer = (offerId, offerObj) => {
+  selectedOfferId.value = offerId;
+  selectedOfferObj.value = offerObj || null;
+  showEditOfferModal.value = true;
 };
 
-const goToEditOffer = (offerId) => {
-  router.push({ name: 'edit-offer', params: { id: offerId } });
-};
-
-// Scroll al validador al querer canjear un pedido
-const handleRedeemRequest = () => {
-  window.scrollTo({ top: 120, behavior: 'smooth' });
-  const inputEl = document.querySelector('input[placeholder="XXXX-XXXX-XXXX"]');
-  if (inputEl) {
-    inputEl.focus();
-  }
-};
-
-// Sincronización en vivo ante nuevas ventas, cancelaciones o retiros de pedidos
 watch(
   () => notificationStore.lastOrderEvent,
   () => {
@@ -85,33 +62,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    <!-- Encabezado Principal -->
-    <DashboardHeader
-      :establishment-name="dashboardData?.establishment?.name"
-      :current-date="currentDateFormatted"
-      :refreshing="refreshing"
-      :loading="loading"
-      @refresh="fetchDashboard(true)"
-      @create-offer="goToCreateOffer"
-    />
-
-    <!-- Estado de Carga (Skeleton minimalista) -->
-    <div v-if="loading && !dashboardData" class="space-y-6 animate-pulse">
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div v-for="n in 5" :key="n" class="h-20 rounded-2xl bg-[#2D2438] border border-white/[0.04]"></div>
+  <div class="seller-content-container w-full max-w-[1420px] mx-auto px-4 sm:px-6 lg:px-8 seller:px-0 min-[1420px]:px-0 pt-9 pb-14">
+    <!-- Loading State -->
+    <div v-if="loading && !dashboardData" class="grid grid-cols-1 lg:grid-cols-2 gap-9 animate-pulse">
+      <div class="space-y-4">
+        <div class="h-10 rounded-full bg-surface border border-border-subtle"></div>
+        <div class="h-11 rounded-full bg-surface border border-border-subtle"></div>
+        <div v-for="n in 3" :key="n" class="h-36 rounded-[18px] bg-surface border border-border-subtle"></div>
       </div>
-      <div class="h-36 rounded-2xl bg-[#2D2438] border border-white/[0.04]"></div>
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-7 h-64 rounded-2xl bg-[#2D2438] border border-white/[0.04]"></div>
-        <div class="lg:col-span-5 h-64 rounded-2xl bg-[#2D2438] border border-white/[0.04]"></div>
+      <div class="space-y-4">
+        <div class="h-10 rounded-full bg-surface border border-border-subtle"></div>
+        <div class="h-11 rounded-full bg-surface border border-border-subtle"></div>
+        <div v-for="n in 3" :key="n" class="h-28 rounded-[18px] bg-surface border border-border-subtle"></div>
       </div>
     </div>
 
-    <!-- Estado de Error -->
+    <!-- Error State -->
     <div
       v-else-if="error && !dashboardData"
-      class="p-5 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/25 flex items-center justify-between gap-4 text-xs text-[#F87171]"
+      class="p-6 rounded-[18px] bg-surface border border-danger/40 shadow-card flex items-center justify-between gap-4 text-sm text-danger"
     >
       <div class="flex items-center gap-2.5">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,44 +90,41 @@ onMounted(() => {
       </div>
       <button
         type="button"
-        class="px-3.5 py-1.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold transition-colors cursor-pointer"
+        class="px-4 py-2 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-xs font-bold transition-colors cursor-pointer"
         @click="fetchDashboard(false)"
       >
         Reintentar
       </button>
     </div>
 
-    <!-- Contenido del Dashboard -->
-    <div v-else-if="dashboardData" class="space-y-6">
-      <!-- 1. Tarjetas de Resumen Operativo (KPIs de Hoy) -->
-      <DashboardKpiCards :summary="dashboardData.summary" />
+    <!-- OperationalColumnsGrid (6002:1955) -->
+    <div v-else-if="dashboardData" class="grid grid-cols-1 lg:grid-cols-2 gap-9 items-start">
+      <!-- ColLeft_RetirosDeHoy -->
+      <div>
+        <TodayPickupsSection
+          :pickups="dashboardData.today_pickups || []"
+          @reload="fetchDashboard(true)"
+        />
+      </div>
 
-      <!-- 2. Canje Rápido de Código ("Express Counter") -->
-      <QuickRedeemCounter
-        @delivery-confirmed="fetchDashboard(true)"
-      />
-
-      <!-- 3. Columnas Operativas: Retiros de Hoy y Stock en Vivo -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Columna Izquierda: Retiros de Hoy (7 cols) -->
-        <div class="lg:col-span-7">
-          <TodayPickupsSection
-            :pickups="dashboardData.today_pickups || []"
-            @redeem="handleRedeemRequest"
-            @reload="fetchDashboard(true)"
-          />
-        </div>
-
-        <!-- Columna Derecha: Stock en Vivo (5 cols) -->
-        <div class="lg:col-span-5">
-          <LiveStockSection
-            :stock="dashboardData.live_stock || []"
-            @create-offer="goToCreateOffer"
-            @edit-offer="goToEditOffer"
-            @view-all="goToMyOffers"
-          />
-        </div>
+      <!-- ColRight_StockEnVivo -->
+      <div>
+        <LiveStockSection
+          :stock="dashboardData.live_stock || []"
+          @create-offer="goToPacksAndTemplates"
+          @edit-offer="handleEditOffer"
+          @view-all="goToPacksAndTemplates"
+        />
       </div>
     </div>
+
+    <!-- Modal Ajustar Oferta Activa (6005:2673) -->
+    <EditActiveOfferModal
+      v-model="showEditOfferModal"
+      :offer-id="selectedOfferId"
+      :offer="selectedOfferObj"
+      @saved="fetchDashboard(true)"
+      @deactivated="fetchDashboard(true)"
+    />
   </div>
 </template>

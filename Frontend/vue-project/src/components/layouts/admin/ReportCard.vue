@@ -499,7 +499,7 @@ const takeAction = async () => {
 
 .action-btn.primary {
   background: var(--color-accent);
-  color: var(--color-text);
+  color: #ffffff;
   border-color: var(--color-accent);
 }
 
@@ -608,7 +608,7 @@ const takeAction = async () => {
 }
 
 .detail-value.code {
-  background: var(--color-darkest);
+  background: var(--color-surface-sunken-base, #F2ECE4);
   color: var(--color-text);
   padding: 0.75rem;
   border-radius: var(--border-radius);
@@ -752,7 +752,7 @@ const takeAction = async () => {
 .form-input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 0 3px rgba(242, 79, 19, 0.2);
 }
 
 .form-textarea {
@@ -804,7 +804,7 @@ const takeAction = async () => {
 
 .btn-primary {
   background: var(--color-accent);
-  color: var(--color-text);
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {

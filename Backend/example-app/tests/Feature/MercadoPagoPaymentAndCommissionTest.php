@@ -406,4 +406,133 @@ class MercadoPagoPaymentAndCommissionTest extends TestCase
         // Ganancia Neta Comercio (85%): $8500
         $this->assertEquals(8500.00, $summary['net_earnings_today']);
     }
+
+    public function test_create_preference_and_verify_payment_handles_multiple_split_sells_by_schedule(): void
+    {
+        $this->actingAs($this->customer);
+
+        $offerLunch = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pack Mediodía',
+            'price' => 4000,
+            'quantity' => 5,
+            'pickup_start_datetime' => now()->addHours(1)->startOfMinute(),
+            'expiration_datetime' => now()->addHours(3)->startOfMinute(),
+        ]);
+
+        $offerDinner = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pack Noche',
+            'price' => 6000,
+            'quantity' => 5,
+            'pickup_start_datetime' => now()->addHours(7)->startOfMinute(),
+            'expiration_datetime' => now()->addHours(9)->startOfMinute(),
+        ]);
+
+        // Agregar al carrito
+        $this->postJson('/api/add-to-cart', ['offer_id' => $offerLunch->id, 'quantity' => 1])->assertStatus(200);
+        $this->postJson('/api/add-to-cart', ['offer_id' => $offerDinner->id, 'quantity' => 1])->assertStatus(200);
+
+        // 1. Preparar compra combinada ("Comprar todo")
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
+            'food_establishment_id' => $this->establishment->id,
+            'offers' => [
+                ['id' => $offerLunch->id, 'quantity' => 1],
+                ['id' => $offerDinner->id, 'quantity' => 1],
+            ],
+        ]);
+        $prepareResponse->assertStatus(200);
+        $purchaseToken = $prepareResponse->json('data.purchase_token');
+
+        // 2. Crear preferencia en Mercado Pago
+        $prefResponse = $this->postJson('/api/customer/payment/create-preference', [
+            'purchase_token' => $purchaseToken,
+        ]);
+
+        $prefResponse->assertStatus(200)
+            ->assertJsonPath('data.sells_count', 2)
+            ->assertJsonCount(2, 'data.sells');
+
+        $this->assertEquals(10000.0, (float) $prefResponse->json('data.gross_amount'));
+        $preferenceId = $prefResponse->json('data.preference_id');
+        $primarySellId = $prefResponse->json('data.sell_id');
+
+        $splitSells = Sell::where('preference_id', $preferenceId)->get();
+        $this->assertCount(2, $splitSells);
+
+        // 3. Verificar pago aprobado -> debe aprobar ambos Sells y retornar ambos códigos QR
+        $verifyResponse = $this->postJson('/api/customer/payment/verify', [
+            'sell_id' => $primarySellId,
+            'payment_id' => 'mock_payment_multi_1',
+            'status' => 'approved',
+            'preference_id' => $preferenceId,
+        ]);
+
+        $verifyResponse->assertStatus(200)
+            ->assertJsonPath('data.sells_count', 2)
+            ->assertJsonCount(2, 'data.sells');
+
+        foreach ($splitSells as $s) {
+            $this->assertEquals(PaymentStatus::APPROVED, $s->fresh()->payment_status);
+        }
+    }
+
+    public function test_rejected_payment_restores_stock_for_all_split_sells_sharing_preference(): void
+    {
+        $this->actingAs($this->customer);
+
+        $offer1 = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'price' => 3000,
+            'quantity' => 5,
+            'pickup_start_datetime' => now()->addHours(1)->startOfMinute(),
+            'expiration_datetime' => now()->addHours(2)->startOfMinute(),
+        ]);
+
+        $offer2 = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'price' => 4000,
+            'quantity' => 5,
+            'pickup_start_datetime' => now()->addHours(5)->startOfMinute(),
+            'expiration_datetime' => now()->addHours(6)->startOfMinute(),
+        ]);
+
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
+            'food_establishment_id' => $this->establishment->id,
+            'offers' => [
+                ['id' => $offer1->id, 'quantity' => 2],
+                ['id' => $offer2->id, 'quantity' => 3],
+            ],
+        ]);
+        $purchaseToken = $prepareResponse->json('data.purchase_token');
+
+        $prefResponse = $this->postJson('/api/customer/payment/create-preference', [
+            'purchase_token' => $purchaseToken,
+        ]);
+        $primarySellId = $prefResponse->json('data.sell_id');
+        $preferenceId = $prefResponse->json('data.preference_id');
+
+        // Stock reservado inicialmente
+        $this->assertEquals(3, $offer1->fresh()->quantity);
+        $this->assertEquals(2, $offer2->fresh()->quantity);
+
+        // Simular rechazo de pago (sin payment_id, status = rejected)
+        $verifyResponse = $this->postJson('/api/customer/payment/verify', [
+            'sell_id' => $primarySellId,
+            'status' => 'rejected',
+            'preference_id' => $preferenceId,
+        ]);
+
+        $verifyResponse->assertStatus(422);
+
+        // El stock de AMBAS ofertas divididas debe haberse restaurado
+        $this->assertEquals(5, $offer1->fresh()->quantity);
+        $this->assertEquals(5, $offer2->fresh()->quantity);
+
+        $splitSells = Sell::where('preference_id', $preferenceId)->get();
+        foreach ($splitSells as $s) {
+            $this->assertEquals(PaymentStatus::REJECTED, $s->payment_status);
+            $this->assertEquals(SellState::CANCELLED, $s->state);
+        }
+    }
 }

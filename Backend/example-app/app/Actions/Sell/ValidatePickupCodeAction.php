@@ -34,7 +34,7 @@ class ValidatePickupCodeAction
             throw new Exception('No tienes permiso para verificar este código', 403);
         }
 
-        if ($sell->state !== \App\Enums\SellState::PENDING) {
+        if ($sell->state !== \App\Enums\SellState::PENDING || $sell->payment_status !== \App\Enums\PaymentStatus::APPROVED) {
             throw new Exception('El pedido no se encuentra disponible para ser retirado.', 422);
         }
 

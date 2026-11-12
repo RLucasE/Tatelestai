@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import QRCode from 'qrcode';
 import { buildPickupQrPayload } from '@/utils/qrPayload';
+import tokens from '@/assets/tokens.json';
 
 const props = defineProps({
   show: {
@@ -53,8 +54,8 @@ const generateQr = async () => {
       width: 320,
       margin: 2,
       color: {
-        dark: '#000000',
-        light: '#FFFFFF',
+        dark: tokens.tatelestai.color.content.value,
+        light: tokens.tatelestai.color.surface.value,
       },
       errorCorrectionLevel: 'M',
     });
@@ -106,31 +107,31 @@ onUnmounted(() => {
   <Teleport to="body">
     <div
       v-if="show"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all"
       @click.self="$emit('close')"
       aria-modal="true"
       role="dialog"
     >
       <div
-        class="relative w-full max-w-sm sm:max-w-md bg-[#2D2438] border border-white/[0.1] rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 text-[#E8EAF6] animate-fadeIn"
+        class="relative w-full max-w-sm sm:max-w-md bg-surface border border-border-subtle rounded-[26px] p-6 sm:p-7 shadow-modal space-y-5 text-content animate-fadeIn"
       >
         <!-- Encabezado Modal -->
         <div class="flex items-start justify-between gap-3">
           <div>
-            <span class="text-[11px] font-bold text-[#A78BFA] uppercase tracking-wider block">
+            <span class="text-[11px] font-bold text-brand uppercase tracking-wider block">
               Ticket de Retiro
             </span>
-            <h3 class="text-lg font-black text-white mt-0.5">
+            <h3 class="text-lg font-black text-content-strong mt-0.5">
               {{ establishmentName }}
             </h3>
-            <span class="text-xs text-[#A5A8C2] block">
+            <span class="text-xs text-content-secondary block">
               Reserva #{{ sellId }}
             </span>
           </div>
 
           <button
             type="button"
-            class="text-[#A5A8C2] hover:text-white p-1.5 rounded-xl hover:bg-white/[0.08] transition-colors cursor-pointer"
+            class="text-content-muted hover:text-content-strong p-1.5 rounded-full hover:bg-surface-sunken transition-colors cursor-pointer"
             @click="$emit('close')"
             aria-label="Cerrar modal"
           >
@@ -142,7 +143,7 @@ onUnmounted(() => {
 
         <!-- Tarjeta QR en Alto Contraste (Fondo Blanco Puro) -->
         <div class="flex flex-col items-center justify-center">
-          <div class="p-3.5 bg-white rounded-2xl shadow-xl border border-white/20 flex items-center justify-center">
+          <div class="p-3.5 bg-surface rounded-2xl shadow-card border border-border-subtle flex items-center justify-center">
             <img
               v-if="qrDataUrl"
               :src="qrDataUrl"
@@ -151,21 +152,21 @@ onUnmounted(() => {
             />
             <div
               v-else
-              class="w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center text-xs text-gray-500"
+              class="w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center text-xs text-content-muted"
             >
-              <div class="w-8 h-8 border-3 border-[#7C3AED] border-t-transparent rounded-full animate-spin"></div>
+              <div class="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin"></div>
             </div>
           </div>
-          <p v-if="qrError" class="text-xs text-[#F87171] mt-2 font-medium">{{ qrError }}</p>
+          <p v-if="qrError" class="text-xs text-danger mt-2 font-medium">{{ qrError }}</p>
         </div>
 
         <!-- Código Alfanumérico con botón de copiar -->
-        <div class="bg-[#1A1625] border border-white/[0.08] rounded-2xl p-3.5 flex items-center justify-between gap-3">
+        <div class="bg-surface-sunken border border-border-subtle rounded-2xl p-3.5 flex items-center justify-between gap-3">
           <div class="min-w-0">
-            <span class="text-[10px] uppercase font-bold text-[#A5A8C2] tracking-wider block">
+            <span class="text-[10px] uppercase font-bold text-content-secondary tracking-wider block">
               Código Alfanumérico
             </span>
-            <span class="font-mono text-lg sm:text-xl font-black text-[#10B981] tracking-widest select-all truncate block">
+            <span class="font-mono text-lg sm:text-xl font-black text-brand tracking-widest select-all truncate block">
               {{ pickupCode }}
             </span>
           </div>
@@ -173,13 +174,13 @@ onUnmounted(() => {
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
-            :class="isCopied ? 'bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30' : 'bg-white/[0.08] hover:bg-white/[0.12] text-white'"
+            :class="isCopied ? 'bg-success/15 text-success border border-success/30' : 'bg-surface hover:bg-surface-elevated text-content border border-border-subtle shadow-sm'"
             @click="copyCode"
           >
             <svg v-if="!isCopied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <svg v-else class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
             <span>{{ isCopied ? '¡Copiado!' : 'Copiar' }}</span>
@@ -188,18 +189,18 @@ onUnmounted(() => {
 
         <!-- Indicaciones de Retiro -->
         <div class="space-y-1 text-center">
-          <p class="text-xs text-[#E8EAF6] font-medium">
+          <p class="text-xs text-content font-medium">
             Mostrá esta pantalla al personal gastronómico en mostrador.
           </p>
-          <p v-if="maxPickupTime" class="text-[11px] text-[#A5A8C2]">
-            Horario límite de retiro: <strong class="text-white">{{ maxPickupTime }} hs</strong>
+          <p v-if="maxPickupTime" class="text-[11px] text-content-secondary">
+            Horario límite de retiro: <strong class="text-content-strong">{{ maxPickupTime }} hs</strong>
           </p>
         </div>
 
         <!-- Botón de Cierre -->
         <button
           type="button"
-          class="w-full py-3 rounded-2xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold text-xs tracking-wide transition-colors cursor-pointer shadow-lg shadow-[#7C3AED]/25"
+          class="w-full py-3 rounded-[10px] bg-brand hover:bg-brand-hover text-surface font-bold text-sm tracking-wide transition-colors cursor-pointer shadow-btn"
           @click="$emit('close')"
         >
           Listo, cerrar

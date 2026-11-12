@@ -89,7 +89,8 @@ function toggleDropdown() {
 }
 
 .submenu-link:hover {
-  background: color-mix(in oklab, var(--color-darkest), white 6%);
+  background: var(--color-surface-sunken);
+  color: var(--color-brand);
 }
 
 .dropdown-enter-active,

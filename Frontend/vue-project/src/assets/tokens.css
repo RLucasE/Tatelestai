@@ -1,0 +1,342 @@
+/* ==========================================================================
+   Tatelestai Design System Tokens
+   Palette: Sunset Anime Light (Warm Cream & Vermilion Flame)
+   Standard: Atomic Design & Fluid Spatial/Typographic Rhythm
+   Synchronized with Figma Document Variables and Text/Paint Styles
+   ========================================================================== */
+
+:root {
+  /* Primitive Base Colors (Figma Collection: tatelestai — Sunset Anime Light) */
+  --color-canvas-base: #F5EFEA;
+  --color-surface-base: #FFFFFF;
+  --color-surface-sunken-base: #F2ECE4;
+  --color-surface-elevated-base: #FFF8F3;
+  --color-surface-darkest-base: #46334F;
+
+  --color-brand-base: #F24F13;
+  --color-brand-hover-base: #D83F0A;
+  --color-brand-light-base: #F2921D;
+  --color-rescue-base: #F2C230;
+  --color-rescue-hover-base: #D9AD27;
+
+  --color-border-subtle-base: #DDD8E5;
+  --color-border-hover-base: #F24F13;
+
+  --color-content-base: #46334F;
+  --color-content-strong-base: #46334F;
+  --color-content-secondary-base: #8082A6;
+  --color-content-muted-base: #9D9EB8;
+
+  /* Semantic Feedback (Figma paintStyles) */
+  --color-success-base: #1F9D6B;
+  --color-warning-base: #F2921D;
+  --color-danger-base: #EF4444;
+  --color-info-base: #8082A6;
+
+  /* Spacing Scale (Figma spacing tokens) */
+  --space-inline-xs: 4px;
+  --space-inline-sm: 6px;
+  --space-cluster: 8px;
+  --space-stack-sm: 10px;
+  --space-stack-card: 12px;
+  --space-card-gap: 14px;
+  --space-card-pad: 16px;
+  --space-toolbar-row: 18px;
+  --space-grid-gap: 24px;
+  --space-page-top: 24px;
+  --space-section: 32px;
+  --space-section-lg: 40px;
+  --space-page-bottom: 48px;
+
+  /* Radii (Figma borderRadius tokens) */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-card: 16px;
+  --radius-modal: 20px;
+  --radius-pill: 9999px;
+}
+
+/* Tailwind CSS v4 Theme Extensions */
+@theme {
+  --color-canvas: var(--color-canvas-base);
+  --color-surface: var(--color-surface-base);
+  --color-surface-sunken: var(--color-surface-sunken-base);
+  --color-surface-elevated: var(--color-surface-elevated-base);
+  --color-surface-darkest: var(--color-surface-darkest-base);
+
+  --color-brand: var(--color-brand-base);
+  --color-brand-hover: var(--color-brand-hover-base);
+  --color-brand-light: var(--color-brand-light-base);
+  --color-rescue: var(--color-rescue-base);
+  --color-rescue-hover: var(--color-rescue-hover-base);
+
+  --color-border-subtle: var(--color-border-subtle-base);
+  --color-border-hover: var(--color-border-hover-base);
+
+  --color-content: var(--color-content-base);
+  --color-content-strong: var(--color-content-strong-base);
+  --color-content-secondary: var(--color-content-secondary-base);
+  --color-content-muted: var(--color-content-muted-base);
+
+  --color-success: var(--color-success-base);
+  --color-warning: var(--color-warning-base);
+  --color-danger: var(--color-danger-base);
+  --color-info: var(--color-info-base);
+
+  --font-sans: Inter, 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing tokens registered in @theme */
+  --space-inline-xs: 4px;
+  --space-inline-sm: 6px;
+  --space-cluster: 8px;
+  --space-stack-sm: 10px;
+  --space-stack-card: 12px;
+  --space-card-pad: 16px;
+  --space-toolbar-row: 18px;
+  --space-grid-gap: 24px;
+  --space-page-top: 24px;
+  --space-section: 32px;
+  --space-section-lg: 40px;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-card: 16px;
+  --radius-modal: 20px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0px 2px 4px rgba(70, 51, 79, 0.04), 0px 8px 20px -4px rgba(70, 51, 79, 0.07);
+  --shadow-card-hover: 0px 4px 10px rgba(70, 51, 79, 0.06), 0px 14px 28px -4px rgba(242, 79, 19, 0.12);
+  --shadow-glow-violet: 0 0 20px -2px rgba(242, 79, 19, 0.28);
+  --shadow-glow-emerald: 0 0 16px -2px rgba(242, 194, 48, 0.35);
+
+  --breakpoint-seller: 1420px;
+}
+
+/* Explicit Radii Utilities */
+.rounded-card {
+  border-radius: 16px !important;
+}
+
+.rounded-modal {
+  border-radius: 20px !important;
+}
+
+/* ==========================================================================
+   Figma Seller Layout Container (1420px Content Geometry)
+   ========================================================================== */
+.seller-content-container {
+  width: 100%;
+  max-width: 1420px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .seller-content-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .seller-content-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1420px) {
+  .seller-content-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* ==========================================================================
+   Figma Typography System (11 Exact Text Styles + Legacy Aliases)
+   ========================================================================== */
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Display Hero: 36px ExtraBold / line-height 44px */
+.type-display {
+  font-family: var(--font-heading);
+  font-size: 2.25rem; /* 36px */
+  font-weight: 800;
+  line-height: 2.75rem; /* 44px */
+  letter-spacing: -0.02em;
+  color: var(--color-content-strong-base);
+}
+
+/* 1. Heading / Page Title (H1): 32px Bold / line-height 38px */
+.type-heading-h1,
+.type-h1 {
+  font-family: var(--font-heading);
+  font-size: 2rem; /* 32px */
+  font-weight: 700;
+  line-height: 2.375rem; /* 38px */
+  letter-spacing: -0.01em;
+  color: var(--color-content-strong-base);
+}
+
+/* 2. Heading Section (H2): 20px SemiBold / line-height 26px */
+.type-heading-h2,
+.type-h2 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem; /* 20px */
+  font-weight: 600;
+  line-height: 1.625rem; /* 26px */
+  color: var(--color-content-strong-base);
+}
+
+/* 3. Heading / Card Title (H3): 18px Bold / line-height 24px */
+.type-card-title,
+.type-h3 {
+  font-family: var(--font-heading);
+  font-size: 1.125rem; /* 18px */
+  font-weight: 700;
+  line-height: 1.5rem; /* 24px */
+  letter-spacing: -0.01em;
+  color: var(--color-content-strong-base);
+}
+
+/* 4. Price / Hero (Large): 32px Bold / line-height 38px */
+.type-price-hero-lg {
+  font-family: var(--font-heading);
+  font-size: 2rem; /* 32px */
+  font-weight: 700;
+  line-height: 2.375rem; /* 38px */
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-content-strong-base);
+}
+
+/* 5. Price / Hero: 24px ExtraBold / line-height 28px */
+.type-price-hero,
+.type-price {
+  font-family: var(--font-heading);
+  font-size: 1.5rem; /* 24px */
+  font-weight: 800;
+  line-height: 1.75rem; /* 28px */
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-content-strong-base);
+}
+
+/* 6. Price / Strikethrough: 13px Medium / line-height 16px */
+.type-price-strikethrough {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+  line-height: 1rem; /* 16px */
+  font-variant-numeric: tabular-nums;
+  text-decoration: line-through;
+  color: var(--color-content-muted-base);
+}
+
+/* 7. Body / Description: 14px Regular / line-height 20px */
+.type-body-desc,
+.type-body {
+  font-family: var(--font-sans);
+  font-size: 0.875rem; /* 14px */
+  font-weight: 400;
+  line-height: 1.25rem; /* 20px */
+  color: var(--color-content-secondary-base);
+}
+
+/* Body Small: 13px Regular / line-height 18px */
+.type-body-sm {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 400;
+  line-height: 1.125rem; /* 18px */
+  color: var(--color-content-secondary-base);
+}
+
+/* 8. UI / Button: 14px SemiBold / line-height 16px */
+.type-ui-button {
+  font-family: var(--font-sans);
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  line-height: 1rem; /* 16px */
+}
+
+/* 9. UI / Filter Chip: 13px Medium / line-height 16px */
+.type-ui-chip {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+  line-height: 1rem; /* 16px */
+}
+
+/* 10. Caption / Metadata: 12px Regular / line-height 16px */
+.type-caption-meta,
+.type-caption {
+  font-family: var(--font-sans);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 400;
+  line-height: 1rem; /* 16px */
+  color: var(--color-content-secondary-base);
+}
+
+/* 11. Caption / Badge & Overline: 11px Medium/Bold / line-height 14px */
+.type-caption-badge {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 500;
+  line-height: 0.875rem; /* 14px */
+}
+
+.type-overline {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  line-height: 0.875rem; /* 14px */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Monospace / Codes & Metrics */
+.type-mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  line-height: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.type-mono-lg {
+  font-family: var(--font-mono);
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  line-height: 1.5rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Common Interactive Controls Sizing */
+.control-xs {
+  height: 28px;
+}
+
+.control-sm {
+  height: 34px;
+}
+
+.control-md {
+  height: 40px;
+}
+
+.control-lg {
+  height: 44px;
+}

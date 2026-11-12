@@ -12,7 +12,6 @@ use App\Actions\Sell\makeSellAction;
 use App\Actions\Sell\ValidateCustomerOwnershipAction;
 use App\Actions\Sell\VerifyPurchaseDataFreshnessAction;
 use App\DTOs\PreparePurchaseDTO;
-use App\Enums\CartState;
 use App\Enums\SellState;
 use App\Events\PurchaseCompleted;
 use App\Exceptions\ApiErrorRenderer;
@@ -85,38 +84,54 @@ class CustomerSellController extends Controller
                     $preparePurchaseDTO->food_establishment_id
                 );
                 $this->verifyPurchaseDataFreshnessAction->execute($preparePurchaseDTO);
-                $sellResult = $this->makeSellAction->execute(
+                $sellResult = $this->makeSellAction->executeMultiple(
                     $preparePurchaseDTO,
                     Auth::id(),
-                    $preparePurchaseDTO->food_establishment_id
+                    $preparePurchaseDTO->food_establishment_id,
+                    cleanCart: true
                 );
-
-                $activeCart = app(CartController::class)->getActiveCartByEstablishment(
-                    Auth::id(),
-                    $preparePurchaseDTO->food_establishment_id
-                );
-                if ($activeCart) {
-                    $activeCart->update(['state' => CartState::PURCHASED->value]);
-                }
             });
-            $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
-                ->findOrFail($sellResult['sell_id']);
 
-            if ($sell) {
-                PurchaseCompleted::dispatch($sell);
+            $sellIds = $sellResult['sell_ids'] ?? [$sellResult['sell_id']];
+            $sells = Sell::with(['customer', 'foodEstablishment', 'sellDetails.offer'])
+                ->whereIn('id', $sellIds)
+                ->orderBy('id')
+                ->get();
+
+            $primarySell = $sells->firstOrFail();
+
+            foreach ($sells as $s) {
+                PurchaseCompleted::dispatch($s);
             }
+
+            $sellsPayload = $sells->map(fn (Sell $s) => [
+                'sell_id' => $s->id,
+                'pickup_code' => $s->pickup_code,
+                'pickup_start_datetime' => $s->getPickupStartDatetime(),
+                'max_pickup_datetime' => $s->max_pickup_datetime,
+                'gross_amount' => $s->getGrossAmount(),
+                'offers' => $s->sellDetails->map(fn ($d) => [
+                    'id' => $d->offer_id,
+                    'title' => $d->pack_name,
+                    'description' => $d->pack_description,
+                    'price' => $d->pack_price,
+                    'quantity' => $d->offer_quantity,
+                ])->values()->toArray(),
+            ])->values()->toArray();
 
             return response()->json([
                 'message' => 'Compra realizada con éxito',
                 'data' => [
-                    'sell_id' => $sell->id,
-                    'pickup_code' => $sell->pickup_code,
-                    'max_pickup_datetime' => $sell->max_pickup_datetime,
+                    'sell_id' => $primarySell->id,
+                    'pickup_code' => $primarySell->pickup_code,
+                    'max_pickup_datetime' => $primarySell->max_pickup_datetime,
+                    'sells_count' => count($sellsPayload),
+                    'sells' => $sellsPayload,
                     'food_establishment_id' => $preparePurchaseDTO->food_establishment_id,
                     'establishment' => [
-                        'id' => $sell->foodEstablishment?->id,
-                        'name' => $sell->foodEstablishment?->name,
-                        'address' => $sell->foodEstablishment?->address,
+                        'id' => $primarySell->foodEstablishment?->id,
+                        'name' => $primarySell->foodEstablishment?->name,
+                        'address' => $primarySell->foodEstablishment?->address,
                     ],
                     'offers' => $preparePurchaseDTO->offers,
                 ],
@@ -254,7 +269,7 @@ class CustomerSellController extends Controller
     {
         $customerId = Auth::id();
 
-        $sells = Sell::with(['foodEstablishment', 'sellDetails.offer', 'review'])
+        $sells = Sell::with(['foodEstablishment', 'sellDetails.offer', 'review', 'claim'])
             ->where('bought_by', $customerId)
             ->where('state', SellState::PICKED_UP->value)
             ->where('is_picked_up', true)

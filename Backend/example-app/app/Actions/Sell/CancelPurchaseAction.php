@@ -32,25 +32,35 @@ class CancelPurchaseAction
 
         // 2. Ejecutar la mutación en transacción atómica
         return DB::transaction(function () use ($sell) {
-            // Actualización condicional atómica: solo cancela si no estaba cancelada previamente
+            // Actualización condicional atómica: solo cancela si no estaba cancelada ni reembolsada previamente
             $affected = Sell::where('id', $sell->id)
                 ->where('state', '!=', SellState::CANCELLED->value)
+                ->whereNotIn('payment_status', [
+                    PaymentStatus::REFUNDED->value,
+                    PaymentStatus::PARTIALLY_REFUNDED->value,
+                ])
                 ->update([
                     'state' => SellState::CANCELLED->value,
                     'payment_status' => PaymentStatus::REFUNDED->value,
+                    'refunded_amount' => $sell->getGrossAmount(),
                     'refunded_at' => now(),
                     'cancelled_by' => 'customer',
                     'cancellation_reason' => 'Cancelación voluntaria del comprador dentro de plazo',
                 ]);
 
             if ($affected === 0) {
-                throw new CancellationNotAllowedException('La compra ya se encuentra cancelada.', 422);
+                throw new CancellationNotAllowedException('La compra ya se encuentra cancelada o reembolsada.', 422);
             }
 
-            // Si tiene pago registrado en Mercado Pago, emitir reembolso
+            // Si tiene pago registrado en Mercado Pago, emitir reembolso (parcial si pertenece a una compra dividida por turnos)
             if ($sell->payment_id) {
                 try {
-                    $this->paymentService->refundPayment($sell->payment_id);
+                    $sharedPaymentCount = $sell->preference_id
+                        ? Sell::where('preference_id', $sell->preference_id)->count()
+                        : Sell::where('payment_id', $sell->payment_id)->count();
+
+                    $refundAmount = $sharedPaymentCount > 1 ? $sell->getGrossAmount() : null;
+                    $this->paymentService->refundPayment($sell->payment_id, $refundAmount);
                 } catch (\Throwable $e) {
                     // Loguear pero continuar para no romper la cancelación del usuario
                     \Illuminate\Support\Facades\Log::error('Fallo al emitir reembolso en pasarela:', [

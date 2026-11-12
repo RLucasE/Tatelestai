@@ -357,4 +357,135 @@ class PackSellerControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['title', 'description']);
     }
+
+    #[Test]
+    public function it_returns_schedule_warning_false_when_establishment_has_no_other_active_offers(): void
+    {
+        $response = $this->postJson('/api/packs', $this->validPayload());
+
+        $response->assertStatus(201)
+            ->assertJsonPath('schedule_warning.has_conflict', false)
+            ->assertJsonPath('schedule_warning.existing_schedules', [])
+            ->assertJsonPath('schedule_warning.warning_message', null);
+    }
+
+    #[Test]
+    public function it_returns_schedule_warning_false_when_publishing_pack_with_same_schedule_as_active_offer(): void
+    {
+        $pickupStart = now()->addHours(2)->startOfMinute();
+        $pickupEnd = now()->addHours(4)->startOfMinute();
+
+        $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => $pickupStart->format('Y-m-d H:i:s'),
+            'expiration_datetime' => $pickupEnd->format('Y-m-d H:i:s'),
+            'quantity' => 5,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        $response = $this->postJson('/api/packs', $this->validPayload([
+            'pickup_start_datetime' => $pickupStart->format('Y-m-d H:i:s'),
+            'pickup_end_datetime' => $pickupEnd->format('Y-m-d H:i:s'),
+        ]));
+
+        $response->assertStatus(201)
+            ->assertJsonPath('schedule_warning.has_conflict', false);
+    }
+
+    #[Test]
+    public function it_returns_schedule_warning_true_when_publishing_pack_with_different_schedule_than_active_offer(): void
+    {
+        $existingStart = now()->addHours(1)->startOfMinute();
+        $existingEnd = now()->addHours(3)->startOfMinute();
+
+        $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => $existingStart->format('Y-m-d H:i:s'),
+            'expiration_datetime' => $existingEnd->format('Y-m-d H:i:s'),
+            'quantity' => 5,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        $newStart = now()->addHours(5)->startOfMinute();
+        $newEnd = now()->addHours(7)->startOfMinute();
+
+        $response = $this->postJson('/api/packs', $this->validPayload([
+            'pickup_start_datetime' => $newStart->format('Y-m-d H:i:s'),
+            'pickup_end_datetime' => $newEnd->format('Y-m-d H:i:s'),
+        ]));
+
+        $response->assertStatus(201)
+            ->assertJsonPath('schedule_warning.has_conflict', true)
+            ->assertJsonCount(1, 'schedule_warning.existing_schedules');
+
+        $this->assertNotEmpty($response->json('schedule_warning.warning_message'));
+    }
+
+    #[Test]
+    public function it_ignores_expired_inactive_or_sold_out_offers_when_checking_schedule_conflicts(): void
+    {
+        // Oferta expirada
+        $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => now()->subHours(4)->format('Y-m-d H:i:s'),
+            'expiration_datetime' => now()->subHours(2)->format('Y-m-d H:i:s'),
+            'quantity' => 5,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        // Oferta inactiva
+        $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => now()->addHours(5)->format('Y-m-d H:i:s'),
+            'expiration_datetime' => now()->addHours(7)->format('Y-m-d H:i:s'),
+            'quantity' => 5,
+            'state' => OfferState::INACTIVE->value,
+        ]);
+
+        // Oferta agotada
+        $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => now()->addHours(8)->format('Y-m-d H:i:s'),
+            'expiration_datetime' => now()->addHours(10)->format('Y-m-d H:i:s'),
+            'quantity' => 0,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        $response = $this->postJson('/api/packs', $this->validPayload([
+            'pickup_start_datetime' => now()->addHours(1)->format('Y-m-d H:i:s'),
+            'pickup_end_datetime' => now()->addHours(3)->format('Y-m-d H:i:s'),
+        ]));
+
+        $response->assertStatus(201)
+            ->assertJsonPath('schedule_warning.has_conflict', false)
+            ->assertJsonPath('schedule_warning.existing_schedules', []);
+    }
+
+    #[Test]
+    public function it_returns_schedule_warning_on_pack_update_when_schedule_differs_from_other_active_offers(): void
+    {
+        $existingStart = now()->addHours(1)->startOfMinute();
+        $existingEnd = now()->addHours(3)->startOfMinute();
+
+        $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => $existingStart->format('Y-m-d H:i:s'),
+            'expiration_datetime' => $existingEnd->format('Y-m-d H:i:s'),
+            'quantity' => 5,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        $packToUpdate = $this->createPackFor($this->establishment, [
+            'pickup_start_datetime' => $existingStart->format('Y-m-d H:i:s'),
+            'expiration_datetime' => $existingEnd->format('Y-m-d H:i:s'),
+            'quantity' => 4,
+            'state' => OfferState::ACTIVE->value,
+        ]);
+
+        $newStart = now()->addHours(6)->startOfMinute();
+        $newEnd = now()->addHours(8)->startOfMinute();
+
+        $response = $this->patchJson("/api/packs/{$packToUpdate->id}", [
+            'pickup_start_datetime' => $newStart->format('Y-m-d H:i:s'),
+            'pickup_end_datetime' => $newEnd->format('Y-m-d H:i:s'),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('schedule_warning.has_conflict', true)
+            ->assertJsonCount(1, 'schedule_warning.existing_schedules');
+    }
 }

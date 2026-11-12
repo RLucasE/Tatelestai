@@ -286,8 +286,8 @@ watch(() => props.isVisible, (newValue) => {
 
 .form-control:focus {
   outline: none;
-  border-color: var(--color-text);
-  background: var(--color-darkest);
+  border-color: var(--color-accent);
+  background: var(--color-primary);
 }
 
 select.form-control {
@@ -311,19 +311,19 @@ textarea.form-control {
 .error-message {
   padding: 12px;
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid #ef4444;
+  border: 1px solid var(--color-danger-base);
   border-radius: 8px;
-  color: #ef4444;
+  color: var(--color-danger-base);
   margin-bottom: 16px;
   font-size: 0.9em;
 }
 
 .success-message {
   padding: 12px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid #22c55e;
+  background: rgba(31, 157, 107, 0.1);
+  border: 1px solid var(--color-success-base);
   border-radius: 8px;
-  color: #22c55e;
+  color: var(--color-success-base);
   margin-bottom: 16px;
   font-size: 0.9em;
 }
@@ -339,7 +339,7 @@ textarea.form-control {
 .btn-submit {
   padding: 12px 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -347,25 +347,27 @@ textarea.form-control {
 }
 
 .btn-cancel {
-  background: var(--color-focus);
+  background: var(--color-surface-sunken);
   color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background: var(--color-darkest);
+  background: var(--color-border);
   transform: translateY(-2px);
 }
 
 .btn-submit {
-  background: var(--color-darkest);
-  color: var(--color-text);
-  border: 2px solid var(--color-focus);
+  background: var(--color-brand);
+  color: var(--color-surface);
+  border: 1px solid var(--color-brand);
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: var(--color-focus);
+  background: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(242, 79, 19, 0.3);
 }
 
 .btn-cancel:disabled,

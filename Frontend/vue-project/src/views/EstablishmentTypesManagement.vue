@@ -540,7 +540,7 @@ onMounted(() => {
 }
 
 .icon-button {
-  color: rgba(232, 234, 246, 0.7);
+  color: var(--color-text-secondary);
   transition: color 0.2s;
   background: none;
   border: none;
@@ -578,14 +578,14 @@ onMounted(() => {
   font-size: 0.875rem;
   color: var(--color-success);
   border: 1px solid rgba(16, 185, 129, 0.5);
-  border-radius: 9999px;
+  border-radius: 10px;
   padding: 0.25rem 1rem;
   transition: all 0.2s;
   background: none;
   cursor: pointer;
 }
 .btn-restore:hover {
-  color: #fff;
+  color: var(--color-surface);
   background-color: var(--color-success);
   border-color: var(--color-success);
 }
@@ -593,7 +593,7 @@ onMounted(() => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 13, 21, 0.8);
+  background-color: rgba(70, 51, 79, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -614,7 +614,7 @@ onMounted(() => {
 
 .modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid var(--color-secondary);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -631,7 +631,7 @@ onMounted(() => {
   width: 100%;
   padding: 0.75rem 1rem;
   background-color: var(--color-secondary);
-  border: 1px solid var(--color-focus);
+  border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   color: var(--color-text);
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -639,7 +639,7 @@ onMounted(() => {
 .form-input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-light);
+  box-shadow: 0 0 0 2px rgba(242, 79, 19, 0.25);
 }
 
 .form-error {

@@ -1,13 +1,29 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { RouterLink, RouterView, useRouter } from "vue-router";
 import DropdownMenu from "@/components/common/DropdownMenu.vue";
 import Logo from "@/components/common/Logo.vue";
+import NotificationBell from "@/components/common/NotificationBell.vue";
+import RealtimeToastContainer from "@/components/common/RealtimeToastContainer.vue";
 import { useAuthStore } from '@/stores/auth.js';
+import { useNotificationStore } from '@/stores/notifications';
 
 const isSidebarOpen = ref(false);
 const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
+
+onMounted(() => {
+  const user = authStore.getUser();
+  if (user?.id) {
+    notificationStore.fetchNotifications();
+    notificationStore.connectRealtime(user.id);
+  }
+});
+
+onUnmounted(() => {
+  notificationStore.disconnect();
+});
 
 const handleLogout = async () => {
   try {
@@ -38,6 +54,9 @@ const handleLogout = async () => {
         <RouterLink to="/adm/dashboard" class="logo-link">
           <Logo />
         </RouterLink>
+        <div class="ml-auto flex items-center">
+          <NotificationBell />
+        </div>
       </nav>
     </header>
 
@@ -51,6 +70,7 @@ const handleLogout = async () => {
           <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>
           <li><RouterLink to="/adm/pending-offers" class="menu-link">Verificar Ofertas</RouterLink></li>
           <li><RouterLink to="/adm/reports" class="menu-link">Reportes</RouterLink></li>
+          <li><RouterLink to="/adm/claims" class="menu-link">Reclamos</RouterLink></li>
           <li>
             <DropdownMenu
                 title="Establecimientos"
@@ -78,6 +98,7 @@ const handleLogout = async () => {
     <main class="content">
       <RouterView />
     </main>
+    <RealtimeToastContainer />
   </div>
 </template>
 
@@ -92,8 +113,8 @@ const handleLogout = async () => {
   position: sticky;
   top: 0;
   z-index: 1100;
-  background: var(--color-darkest);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background-soft, #FFFFFF);
+  border-bottom: 1px solid var(--color-border, #DDD8E5);
 }
 
 .nav {
@@ -115,18 +136,18 @@ const handleLogout = async () => {
   padding: 4px 6px;
   border-radius: var(--border-radius);
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border, #DDD8E5);
 }
 
 .nav-toggle:hover {
-  background-color: color-mix(in oklab, var(--color-darkest), white 6%);
+  background-color: var(--color-background-mute, #F2ECE4);
 }
 
 .nav-toggle span {
   display: block;
   width: 100%;
   height: 3px;
-  background: var(--color-primary);
+  background: var(--color-text, #46334F);
   border-radius: 2px;
   transition: transform 0.25s ease, opacity 0.25s ease, width 0.25s ease;
 }
@@ -149,7 +170,7 @@ const handleLogout = async () => {
   transition: background 0.25s ease;
 }
 .sidebar.open {
-  background: rgba(0, 0, 0, 0.35); /* backdrop */
+  background: rgba(70, 51, 79, 0.4); /* backdrop */
   pointer-events: auto;
 }
 
@@ -158,9 +179,9 @@ const handleLogout = async () => {
   width: 260px;
   height: 100%;
   padding: 16px;
-  background: color-mix(in oklab, var(--color-darkest), black 6%);
-  border-right: 1px solid var(--color-border);
-  box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+  background: var(--color-background-soft, #FFFFFF);
+  border-right: 1px solid var(--color-border, #DDD8E5);
+  box-shadow: 2px 0 12px rgba(70, 51, 79, 0.08);
   transform: translateX(-100%);
   transition: transform 0.25s ease;
 }
@@ -171,9 +192,10 @@ const handleLogout = async () => {
 .sidebar-title {
   margin: 0 0 8px;
   font-size: 12px;
-  color: var(--color-primary);
+  color: var(--color-text-secondary, #8082A6);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  font-weight: 700;
 }
 .menu {
   list-style: none;
@@ -186,11 +208,14 @@ const handleLogout = async () => {
   display: block;
   padding: 8px 10px;
   border-radius: 8px;
-  color: var(--color-text);
+  color: var(--color-text, #46334F);
   text-decoration: none;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .menu-link:hover {
-  background: color-mix(in oklab, var(--color-darkest), white 6%);
+  background: var(--color-background-mute, #F2ECE4);
+  color: var(--color-accent, #F24F13);
 }
 
 .logout-button {

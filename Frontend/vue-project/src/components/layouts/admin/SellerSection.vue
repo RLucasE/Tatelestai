@@ -103,9 +103,10 @@ const verVentas = () => {
 
 <style scoped>
 .seller-section {
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
   padding: 1.25rem;
   margin-top: 1.5rem;
 }
@@ -217,6 +218,7 @@ const verVentas = () => {
 .action-btn.primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
+  color: #ffffff;
 }
 
 .action-btn.primary:hover {

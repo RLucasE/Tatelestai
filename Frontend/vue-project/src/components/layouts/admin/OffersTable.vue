@@ -151,20 +151,20 @@ const getStatusText = (state) => {
 }
 
 .offer-card {
-  background: var(--color-darkest);
-  border-radius: 8px;
+  background: var(--color-primary);
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--color-focus);
+  border: 1px solid var(--color-border);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
 }
 
 .offer-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-  border-color: var(--color-secondary);
+  box-shadow: 0 8px 16px rgba(70, 51, 79, 0.12);
+  border-color: var(--color-border-hover);
 }
 
 .card-header {
@@ -260,7 +260,7 @@ const getStatusText = (state) => {
   padding: 20px;
   cursor: pointer;
   flex: 1;
-  background: var(--color-darkest);
+  background: var(--color-primary);
 }
 
 .info-section {
@@ -462,9 +462,9 @@ const getStatusText = (state) => {
 .empty-state {
   text-align: center;
   padding: 60px 40px;
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border-radius: 8px;
-  border: 1px dashed var(--color-focus);
+  border: 1px dashed var(--color-border);
 }
 
 .empty-title {

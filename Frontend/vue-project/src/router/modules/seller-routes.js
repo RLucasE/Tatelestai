@@ -23,6 +23,7 @@ export default [
       {
         name: "my-offers",
         path: "my-offers",
+        alias: ["offers"],
         component: () => import("@/components/layouts/seller/MyOffers.vue"),
       },
       {
@@ -34,6 +35,7 @@ export default [
       {
         name: "sells",
         path: "sells",
+        alias: ["ventas"],
         component: () => import("@/components/layouts/seller/Ventas.vue"),
       },
       {

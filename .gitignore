@@ -40,3 +40,9 @@ Backend/example-app/.phpunit.result.cache
 /Proyecto Tatelestai/.obsidian/core-plugins.json
 /Proyecto Tatelestai/.obsidian/workspace.json
 /Proyecto Tatelestai/.obsidian/app.json
+
+# Herramientas de IA, configuración de agentes y puentes locales
+.agents/
+.impeccable/
+tools/
+

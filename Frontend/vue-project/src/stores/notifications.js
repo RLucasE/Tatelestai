@@ -114,6 +114,10 @@ export const useNotificationStore = defineStore('notifications', () => {
           offer_sold_out: 'warning',
           cart_item_sold_out: 'error',
           cart_item_stock_reduced: 'warning',
+          claim_created: 'warning',
+          claim_approved: 'success',
+          claim_refunded_seller: 'warning',
+          claim_rejected: 'error',
         };
 
         pushToast({

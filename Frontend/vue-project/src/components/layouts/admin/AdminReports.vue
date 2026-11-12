@@ -352,7 +352,7 @@ onMounted(() => {
 .filter-select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 0 3px rgba(242, 79, 19, 0.2);
 }
 
 .reset-filters-btn {

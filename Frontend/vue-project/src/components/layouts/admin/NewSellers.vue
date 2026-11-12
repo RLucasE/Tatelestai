@@ -264,7 +264,7 @@ onMounted(() => {
             <span class="metric-label">Total Solicitudes</span>
             <span class="metric-badge-indicator metric-badge-indicator--all">Histórico</span>
           </div>
-          <span class="metric-value text-white">{{ stats.total }}</span>
+          <span class="metric-value text-[#46334F]">{{ stats.total }}</span>
           <span class="metric-helper">Todos los registros</span>
         </div>
       </div>
@@ -327,7 +327,7 @@ onMounted(() => {
 
         <!-- Input de Búsqueda -->
         <div class="search-input-wrap">
-          <svg class="w-4 h-4 text-[#A5A8C2]/50 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-[#8082A6] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -338,7 +338,7 @@ onMounted(() => {
             placeholder="Buscar por comercio, titular, email o rubro..."
             class="search-input"
           />
-          <button v-if="searchQuery" type="button" @click="clearSearch" class="text-xs text-[#A5A8C2]/60 hover:text-white">
+          <button v-if="searchQuery" type="button" @click="clearSearch" class="text-xs text-[#8082A6] hover:text-[#46334F]">
             Limpiar
           </button>
         </div>
@@ -346,8 +346,8 @@ onMounted(() => {
 
       <!-- Resumen de Resultados / Paginación Info -->
       <div class="results-meta-bar" v-if="!loading && totalItems > 0">
-        <span class="text-xs text-[#A5A8C2]/70 font-medium">
-          Mostrando <strong class="text-white">{{ fromItem }} - {{ toItem }}</strong> de <strong class="text-white">{{ totalItems }}</strong> solicitudes
+        <span class="text-xs text-[#8082A6] font-medium">
+          Mostrando <strong class="text-[#46334F]">{{ fromItem }} - {{ toItem }}</strong> de <strong class="text-[#46334F]">{{ totalItems }}</strong> solicitudes
           <span v-if="statusFilter !== 'all'"> (filtradas por {{ getStatusLabel(statusFilter) }})</span>
         </span>
       </div>
@@ -355,7 +355,7 @@ onMounted(() => {
       <!-- Estado: Cargando -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
-        <p class="text-xs text-[#A5A8C2]/70 font-medium">Cargando solicitudes...</p>
+        <p class="text-xs text-[#8082A6] font-medium">Cargando solicitudes...</p>
       </div>
 
       <!-- Estado: Error -->
@@ -363,7 +363,7 @@ onMounted(() => {
         <svg class="w-8 h-8 text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <p class="text-sm text-red-300 font-medium mb-3">{{ error }}</p>
+        <p class="text-sm text-red-600 font-medium mb-3">{{ error }}</p>
         <button class="btn-retry" @click="fetchEstablishments(currentPage)">Reintentar</button>
       </div>
 
@@ -376,23 +376,23 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h3 class="text-base font-bold text-white mb-1">Sin solicitudes registradas</h3>
-          <p class="text-xs text-[#A5A8C2]/70">No hay solicitudes de comercios en el sistema en este momento.</p>
+          <h3 class="text-base font-bold text-[#46334F] mb-1">Sin solicitudes registradas</h3>
+          <p class="text-xs text-[#8082A6]">No hay solicitudes de comercios en el sistema en este momento.</p>
         </div>
 
         <!-- Estado Vacío con Filtro de Estado o Búsqueda -->
         <div v-else-if="establishments.length === 0" class="empty-box">
-          <svg class="w-8 h-8 text-[#A5A8C2]/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-8 h-8 text-[#8082A6]/60 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <h3 class="text-base font-bold text-white mb-1">
+          <h3 class="text-base font-bold text-[#46334F] mb-1">
             <span v-if="searchQuery">Sin resultados para "{{ searchQuery }}"</span>
             <span v-else-if="statusFilter === 'pending'">No hay solicitudes pendientes</span>
             <span v-else-if="statusFilter === 'approved'">No hay solicitudes aceptadas</span>
             <span v-else-if="statusFilter === 'rejected'">No hay solicitudes rechazadas</span>
             <span v-else>Sin solicitudes</span>
           </h3>
-          <p class="text-xs text-[#A5A8C2]/70 mb-3">
+          <p class="text-xs text-[#8082A6] mb-3">
             <span v-if="searchQuery">Intenta ajustar los términos de búsqueda o cambiar de pestaña.</span>
             <span v-else-if="statusFilter === 'pending'">Todas las solicitudes han sido revisadas y resueltas.</span>
             <span v-else-if="statusFilter === 'approved'">Aún no se ha aprobado ningún establecimiento en este filtro.</span>
@@ -449,16 +449,16 @@ onMounted(() => {
                     </span>
                   </div>
 
-                  <div class="flex items-center gap-3 text-xs text-[#A5A8C2]/70 mt-1 flex-wrap">
+                  <div class="flex items-center gap-3 text-xs text-[#8082A6] mt-1 flex-wrap">
                     <span class="flex items-center gap-1 truncate max-w-sm" v-if="establishment.address">
-                      <svg class="w-3.5 h-3.5 text-[#A5A8C2]/50 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5 text-[#8082A6] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       <span class="truncate">{{ establishment.address }}</span>
                     </span>
                     <span class="flex items-center gap-1" v-if="establishment.created_at">
-                      <svg class="w-3.5 h-3.5 text-[#A5A8C2]/50 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5 text-[#8082A6] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <span>Ingresó {{ formatDate(establishment.created_at) }}</span>
@@ -469,13 +469,13 @@ onMounted(() => {
 
               <!-- Bloque 2: Titular -->
               <div class="seller-col-owner">
-                <div class="flex items-center gap-1.5 text-xs text-[#CBD5E1] font-semibold">
-                  <svg class="w-3.5 h-3.5 text-[#A78BFA] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-1.5 text-xs text-[#46334F] font-semibold">
+                  <svg class="w-3.5 h-3.5 text-[#8082A6] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span class="truncate">{{ establishment.user?.name }} {{ establishment.user?.last_name }}</span>
                 </div>
-                <p class="text-[11px] text-[#A5A8C2]/60 truncate mt-0.5">
+                <p class="text-[11px] text-[#8082A6] truncate mt-0.5">
                   {{ establishment.user?.email }}
                 </p>
               </div>
@@ -525,7 +525,7 @@ onMounted(() => {
                   <span class="trust-mini-pill__dot"></span>
                   <span>{{ establishment.trust_score || 0 }} pts</span>
                 </div>
-                <span class="text-[10px] text-[#A5A8C2]/50 uppercase tracking-wider font-semibold mt-0.5">Confianza</span>
+                <span class="text-[10px] text-[#8082A6] uppercase tracking-wider font-semibold mt-0.5">Confianza</span>
               </div>
 
               <!-- Bloque 5: Botón Acción -->
@@ -628,8 +628,8 @@ onMounted(() => {
 <style scoped>
 .new-sellers-page {
   min-height: 100vh;
-  background-color: #1A1625;
-  color: #E8EAF6;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   padding: 2rem 1.5rem 3.5rem;
 }
 
@@ -649,14 +649,14 @@ onMounted(() => {
 .page-title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #46334F;
   margin: 0 0 0.35rem;
   letter-spacing: -0.025em;
 }
 
 .page-subtitle {
   font-size: 0.875rem;
-  color: rgba(165, 168, 194, 0.75);
+  color: #8082A6;
   margin: 0;
   max-width: 680px;
 }
@@ -666,9 +666,9 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.85rem;
-  background: #2D2438;
-  border: 1px solid #3D3450;
-  color: #CBD5E1;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
+  color: #46334F;
   border-radius: 10px;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -678,9 +678,9 @@ onMounted(() => {
 }
 
 .btn-refresh:hover:not(:disabled) {
-  background: rgba(124, 58, 237, 0.15);
-  border-color: #7C3AED;
-  color: #FFFFFF;
+  background: #FFF8F3;
+  border-color: #F24F13;
+  color: #F24F13;
 }
 
 .btn-refresh:disabled {
@@ -697,8 +697,8 @@ onMounted(() => {
 }
 
 .metric-card {
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
   border-radius: 12px;
   padding: 0.95rem 1.15rem;
   cursor: pointer;
@@ -708,57 +708,59 @@ onMounted(() => {
   gap: 0.35rem;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(70, 51, 79, 0.04);
 }
 
 .metric-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(165, 168, 194, 0.4);
+  border-color: #F24F13;
+  box-shadow: 0 4px 12px rgba(70, 51, 79, 0.08);
 }
 
 .metric-card--pending:hover {
-  border-color: rgba(245, 158, 11, 0.5);
+  border-color: #F2921D;
 }
 
 .metric-card--approved:hover {
-  border-color: rgba(16, 185, 129, 0.5);
+  border-color: #10B981;
 }
 
 .metric-card--rejected:hover {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: #EF4444;
 }
 
 .metric-card--all:hover {
-  border-color: rgba(124, 58, 237, 0.5);
+  border-color: #F24F13;
 }
 
 /* Estado activo de las tarjetas */
 .metric-card--active {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(70, 51, 79, 0.08);
 }
 
 .metric-card--pending.metric-card--active {
-  border-color: #F59E0B;
-  background: color-mix(in srgb, #F59E0B 8%, #2D2438);
+  border-color: #F2921D;
+  background: rgba(242, 146, 29, 0.06);
 }
 
 .metric-card--approved.metric-card--active {
   border-color: #10B981;
-  background: color-mix(in srgb, #10B981 8%, #2D2438);
+  background: rgba(16, 185, 129, 0.06);
 }
 
 .metric-card--rejected.metric-card--active {
   border-color: #EF4444;
-  background: color-mix(in srgb, #EF4444 8%, #2D2438);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .metric-card--all.metric-card--active {
-  border-color: #7C3AED;
-  background: color-mix(in srgb, #7C3AED 8%, #2D2438);
+  border-color: #F24F13;
+  background: rgba(242, 79, 19, 0.06);
 }
 
 .metric-label {
   font-size: 0.75rem;
-  color: rgba(165, 168, 194, 0.8);
+  color: #8082A6;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -793,9 +795,9 @@ onMounted(() => {
 }
 
 .metric-badge-indicator--all {
-  background: rgba(255, 255, 255, 0.06);
-  color: #CBD5E1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #F2ECE4;
+  color: #46334F;
+  border: 1px solid #DDD8E5;
 }
 
 .metric-value {
@@ -806,7 +808,7 @@ onMounted(() => {
 
 .metric-helper {
   font-size: 0.75rem;
-  color: rgba(165, 168, 194, 0.6);
+  color: #8082A6;
   margin-top: 0.1rem;
 }
 
@@ -838,8 +840,8 @@ onMounted(() => {
 /* Segmented Control de Estados */
 .status-tabs-nav {
   display: inline-flex;
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #F2ECE4;
+  border: 1px solid #DDD8E5;
   border-radius: 10px;
   padding: 0.25rem;
   gap: 0.2rem;
@@ -854,7 +856,7 @@ onMounted(() => {
   border-radius: 7px;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: rgba(165, 168, 194, 0.8);
+  color: #8082A6;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -863,14 +865,14 @@ onMounted(() => {
 }
 
 .status-tab-btn:hover:not(.status-tab-btn--active) {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.04);
+  color: #46334F;
+  background: rgba(70, 51, 79, 0.05);
 }
 
 .status-tab-btn--active {
-  background: #7C3AED;
+  background: #F24F13;
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 2px 8px rgba(242, 79, 19, 0.35);
 }
 
 .status-tab-dot {
@@ -880,7 +882,7 @@ onMounted(() => {
 }
 
 .status-tab-dot--pending {
-  background: #F59E0B;
+  background: #F2921D;
 }
 
 .status-tab-dot--approved {
@@ -895,12 +897,13 @@ onMounted(() => {
   font-size: 0.6875rem;
   padding: 0.1rem 0.4rem;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(70, 51, 79, 0.08);
+  color: #46334F;
   font-weight: 700;
 }
 
 .status-tab-btn--active .status-tab-count {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
 }
 
@@ -909,8 +912,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
   border-radius: 10px;
   padding: 0.45rem 0.85rem;
   min-width: 280px;
@@ -920,20 +923,20 @@ onMounted(() => {
 }
 
 .search-input-wrap:focus-within {
-  border-color: #7C3AED;
+  border-color: #F24F13;
 }
 
 .search-input {
   background: transparent;
   border: none;
   outline: none;
-  color: #FFFFFF;
+  color: #46334F;
   font-size: 0.8125rem;
   width: 100%;
 }
 
 .search-input::placeholder {
-  color: rgba(165, 168, 194, 0.5);
+  color: #8082A6;
 }
 
 /* Barra de metadatos de resultados */
@@ -954,24 +957,25 @@ onMounted(() => {
 
 /* Fila / Elemento de la lista */
 .seller-list-item {
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
   border-radius: 12px;
   padding: 1rem 1.25rem;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   position: relative;
+  box-shadow: 0 2px 8px rgba(70, 51, 79, 0.04);
 }
 
 .seller-list-item:hover {
-  background: color-mix(in srgb, #7C3AED 5%, #2D2438);
-  border-color: rgba(124, 58, 237, 0.5);
+  background: #FFF8F3;
+  border-color: #F24F13;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(70, 51, 79, 0.08);
 }
 
 .seller-list-item:focus-visible {
-  outline: 2px solid #7C3AED;
+  outline: 2px solid #F24F13;
   outline-offset: 2px;
 }
 
@@ -1007,9 +1011,9 @@ onMounted(() => {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: color-mix(in srgb, #7C3AED 18%, #3D3450);
-  border: 1px solid rgba(124, 58, 237, 0.4);
-  color: #FFFFFF;
+  background: #F2ECE4;
+  border: 1px solid #DDD8E5;
+  color: #46334F;
   font-weight: 700;
   font-size: 0.875rem;
   display: flex;
@@ -1019,24 +1023,27 @@ onMounted(() => {
 }
 
 .commerce-avatar--approved {
-  background: color-mix(in srgb, #10B981 18%, #2D2438);
-  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10B981;
 }
 
 .commerce-avatar--rejected {
-  background: color-mix(in srgb, #EF4444 18%, #2D2438);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #EF4444;
 }
 
 .commerce-avatar--pending {
-  background: color-mix(in srgb, #F59E0B 18%, #2D2438);
-  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(242, 146, 29, 0.12);
+  border-color: rgba(242, 146, 29, 0.35);
+  color: #F2921D;
 }
 
 .commerce-name {
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #46334F;
   margin: 0;
   line-height: 1.3;
 }
@@ -1046,9 +1053,9 @@ onMounted(() => {
   font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #CBD5E1;
+  background: #F2ECE4;
+  border: 1px solid #DDD8E5;
+  color: #46334F;
 }
 
 .badge-google-maps {
@@ -1061,7 +1068,7 @@ onMounted(() => {
   border-radius: 6px;
   background: rgba(59, 130, 246, 0.12);
   border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #93C5FD;
+  color: #2563EB;
 }
 
 /* Bloque 2: Titular */
@@ -1091,21 +1098,21 @@ onMounted(() => {
 }
 
 .status-pill--pending {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #FBBF24;
+  background: rgba(242, 146, 29, 0.12);
+  border: 1px solid rgba(242, 146, 29, 0.35);
+  color: #D97706;
 }
 
 .status-pill--approved {
   background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #059669;
 }
 
 .status-pill--rejected {
   background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #DC2626;
 }
 
 .status-pill__dot {
@@ -1115,8 +1122,8 @@ onMounted(() => {
 }
 
 .status-pill__dot--pending {
-  background: #F59E0B;
-  box-shadow: 0 0 5px #F59E0B;
+  background: #F2921D;
+  box-shadow: 0 0 5px #F2921D;
 }
 
 /* Bloque 4: Confiabilidad */
@@ -1141,19 +1148,19 @@ onMounted(() => {
 .trust-mini-pill--green {
   background: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34D399;
+  color: #059669;
 }
 
 .trust-mini-pill--yellow {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #FBBF24;
+  background: rgba(242, 146, 29, 0.12);
+  border: 1px solid rgba(242, 146, 29, 0.3);
+  color: #D97706;
 }
 
 .trust-mini-pill--red {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #F87171;
+  color: #DC2626;
 }
 
 .trust-mini-pill__dot {
@@ -1184,28 +1191,28 @@ onMounted(() => {
 }
 
 .btn-action-seller--primary {
-  background: #7C3AED;
-  border: 1px solid #7C3AED;
+  background: #F24F13;
+  border: 1px solid #F24F13;
   color: #FFFFFF;
 }
 
 .btn-action-seller--primary:hover {
-  background: #6D28D9;
-  border-color: #6D28D9;
+  background: #D83F0A;
+  border-color: #D83F0A;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 4px 12px rgba(242, 79, 19, 0.3);
 }
 
 .btn-action-seller--secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #3D3450;
-  color: #CBD5E1;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
+  color: #46334F;
 }
 
 .btn-action-seller--secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(165, 168, 194, 0.4);
-  color: #FFFFFF;
+  background: #F2ECE4;
+  border-color: #DDD8E5;
+  color: #46334F;
 }
 
 /* Barra de Paginación */
@@ -1215,15 +1222,15 @@ onMounted(() => {
   justify-content: center;
   margin-top: 1.75rem;
   padding-top: 1.25rem;
-  border-top: 1px solid rgba(61, 52, 80, 0.6);
+  border-top: 1px solid #DDD8E5;
 }
 
 .pagination-controls {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
   border-radius: 12px;
   padding: 0.35rem;
 }
@@ -1239,7 +1246,7 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: rgba(203, 213, 225, 0.85);
+  color: #8082A6;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1248,8 +1255,8 @@ onMounted(() => {
 }
 
 .pagination-btn:hover:not(:disabled):not(.pagination-btn--active) {
-  background: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
+  background: #F2ECE4;
+  color: #46334F;
 }
 
 .pagination-btn:disabled {
@@ -1258,14 +1265,14 @@ onMounted(() => {
 }
 
 .pagination-btn--active {
-  background: #7C3AED;
+  background: #F24F13;
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 2px 8px rgba(242, 79, 19, 0.35);
 }
 
 .pagination-ellipsis {
   padding: 0 0.35rem;
-  color: rgba(165, 168, 194, 0.5);
+  color: #8082A6;
   font-size: 0.875rem;
   user-select: none;
 }
@@ -1277,9 +1284,10 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 4rem 1.5rem;
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
   border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(70, 51, 79, 0.04);
 }
 
 .error-box,
@@ -1289,10 +1297,11 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 3.5rem 1.5rem;
-  background: #2D2438;
-  border: 1px solid #3D3450;
+  background: #FFFFFF;
+  border: 1px solid #DDD8E5;
   border-radius: 14px;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(70, 51, 79, 0.04);
 }
 
 .empty-icon-wrapper {
@@ -1310,9 +1319,9 @@ onMounted(() => {
 .spinner {
   width: 32px;
   height: 32px;
-  border: 2.5px solid rgba(124, 58, 237, 0.2);
+  border: 2.5px solid rgba(242, 79, 19, 0.2);
   border-radius: 50%;
-  border-top-color: #7C3AED;
+  border-top-color: #F24F13;
   animation: spin 0.8s linear infinite;
   margin-bottom: 0.85rem;
 }
@@ -1327,17 +1336,17 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #3D3450;
-  color: #CBD5E1;
+  background: #F2ECE4;
+  border: 1px solid #DDD8E5;
+  color: #46334F;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-retry:hover,
 .btn-clear-filters:hover {
-  background: #7C3AED;
-  border-color: #7C3AED;
+  background: #F24F13;
+  border-color: #F24F13;
   color: #FFFFFF;
 }
 

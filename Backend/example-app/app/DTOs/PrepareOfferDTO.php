@@ -12,6 +12,9 @@ class PrepareOfferDTO
         public readonly string $description,
         public readonly int $price,
         public readonly int $quantity,
+        public readonly ?array $allergens = null,
+        public readonly ?float $estimated_weight_kg = null,
+        public readonly ?float $minimum_value = null,
     ) {}
 
     /**
@@ -27,6 +30,9 @@ class PrepareOfferDTO
             description: $offer->description,
             price: (int) $offer->price,
             quantity: $quantity,
+            allergens: is_array($offer->allergens) ? array_values($offer->allergens) : [],
+            estimated_weight_kg: $offer->estimated_weight_kg !== null ? (float) $offer->estimated_weight_kg : null,
+            minimum_value: $offer->minimum_value !== null ? (float) $offer->minimum_value : null,
         );
     }
 }

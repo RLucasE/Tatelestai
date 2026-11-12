@@ -16,6 +16,16 @@ export default [
         },
       },
       {
+        path: "offers/:id",
+        name: "customer-offer-detail",
+        component: () =>
+          import("@/components/layouts/customer/CustomerOfferDetail.vue"),
+        meta: {
+          requiresAuth: true,
+          requiresCustomer: true,
+        },
+      },
+      {
         path: "profile",
         name: "customer-profile",
         component: () =>
@@ -27,6 +37,7 @@ export default [
       },
       {
         path: "carrito",
+        alias: ["cart"],
         name: "cart",
         component: () =>
           import("@/components/layouts/customer/CustomerCart.vue"),

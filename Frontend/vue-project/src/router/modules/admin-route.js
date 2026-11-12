@@ -69,6 +69,11 @@ export default [
             path: "reports",
             name: "admin-reports",
             component: () => import('@/components/layouts/admin/AdminReports.vue'),
+        },
+        {
+            path: "claims",
+            name: "admin-claims",
+            component: () => import('@/components/layouts/admin/AdminClaims.vue'),
         }
     ],
     meta: {

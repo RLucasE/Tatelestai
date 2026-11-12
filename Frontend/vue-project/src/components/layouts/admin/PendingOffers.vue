@@ -256,11 +256,11 @@ onMounted(() => {
   text-align: center;
 }
 
-.loading-spinner {
+.loading-.spinner {
   width: 50px;
   height: 50px;
   border: 4px solid var(--color-secondary);
-  border-top-color: var(--color-primary);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -279,17 +279,17 @@ onMounted(() => {
 .retry-btn {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background-color: var(--color-primary);
-  color: var(--color-text);
+  background-color: var(--color-accent);
+  color: #ffffff;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   transition: background-color 0.2s;
 }
 
 .retry-btn:hover {
-  background-color: var(--color-focus);
+  background-color: var(--color-accent-hover);
 }
 
 .empty-container {
@@ -299,7 +299,7 @@ onMounted(() => {
 
 .empty-icon {
   font-size: 4rem;
-  color: var(--color-primary);
+  color: var(--color-accent);
   margin-bottom: 1rem;
 }
 
@@ -316,16 +316,16 @@ onMounted(() => {
 }
 
 .offer-card {
-  background: var(--color-darkest);
+  background: var(--color-primary);
   border-radius: var(--border-radius);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
   transition: box-shadow 0.2s;
   border: 1px solid var(--color-border);
 }
 
 .offer-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(70, 51, 79, 0.1);
 }
 
 .offer-header {
@@ -333,7 +333,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background-color: color-mix(in oklab, var(--color-darkest), var(--color-secondary) 15%);
+  background-color: var(--color-secondary);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -391,7 +391,7 @@ onMounted(() => {
 .info-group label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-text-secondary);
 }
 
 .info-group p {
@@ -417,7 +417,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: start;
   padding: 1rem;
-  background-color: color-mix(in oklab, var(--color-darkest), var(--color-bg) 10%);
+  background-color: var(--color-surface-sunken-base, #F2ECE4);
   border-radius: var(--border-radius);
   border: 1px solid var(--color-border);
 }

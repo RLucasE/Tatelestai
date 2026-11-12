@@ -16,7 +16,7 @@ export const useLocationStore = defineStore(
     }
 
     function setRadius(km) {
-      radiusKm.value = km
+      radiusKm.value = Math.min(Math.max(km, 1), 3)
     }
 
     function clearLocation() {

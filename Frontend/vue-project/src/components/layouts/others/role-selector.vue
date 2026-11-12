@@ -3,37 +3,38 @@ import axiosInstance from "@/lib/axios";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import OnboardingTopNavbar from "./OnboardingTopNavbar.vue";
+import RoleOptionCard from "./RoleOptionCard.vue";
 
 const router = useRouter();
-const role = ref("unknown_role");
+const role = ref("seller");
 const authStore = useAuthStore();
 const loading = ref(false);
 const errorMessage = ref("");
 
 const selectRole = (role_selected) => {
   role.value = role_selected;
-  console.log("Selected role:", role.value);
   errorMessage.value = "";
 };
 
 const hadleElection = async () => {
-  if (role.value === "unknown_role") {
-    errorMessage.value = "Por favor, selecciona un rol.";
+  if (!role.value || role.value === "unknown_role") {
+    errorMessage.value = "Por favor, seleccioná un rol.";
     return;
   }
 
   loading.value = true;
   errorMessage.value = "";
   try {
-    const response = await axiosInstance.post("/select-role", {
+    await axiosInstance.post("/select-role", {
       role: role.value,
     });
-    console.log("Role selection response:", response.data);
     await authStore.refreshUser();
     await router.replace(authStore.getDefaultRoute());
   } catch (error) {
     console.error("Error selecting role:", error);
-    errorMessage.value = "Hubo un error al seleccionar el rol. Inténtalo de nuevo.";
+    errorMessage.value =
+      "Hubo un error al seleccionar el rol. Intentalo de nuevo.";
   } finally {
     loading.value = false;
   }
@@ -42,150 +43,99 @@ const hadleElection = async () => {
 const handleLogout = async () => {
   try {
     await authStore.logout();
-    router.push('/login');
+    router.push("/login");
   } catch (error) {
-    console.error('Error al cerrar sesión:', error);
+    console.error("Error al cerrar sesión:", error);
   }
 };
 </script>
 
 <template>
-  <main class="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
-    <section
-      class="w-full max-w-3xl bg-[var(--color-background)] text-[var(--color-heading)] rounded-xl shadow-lg border border-[var(--color-border)] p-8"
-    >
-      <header class="mb-6">
-        <h1 class="text-2xl font-semibold">Selecciona tu rol</h1>
-        <p class="text-[var(--color-heading)]/70 text-sm mt-1">
-          Elige cómo deseas usar la plataforma. Puedes cambiarlo más adelante si es necesario.
-        </p>
-      </header>
+  <div class="min-h-screen flex flex-col bg-canvas text-content">
+    <!-- Navbar with badge and rounded-full logout -->
+    <OnboardingTopNavbar badge-text="PASO 1 DE 2 • CONFIGURACIÓN" />
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <!-- Customer Card -->
-        <button
-          type="button"
-          @click="selectRole('customer')"
-          :class="[
-            'group relative w-full text-left rounded-xl border p-5 transition focus:outline-none',
-            role === 'customer'
-              ? 'border-[var(--color-secondary)] ring-2 ring-[var(--color-secondary)]'
-              : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
-          ]"
-        >
-          <div class="flex items-start gap-4">
-            <span
-              class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary)]/20 text-[var(--color-secondary)]"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6">
-                <path d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12Z" />
-                <path fill-rule="evenodd" d="M3.75 20.1a8.25 8.25 0 0116.5 0 .9.9 0 01-.9.9H4.65a.9.9 0 01-.9-.9Z" clip-rule="evenodd" />
-              </svg>
-            </span>
-            <div>
-              <h2 class="text-lg font-medium">Comprador</h2>
-              <p class="text-sm text-[var(--color-heading)]/70 mt-1">
-                Compra productos y aprovecha ofertas de los establecimientos.
-              </p>
-            </div>
-          </div>
-          <span
-            v-if="role === 'customer'"
-            class="absolute right-4 top-4 text-[var(--color-focus)]"
-            aria-hidden="true"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
+    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
+      <!-- RoleSelectorCard (Figma exact: width 896px, height ~425px, rounded-[22px], border-border-subtle, bg-surface) -->
+      <section
+        class="w-full max-w-[896px] bg-surface rounded-[22px] border border-border-subtle shadow-sm p-6 sm:p-10 lg:py-10 lg:px-12 space-y-6"
+      >
+        <!-- RoleHeader -->
+        <header class="space-y-1">
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-brand">
+            PASO 1 DE 2 • PERFIL DE USUARIO
           </span>
-        </button>
+          <h1 class="text-2xl sm:text-[26px] font-extrabold text-content tracking-tight leading-tight">
+            ¿Qué quieres hacer en la aplicación?
+          </h1>
+          <p class="text-sm text-content-secondary pt-0.5">
+            Elegí cómo deseás usar la plataforma. Podrás cambiarlo más adelante si es necesario.
+          </p>
+        </header>
 
-        <!-- Seller Card -->
-        <button
-          type="button"
-          @click="selectRole('seller')"
-          :class="[
-            'group relative w-full text-left rounded-xl border p-5 transition focus:outline-none',
-            role === 'seller'
-              ? 'border-[var(--color-secondary)] ring-2 ring-[var(--color-secondary)]'
-              : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
-          ]"
-        >
-          <div class="flex items-start gap-4">
-            <span
-              class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary)]/20 text-[var(--color-secondary)]"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6">
-                <path d="M3 4.5h18V9a3 3 0 01-3 3H6a3 3 0 01-3-3V4.5Z" />
-                <path d="M4.5 14.25h15V19.5a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75v-5.25Z" />
-              </svg>
-            </span>
-            <div>
-              <h2 class="text-lg font-medium">Vendedor</h2>
-              <p class="text-sm text-[var(--color-heading)]/70 mt-1">
-                Publica productos y gestiona tus ofertas y ventas.
-              </p>
-            </div>
-          </div>
-          <span
-            v-if="role === 'seller'"
-            class="absolute right-4 top-4 text-[var(--color-focus)]"
-            aria-hidden="true"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
-        </button>
-      </div>
+        <!-- RoleCardsGrid (Figma: Comprar vs Vender en 2 columnas) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <RoleOptionCard
+            role="customer"
+            title="Comprar"
+            description="Comprá bolsas sorpresa y rescatá alimentos de comercios cercanos con grandes descuentos."
+            :selected="role === 'customer'"
+            @select="selectRole('customer')"
+          />
 
-      <!-- Nota informativa si elige vendedor -->
-      <div v-if="role === 'seller'" class="mt-5 p-4 rounded-xl bg-[var(--color-primary)] border border-[var(--color-border)] text-sm text-[var(--color-text)] transition-all">
-        <div class="flex items-start gap-3">
-          <div class="p-2 rounded-lg bg-[var(--color-focus)]/20 text-[var(--color-focus)] flex-shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p class="font-semibold text-white mb-0.5">Ubicación del establecimiento</p>
-            <p class="text-xs text-[var(--color-text)]/80 leading-relaxed">
-              No es obligatorio que tu negocio figure en Google Maps. Podrás buscarlo en Google Places o ingresar su dirección y ubicar el punto de retiro directamente en el mapa interactivo.
-            </p>
-          </div>
+          <RoleOptionCard
+            role="seller"
+            title="Vender"
+            description="Publicá tus excedentes gastronómicos, evitá el desperdicio y gestioná tus ventas y retiros."
+            :selected="role === 'seller'"
+            @select="selectRole('seller')"
+          />
         </div>
-      </div>
 
-       <div class="mt-6 flex items-center gap-4">
-         <p v-if="errorMessage" class="text-red-400 text-sm">{{ errorMessage }}</p>
-         <div class="ml-auto flex gap-3">
-           <button
-             @click="handleLogout"
-             class="inline-flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-transparent text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)]"
-           >
-             Cancelar
-           </button>
-           <button
-             @click="hadleElection"
-             :disabled="loading"
-             class="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] text-[var(--color-text)] px-4 py-2 font-medium hover:bg-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[var(--color-focus)] disabled:opacity-60 disabled:cursor-not-allowed"
-           >
-             <svg
-               v-if="loading"
-               class="animate-spin -ml-1 mr-2 h-5 w-5 text-[var(--color-text)]"
-               xmlns="http://www.w3.org/2000/svg"
-               fill="none"
-               viewBox="0 0 24 24"
-             >
-               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-             </svg>
-             {{ loading ? "Confirmando..." : "Confirmar" }}
-           </button>
-         </div>
-       </div>
-    </section>
-  </main>
+        <!-- Error message if any -->
+        <div
+          v-if="errorMessage"
+          class="p-3.5 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs font-semibold flex items-center gap-2"
+        >
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <!-- RoleFooterActions (Standard project buttons: corner radius 10px, NOT rounded-full) -->
+        <div class="pt-4 border-t border-border-subtle flex items-center justify-between gap-4">
+          <button
+            type="button"
+            class="h-[46px] px-6 rounded-[10px] bg-canvas hover:bg-surface-sunken border border-border-subtle text-sm font-semibold text-content transition-colors cursor-pointer select-none"
+            @click="handleLogout"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            :disabled="loading"
+            class="h-[46px] inline-flex items-center justify-center gap-2 px-7 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-sm font-bold transition-colors shadow-xs disabled:opacity-60 cursor-pointer select-none"
+            @click="hadleElection"
+          >
+            <svg
+              v-if="loading"
+              class="animate-spin h-4 w-4 text-surface"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span>{{ loading ? "Confirmando..." : "Confirmar y continuar →" }}</span>
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>

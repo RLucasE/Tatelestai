@@ -21,6 +21,7 @@ const steps = [
 const loadingTemplates = ref(true);
 const submitting = ref(false);
 const templates = ref([]);
+const activeOffers = ref([]);
 const errorMessage = ref("");
 const successMessage = ref("");
 const validationErrors = reactive({});
@@ -98,6 +99,23 @@ const fetchTemplates = async () => {
   }
 };
 
+// Cargar ofertas activas del comercio para reutilizar horarios y detectar conflictos
+const fetchActiveOffers = async () => {
+  try {
+    const response = await axiosInstance.get("/my-packs");
+    const list = response.data?.data || response.data || [];
+    const now = new Date();
+    activeOffers.value = list.filter((o) => {
+      if (o.state && o.state !== "active") return false;
+      if (Number(o.quantity ?? 0) <= 0) return false;
+      if (!o.pickup_start_datetime || !o.expiration_datetime) return false;
+      return new Date(o.expiration_datetime) > now;
+    });
+  } catch (err) {
+    console.error("Error al cargar ofertas activas:", err);
+  }
+};
+
 // Seleccionar plantilla
 const selectTemplate = (template) => {
   if (!template) {
@@ -136,6 +154,69 @@ const formatDateTimeLocal = (date) => {
 const minPickupStart = computed(() => {
   const now = new Date();
   return formatDateTimeLocal(now);
+});
+
+const formatScheduleWindowLabel = (startDt, endDt) => {
+  try {
+    const s = new Date(startDt);
+    const e = new Date(endDt);
+    const isToday = s.toDateString() === new Date().toDateString();
+    const dayStr = isToday
+      ? "Hoy"
+      : s.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
+    const sTime = s.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const eTime = e.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    return `${dayStr} ${sTime} – ${eTime} hs`;
+  } catch {
+    return `${startDt} - ${endDt}`;
+  }
+};
+
+// Horarios únicos de ofertas activas vigentes del establecimiento
+const existingActiveSchedules = computed(() => {
+  const map = new Map();
+  for (const o of activeOffers.value) {
+    const sDate = new Date(o.pickup_start_datetime);
+    const eDate = new Date(o.expiration_datetime);
+    if (isNaN(sDate.getTime()) || isNaN(eDate.getTime())) continue;
+    const startLocal = formatDateTimeLocal(sDate);
+    const endLocal = formatDateTimeLocal(eDate);
+    const key = `${startLocal}|${endLocal}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        startLocal,
+        endLocal,
+        label: formatScheduleWindowLabel(sDate, eDate),
+        count: 1,
+      });
+    } else {
+      map.get(key).count++;
+    }
+  }
+  return Array.from(map.values());
+});
+
+const applyExistingSchedule = (sched) => {
+  form.pickup_start_datetime = sched.startLocal;
+  form.pickup_end_datetime = sched.endLocal;
+  delete validationErrors.pickup_start_datetime;
+  delete validationErrors.pickup_end_datetime;
+};
+
+const isScheduleMatchingForm = (sched) => {
+  return (
+    form.pickup_start_datetime === sched.startLocal &&
+    form.pickup_end_datetime === sched.endLocal
+  );
+};
+
+// Detectar si el horario configurado difiere de otras ofertas activas vigentes
+const hasScheduleConflict = computed(() => {
+  if (!existingActiveSchedules.value.length) return false;
+  if (!form.pickup_start_datetime || !form.pickup_end_datetime) return false;
+  const currentKey = `${form.pickup_start_datetime}|${form.pickup_end_datetime}`;
+  return existingActiveSchedules.value.some((s) => s.key !== currentKey);
 });
 
 // Atajos para configurar ventana de retiro rápido
@@ -389,9 +470,12 @@ const handleSubmit = async () => {
 
   try {
     submitting.value = true;
-    await axiosInstance.post("/packs", payload);
+    const response = await axiosInstance.post("/packs", payload);
+    const warningMsg = response.data?.schedule_warning?.warning_message;
 
-    successMessage.value = "¡Oferta publicada exitosamente! Ya está visible para los clientes.";
+    successMessage.value = warningMsg
+      ? `¡Oferta publicada exitosamente! Aviso: ${warningMsg}`
+      : "¡Oferta publicada exitosamente! Ya está visible para los clientes.";
 
     setTimeout(() => {
       router.push({ name: "my-offers" });
@@ -412,12 +496,13 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   fetchTemplates();
+  fetchActiveOffers();
   applyQuickSchedule("today-afternoon");
 });
 </script>
 
 <template>
-  <div class="create-offer-wrapper">
+  <div class="create-offer-wrapper seller-content-container pt-9 pb-14">
     <!-- Encabezado de la página (Figma Page Header) -->
     <header class="page-header">
       <div class="header-titles">
@@ -521,8 +606,8 @@ onMounted(() => {
                 <div class="pack-icon-squircle violet-glow">
                   <!-- plus-icon.svg de Figma -->
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12H19" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 5V19" stroke="#A78BFA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M5 12H19" stroke="var(--color-brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 5V19" stroke="var(--color-brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </div>
 
@@ -610,8 +695,8 @@ onMounted(() => {
             <div class="editable-info-note">
               <!-- info-clock.svg (shield check green) de Figma -->
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.3333 8.66664C13.3333 12 11 13.6666 8.22666 14.6333C8.08144 14.6825 7.92369 14.6802 7.78 14.6266C5 13.6666 2.66666 12 2.66666 8.66664V3.99997C2.66666 3.63203 2.96539 3.33331 3.33333 3.33331C4.66666 3.33331 6.33333 2.53331 7.49333 1.51997C7.78511 1.27069 8.21488 1.27069 8.50666 1.51997C9.67333 2.53997 11.3333 3.33331 12.6667 3.33331C13.0346 3.33331 13.3333 3.63203 13.3333 3.99997V8.66664" stroke="#34D399" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M6 7.99996L7.33333 9.33329L10 6.66663" stroke="#34D399" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.3333 8.66664C13.3333 12 11 13.6666 8.22666 14.6333C8.08144 14.6825 7.92369 14.6802 7.78 14.6266C5 13.6666 2.66666 12 2.66666 8.66664V3.99997C2.66666 3.63203 2.96539 3.33331 3.33333 3.33331C4.66666 3.33331 6.33333 2.53331 7.49333 1.51997C7.78511 1.27069 8.21488 1.27069 8.50666 1.51997C9.67333 2.53997 11.3333 3.33331 12.6667 3.33331C13.0346 3.33331 13.3333 3.63203 13.3333 3.99997V8.66664" stroke="var(--color-success)" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 7.99996L7.33333 9.33329L10 6.66663" stroke="var(--color-success)" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span>Configuración editable hasta la hora de inicio</span>
             </div>
@@ -924,6 +1009,42 @@ onMounted(() => {
             </p>
           </div>
 
+          <!-- Horarios de tus otras ofertas activas (1 clic para hacerlos coincidir) -->
+          <div
+            v-if="existingActiveSchedules.length > 0"
+            class="mb-4 p-4 rounded-xl bg-surface-sunken border border-brand/30 space-y-2.5"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-content flex items-center gap-1.5">
+                <span>🕒</span>
+                <span>Horarios usados en tus otras ofertas activas hoy:</span>
+              </span>
+              <span class="text-[11px] font-semibold text-brand">
+                Clic para igualar turno
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="sched in existingActiveSchedules"
+                :key="sched.key"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border"
+                :class="
+                  isScheduleMatchingForm(sched)
+                    ? 'bg-brand text-surface border-brand shadow-xs'
+                    : 'bg-surface text-content border-border-subtle hover:border-brand'
+                "
+                @click="applyExistingSchedule(sched)"
+              >
+                <span>{{ sched.label }}</span>
+                <span class="text-[10px] opacity-80">
+                  ({{ sched.count }} {{ sched.count === 1 ? 'oferta' : 'ofertas' }})
+                </span>
+                <span v-if="isScheduleMatchingForm(sched)" class="font-bold">✓</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Atajos rápidos -->
           <div class="quick-shortcuts-panel">
             <span class="quick-shortcuts-title">Atajos rápidos de retiro:</span>
@@ -990,8 +1111,25 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- Advertencia de diferentes horarios de retiro -->
+          <div
+            v-if="hasScheduleConflict"
+            class="mt-4 p-4 rounded-xl bg-warning/15 border border-warning/40 text-xs text-content flex items-start gap-3"
+          >
+            <span class="text-base shrink-0">⚠️</span>
+            <div class="space-y-1">
+              <p class="font-bold text-warning">
+                Atención: Vas a tener ofertas activas en diferentes horarios de retiro
+              </p>
+              <p class="text-content-secondary leading-relaxed">
+                Tu comercio ya tiene ofertas publicadas en otro horario ({{ existingActiveSchedules.map(s => s.label).join(', ') }}).
+                A los clientes les aparecerán separadas por turno de retiro y no podrán retirarlas juntas en un mismo viaje a menos que confirmen compras separadas.
+              </p>
+            </div>
+          </div>
+
           <!-- Modalidad de Visibilidad -->
-          <div class="mt-4 p-4 rounded-xl bg-[#1A1625]/60 border border-white/[0.08] space-y-3">
+          <div class="mt-4 p-4 rounded-xl bg-surface-sunken border border-border-subtle space-y-3">
             <label class="custom-label mb-1">
               Visibilidad de la Oferta en el Catálogo
             </label>
@@ -999,10 +1137,10 @@ onMounted(() => {
               <button
                 type="button"
                 class="flex items-center gap-3 p-3 rounded-xl border text-left transition cursor-pointer"
-                :class="form.visibility_mode === 'now' ? 'bg-[#7C3AED]/20 border-[#7C3AED] text-white shadow-sm' : 'bg-[#2D2438] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'"
+                :class="form.visibility_mode === 'now' ? 'bg-brand/10 border-brand text-content-strong shadow-sm' : 'bg-surface border border-border-subtle text-content-secondary hover:border-brand/40'"
                 @click="form.visibility_mode = 'now'"
               >
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="form.visibility_mode === 'now' ? 'bg-[#7C3AED] text-white' : 'bg-white/5 text-[#A5A8C2]'">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="form.visibility_mode === 'now' ? 'bg-brand text-surface' : 'bg-surface-sunken text-content-secondary'">
                   🚀
                 </div>
                 <div>
@@ -1014,10 +1152,10 @@ onMounted(() => {
               <button
                 type="button"
                 class="flex items-center gap-3 p-3 rounded-xl border text-left transition cursor-pointer"
-                :class="form.visibility_mode === 'scheduled' ? 'bg-[#7C3AED]/20 border-[#7C3AED] text-white shadow-sm' : 'bg-[#2D2438] border-white/[0.08] text-[#A5A8C2] hover:border-white/20'"
+                :class="form.visibility_mode === 'scheduled' ? 'bg-brand/10 border-brand text-content-strong shadow-sm' : 'bg-surface border border-border-subtle text-content-secondary hover:border-brand/40'"
                 @click="form.visibility_mode = 'scheduled'"
               >
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="form.visibility_mode === 'scheduled' ? 'bg-[#7C3AED] text-white' : 'bg-white/5 text-[#A5A8C2]'">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :class="form.visibility_mode === 'scheduled' ? 'bg-brand text-surface' : 'bg-surface-sunken text-content-secondary'">
                   ⏰
                 </div>
                 <div>
@@ -1045,7 +1183,7 @@ onMounted(() => {
                 <span v-if="validationErrors.visible_from" class="custom-field-error">
                   {{ validationErrors.visible_from }}
                 </span>
-                <p class="text-xs text-[#A5A8C2] mt-1">
+                <p class="text-xs text-content-secondary mt-1">
                   Los clientes solo podrán ver y reservar esta bolsa a partir de este momento.
                 </p>
               </div>
@@ -1189,8 +1327,8 @@ onMounted(() => {
               <div class="mockup-pickup-chip">
                 <!-- clock.svg de Figma -->
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1.33331 7.99998C1.33331 11.6794 4.32055 14.6666 7.99998 14.6666C11.6794 14.6666 14.6666 11.6794 14.6666 7.99998C14.6666 4.32055 11.6794 1.33331 7.99998 1.33331C4.32055 1.33331 1.33331 4.32055 1.33331 7.99998V7.99998" stroke="#A78BFA" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M8 4V8L10.6667 9.33333" stroke="#A78BFA" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M1.33331 7.99998C1.33331 11.6794 4.32055 14.6666 7.99998 14.6666C11.6794 14.6666 14.6666 11.6794 14.6666 7.99998C14.6666 4.32055 11.6794 1.33331 7.99998 1.33331C4.32055 1.33331 1.33331 4.32055 1.33331 7.99998V7.99998" stroke="var(--color-content-secondary)" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8 4V8L10.6667 9.33333" stroke="var(--color-content-secondary)" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <div class="pickup-text-inline">
                   <span class="pickup-prefix">Retiro:</span>
@@ -1240,15 +1378,36 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* CONTENEDOR GENERAL (Canvas Dark Violet de Tatelestai) */
+/* CONTENEDOR GENERAL (Sunset Anime Light) */
 .create-offer-wrapper {
   width: 100%;
-  max-width: 1280px;
+  max-width: 1420px;
   margin: 0 auto;
-  padding: 0 0 64px;
-  color: #e8eaf6;
+  padding: 0 1rem 64px;
+  color: var(--color-content);
   font-family: "Plus Jakarta Sans", "Inter", -apple-system, sans-serif;
   align-self: flex-start;
+}
+
+@media (min-width: 640px) {
+  .create-offer-wrapper {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .create-offer-wrapper {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1420px) {
+  .create-offer-wrapper {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 /* ENCABEZADO DE LA PÁGINA (Figma Page Header) */
@@ -1269,7 +1428,7 @@ onMounted(() => {
 .page-title {
   font-size: 2.25rem; /* 36px en Figma */
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-content);
   margin: 0;
   line-height: 2.5rem; /* 40px */
   letter-spacing: -0.025em;
@@ -1277,38 +1436,38 @@ onMounted(() => {
 
 .page-subtitle {
   font-size: 1rem; /* 16px */
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   margin: 0;
   line-height: 1.5rem; /* 24px */
 }
 
 .back-button {
-  background: transparent;
-  color: #94a3b8;
-  border: 1px solid #2d2443;
+  background: var(--color-surface);
+  color: var(--color-content-secondary);
+  border: 1px solid var(--color-border-subtle);
   padding: 0.55rem 1.15rem;
   border-radius: 10px;
   cursor: pointer;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   transition: all 0.2s ease;
 }
 
 .back-button:hover {
-  color: #ffffff;
-  border-color: #7c3aed;
-  background: rgba(124, 58, 237, 0.1);
+  color: var(--color-brand);
+  border-color: var(--color-brand);
+  background: var(--color-canvas);
 }
 
 /* STEPPER PROGRESS SECTION (Figma StepperProgressSection) */
 .stepper-card {
-  background: #151120;
-  border: 1px solid rgba(45, 36, 67, 0.8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0px 8px 30px -8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0px 4px 20px -4px rgba(70, 51, 79, 0.06);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -1330,24 +1489,24 @@ onMounted(() => {
 }
 
 .stepper-label-tag {
-  color: #a78bfa;
-  font-weight: 600;
+  color: var(--color-brand);
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .stepper-dot {
-  color: #64748b;
+  color: var(--color-border-subtle);
   font-size: 1rem;
 }
 
 .stepper-status-text {
-  color: #cbd5e1;
+  color: var(--color-content-secondary);
   font-weight: 500;
 }
 
 .stepper-status-text strong {
-  color: #ffffff;
+  color: var(--color-content);
   font-weight: 700;
 }
 
@@ -1355,14 +1514,14 @@ onMounted(() => {
 .linear-progress-track {
   width: 100%;
   height: 6px;
-  background: #221c33;
+  background: var(--color-surface-sunken);
   border-radius: 9999px;
   overflow: hidden;
 }
 
 .linear-progress-fill {
   height: 100%;
-  background: #7c3aed;
+  background: var(--color-brand);
   border-radius: 9999px;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1386,17 +1545,17 @@ onMounted(() => {
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .step-item:not(.disabled):hover {
   opacity: 1;
-  background: rgba(45, 36, 67, 0.3);
+  background: var(--color-canvas);
 }
 
 .step-item.active {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(242, 79, 19, 0.08);
+  border-color: rgba(242, 79, 19, 0.3);
   opacity: 1;
 }
 
@@ -1413,8 +1572,8 @@ onMounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #221c33;
-  border: 1px solid #2d2443;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1425,27 +1584,27 @@ onMounted(() => {
 .step-num {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .step-item.active .step-squircle {
-  background: #7c3aed;
+  background: var(--color-brand);
   border-color: transparent;
-  box-shadow: 0px 4px 20px -2px rgba(124, 58, 237, 0.45);
+  box-shadow: 0px 4px 14px -2px rgba(242, 79, 19, 0.35);
 }
 
 .step-item.active .step-num {
-  color: #ffffff;
+  color: var(--color-surface);
   font-weight: 700;
 }
 
 .step-item.completed .step-squircle {
   background: rgba(16, 185, 129, 0.2);
-  border-color: #10b981;
+  border-color: var(--color-success);
 }
 
 .step-check-mark {
-  color: #10b981;
+  color: var(--color-success);
   font-weight: 800;
   font-size: 0.875rem;
 }
@@ -1460,33 +1619,33 @@ onMounted(() => {
   font-weight: 700;
   letter-spacing: 0.025em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .step-item.active .step-kicker {
-  color: #f1f5f9;
+  color: var(--color-brand);
 }
 
 .step-heading {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--color-content-secondary);
   line-height: 1.25rem;
 }
 
 .step-item.active .step-heading {
-  color: #ffffff;
+  color: var(--color-content);
   font-weight: 700;
 }
 
 .step-caption {
   font-size: 0.6875rem; /* 11px */
-  color: #64748b;
+  color: var(--color-content-muted);
   line-height: 0.875rem;
 }
 
 .step-item.active .step-caption {
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 @media (max-width: 900px) {
@@ -1515,14 +1674,14 @@ onMounted(() => {
 
 .feedback-alert.success {
   background: rgba(16, 185, 129, 0.15);
-  border: 1px solid #10b981;
-  color: #6ee7b7;
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
 }
 
 .feedback-alert.error {
   background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #ef4444;
-  color: #fca5a5;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
 }
 
 .alert-icon {
@@ -1545,11 +1704,11 @@ onMounted(() => {
 
 /* TARJETA DEL FORMULARIO (Columna Izquierda 7 Cols) */
 .step-form-card {
-  background: #151120;
-  border: 1px solid #2d2443;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
   padding: 2rem;
-  box-shadow: 0px 8px 10px -6px rgba(0, 0, 0, 0.1), 0px 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 10px 30px -5px rgba(70, 51, 79, 0.06);
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
@@ -1558,7 +1717,7 @@ onMounted(() => {
 /* Narrativa y título de sección */
 .section-narrative {
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(45, 36, 67, 0.7);
+  border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1567,7 +1726,7 @@ onMounted(() => {
 .section-title {
   font-size: 1.5rem; /* 24px */
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-content);
   letter-spacing: -0.025em;
   margin: 0;
   line-height: 2rem;
@@ -1575,7 +1734,7 @@ onMounted(() => {
 
 .section-desc {
   font-size: 0.875rem; /* 14px */
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   margin: 0;
   line-height: 1.42;
 }
@@ -1594,8 +1753,8 @@ onMounted(() => {
 }
 
 .pack-card {
-  background: #1a1528;
-  border: 1px solid rgba(45, 36, 67, 0.8);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 1.25rem;
   cursor: pointer;
@@ -1607,15 +1766,15 @@ onMounted(() => {
 }
 
 .pack-card:hover {
-  border-color: #7c3aed;
+  border-color: var(--color-brand);
   transform: translateY(-2px);
-  background: #1f1931;
+  background: var(--color-surface);
 }
 
 .pack-card.selected {
-  border-color: #8b5cf6;
-  box-shadow: 0px 0px 20px -2px rgba(124, 58, 237, 0.5), 0px 0px 0px 2px rgba(124, 58, 237, 1);
-  background: #1a1528;
+  border-color: var(--color-brand);
+  box-shadow: 0px 0px 0px 2px var(--color-brand);
+  background: var(--color-surface);
 }
 
 .pack-card-top {
@@ -1636,18 +1795,18 @@ onMounted(() => {
 }
 
 .pack-icon-squircle.violet-glow {
-  background: rgba(124, 58, 237, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(242, 79, 19, 0.12);
+  border: 1px solid rgba(242, 79, 19, 0.3);
 }
 
 .pack-icon-squircle.amber-glow {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: rgba(242, 146, 29, 0.12);
+  border: 1px solid rgba(242, 146, 29, 0.3);
 }
 
 .pack-icon-squircle.muted-glow {
-  background: rgba(100, 116, 139, 0.15);
-  border: 1px solid rgba(100, 116, 139, 0.25);
+  background: rgba(128, 130, 166, 0.12);
+  border: 1px solid rgba(128, 130, 166, 0.25);
 }
 
 .emoji-icon {
@@ -1656,7 +1815,7 @@ onMounted(() => {
 
 /* Pills de badges */
 .selected-badge-pill {
-  background: #7c3aed;
+  background: var(--color-brand);
   border-radius: 9999px;
   padding: 0.25rem 0.65rem;
   display: flex;
@@ -1668,14 +1827,14 @@ onMounted(() => {
 .selected-badge-pill span {
   font-size: 0.6875rem; /* 11px */
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-surface);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .reusable-badge-pill {
-  background: rgba(45, 36, 67, 0.6);
-  border: 1px solid rgba(61, 50, 89, 0.4);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
   padding: 0.15rem 0.6rem;
 }
@@ -1683,20 +1842,20 @@ onMounted(() => {
 .reusable-badge-pill span {
   font-size: 0.6875rem; /* 11px */
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .pack-card-title {
   font-size: 1rem; /* 16px */
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-content);
   margin: 0;
   line-height: 1.5rem;
 }
 
 .pack-card-desc {
   font-size: 0.75rem; /* 12px */
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   margin: 0;
   line-height: 1.25rem;
 }
@@ -1706,24 +1865,24 @@ onMounted(() => {
   align-items: center;
   gap: 0.375rem;
   padding-top: 0.5rem;
-  border-top: 1px solid rgba(45, 36, 67, 0.5);
+  border-top: 1px solid var(--color-border-subtle);
   margin-top: 0.25rem;
 }
 
 .allergen-tag-pill {
-  background: #2d2443;
-  color: #cbd5e1;
+  background: var(--color-surface-sunken);
+  color: var(--color-content);
   font-size: 0.625rem; /* 10px */
-  font-weight: 500;
+  font-weight: 600;
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
 }
 
 .allergen-tag-more {
-  background: rgba(45, 36, 67, 0.7);
-  color: #94a3b8;
+  background: var(--color-surface-sunken);
+  color: var(--color-content-secondary);
   font-size: 0.625rem;
-  font-weight: 500;
+  font-weight: 600;
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
 }
@@ -1734,7 +1893,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(45, 36, 67, 0.7);
+  border-top: 1px solid var(--color-border-subtle);
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -1747,15 +1906,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #94a3b8;
+  color: var(--color-content-muted);
   font-size: 0.75rem; /* 12px */
 }
 
 .primary-cta-btn {
-  background: #7c3aed;
-  border-radius: 12px;
+  background: var(--color-brand);
+  border-radius: 10px;
   padding: 0.875rem 1.75rem;
-  color: #ffffff;
+  color: var(--color-surface);
   font-size: 0.875rem; /* 14px */
   font-weight: 700;
   border: none;
@@ -1763,15 +1922,15 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0px 0px 25px -4px rgba(124, 58, 237, 0.45);
+  box-shadow: 0px 4px 14px -2px rgba(242, 79, 19, 0.35);
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .primary-cta-btn:hover:not(:disabled) {
-  background: #6d28d9;
+  background: var(--color-brand-hover);
   transform: translateY(-2px);
-  box-shadow: 0px 0px 30px -2px rgba(124, 58, 237, 0.65);
+  box-shadow: 0px 6px 18px -2px rgba(242, 79, 19, 0.45);
 }
 
 .primary-cta-btn:disabled {
@@ -1781,10 +1940,10 @@ onMounted(() => {
 
 .btn-secondary-prev {
   background: transparent;
-  color: #94a3b8;
-  border: 1px solid #2d2443;
+  color: var(--color-content-secondary);
+  border: 1px solid var(--color-border-subtle);
   padding: 0.8rem 1.4rem;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -1792,9 +1951,9 @@ onMounted(() => {
 }
 
 .btn-secondary-prev:hover {
-  color: #ffffff;
-  border-color: #7c3aed;
-  background: rgba(124, 58, 237, 0.1);
+  color: var(--color-brand);
+  border-color: var(--color-brand);
+  background: var(--color-canvas);
 }
 
 /* CAMPOS DE FORMULARIO (Pasos 2, 3, 4) */
@@ -1807,28 +1966,28 @@ onMounted(() => {
 .custom-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #e8eaf6;
+  color: var(--color-content);
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
 .required-star {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .label-muted-hint {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   font-weight: 400;
 }
 
 .custom-input,
 .custom-textarea {
   width: 100%;
-  background: #1a1528;
-  border: 1px solid #2d2443;
-  color: #ffffff;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content);
   padding: 0.75rem 1rem;
   border-radius: 12px;
   font-size: 0.875rem;
@@ -1839,24 +1998,24 @@ onMounted(() => {
 
 .custom-input:focus,
 .custom-textarea:focus {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(242, 79, 19, 0.15);
 }
 
 .custom-input.has-error,
 .custom-textarea.has-error {
-  border-color: #ef4444;
+  border-color: var(--color-danger);
 }
 
 .custom-field-error {
   font-size: 0.75rem;
-  color: #f87171;
+  color: var(--color-danger);
   font-weight: 500;
 }
 
 .custom-field-hint {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-content-secondary);
 }
 
 /* Ocultar botones de selector (spinner) en inputs type="number" */
@@ -1880,9 +2039,9 @@ input[type="number"] {
 }
 
 .chip-button {
-  background: #1a1528;
-  border: 1px solid #2d2443;
-  color: #94a3b8;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content-secondary);
   padding: 0.4rem 0.85rem;
   border-radius: 9999px;
   font-size: 0.8125rem;
@@ -1894,16 +2053,16 @@ input[type="number"] {
 }
 
 .chip-button:hover {
-  border-color: #7c3aed;
-  color: #ffffff;
+  border-color: var(--color-brand);
+  color: var(--color-brand);
 }
 
 .chip-button.active {
-  background: #7c3aed;
-  border-color: #7c3aed;
-  color: #ffffff;
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: var(--color-surface);
   font-weight: 600;
-  box-shadow: 0px 2px 8px rgba(124, 58, 237, 0.35);
+  box-shadow: 0px 2px 8px rgba(242, 79, 19, 0.25);
 }
 
 .chip-check {
@@ -1919,9 +2078,9 @@ input[type="number"] {
 
 .custom-input-sm {
   flex: 1;
-  background: #1a1528;
-  border: 1px solid #2d2443;
-  color: #ffffff;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content);
   padding: 0.5rem 0.85rem;
   border-radius: 10px;
   font-size: 0.8125rem;
@@ -1929,13 +2088,13 @@ input[type="number"] {
 }
 
 .custom-input-sm:focus {
-  border-color: #7c3aed;
+  border-color: var(--color-brand);
 }
 
 .btn-sm-secondary {
-  background: #2d2443;
-  color: #e8eaf6;
-  border: none;
+  background: var(--color-surface-sunken);
+  color: var(--color-content);
+  border: 1px solid var(--color-border-subtle);
   padding: 0.5rem 1rem;
   border-radius: 10px;
   font-size: 0.8125rem;
@@ -1945,30 +2104,30 @@ input[type="number"] {
 }
 
 .btn-sm-secondary:hover {
-  background: #3d3450;
-  color: #ffffff;
+  background: var(--color-border-subtle);
+  color: var(--color-content);
 }
 
 .active-tags-banner {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #1a1528;
+  background: var(--color-surface-sunken);
   padding: 0.6rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid #2d2443;
+  border: 1px solid var(--color-border-subtle);
   margin-top: 0.5rem;
 }
 
 .active-tags-label {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .active-tag-pill {
-  background: rgba(124, 58, 237, 0.2);
-  border: 1px solid #7c3aed;
-  color: #c4b5fd;
+  background: rgba(242, 79, 19, 0.1);
+  border: 1px solid var(--color-brand);
+  color: var(--color-brand);
   font-size: 0.6875rem;
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
@@ -1980,7 +2139,7 @@ input[type="number"] {
 .tag-del-btn {
   background: transparent;
   border: none;
-  color: #c4b5fd;
+  color: var(--color-brand);
   cursor: pointer;
   font-size: 0.875rem;
   line-height: 1;
@@ -1988,7 +2147,7 @@ input[type="number"] {
 }
 
 .tag-del-btn:hover {
-  color: #ffffff;
+  color: var(--color-brand-hover);
 }
 
 /* PESO ESTIMADO PRESETS */
@@ -2005,9 +2164,9 @@ input[type="number"] {
 }
 
 .weight-preset-btn {
-  background: #1a1528;
-  border: 1px solid #2d2443;
-  color: #94a3b8;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content);
   padding: 0.35rem 0.75rem;
   border-radius: 8px;
   font-size: 0.75rem;
@@ -2016,14 +2175,15 @@ input[type="number"] {
 }
 
 .weight-preset-btn:hover {
-  border-color: #7c3aed;
-  color: #ffffff;
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+  background: var(--color-surface-elevated);
 }
 
 /* CARD DE AHORRO EN TIEMPO REAL */
 .realtime-savings-box {
   background: rgba(16, 185, 129, 0.12);
-  border: 1.5px solid #10b981;
+  border: 1.5px solid var(--color-success);
   border-radius: 14px;
   padding: 1rem 1.25rem;
   display: flex;
@@ -2033,8 +2193,8 @@ input[type="number"] {
 }
 
 .savings-pill-highlight {
-  background: #10b981;
-  color: #064e3b;
+  background: var(--color-success);
+  color: var(--color-success);
   font-weight: 800;
   font-size: 0.875rem;
   padding: 0.35rem 0.85rem;
@@ -2043,7 +2203,7 @@ input[type="number"] {
 }
 
 .savings-text-detail {
-  color: #d1fae5;
+  color: var(--color-success);
   font-size: 0.875rem;
 }
 
@@ -2057,10 +2217,10 @@ input[type="number"] {
 .quantity-step-btn {
   width: 44px;
   height: 44px;
-  background: #2d2443;
-  border: 1px solid #3d3450;
-  color: #ffffff;
-  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content);
+  border-radius: 10px;
   font-size: 1.25rem;
   cursor: pointer;
   display: flex;
@@ -2070,8 +2230,9 @@ input[type="number"] {
 }
 
 .quantity-step-btn:hover:not(:disabled) {
-  background: #7c3aed;
-  border-color: #7c3aed;
+  background: var(--color-canvas);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
 }
 
 .quantity-step-btn:disabled {
@@ -2082,9 +2243,9 @@ input[type="number"] {
 .quantity-number-input {
   width: 70px;
   height: 44px;
-  background: #1a1528;
-  border: 1px solid #2d2443;
-  color: #ffffff;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content);
   border-radius: 12px;
   text-align: center;
   font-weight: 800;
@@ -2094,13 +2255,13 @@ input[type="number"] {
 
 .quantity-unit-label {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 /* ATAJOS RÁPIDOS DE HORARIO */
 .quick-shortcuts-panel {
-  background: #1a1528;
-  border: 1px solid #2d2443;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   padding: 0.875rem 1.15rem;
   display: flex;
@@ -2110,7 +2271,7 @@ input[type="number"] {
 
 .quick-shortcuts-title {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2123,9 +2284,9 @@ input[type="number"] {
 }
 
 .quick-pill-button {
-  background: #2d2443;
-  border: 1px solid #3d3450;
-  color: #cbd5e1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-content);
   padding: 0.4rem 0.85rem;
   border-radius: 8px;
   font-size: 0.8125rem;
@@ -2134,15 +2295,15 @@ input[type="number"] {
 }
 
 .quick-pill-button:hover {
-  background: #7c3aed;
-  border-color: #7c3aed;
-  color: #ffffff;
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: var(--color-surface);
 }
 
 /* PANEL DE RESUMEN DE ORDEN */
 .order-summary-panel {
-  background: #1a1528;
-  border: 1px solid #2d2443;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 1.25rem;
   margin-top: 0.5rem;
@@ -2151,7 +2312,7 @@ input[type="number"] {
 .order-summary-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-content);
   margin: 0 0 1rem 0;
 }
 
@@ -2169,21 +2330,22 @@ input[type="number"] {
 
 .cell-label {
   font-size: 0.6875rem;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .cell-value {
   font-size: 0.875rem;
-  color: #ffffff;
+  color: var(--color-content);
+  font-weight: 600;
 }
 
 .loading-spinner-circle {
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
+  border-top-color: var(--color-surface);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -2234,7 +2396,7 @@ input[type="number"] {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: #34d399;
+  background: var(--color-success);
   border-radius: 9999px;
   opacity: 0.75;
   animation: pulsePing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
@@ -2244,7 +2406,7 @@ input[type="number"] {
   position: relative;
   width: 10px;
   height: 10px;
-  background: #10b981;
+  background: var(--color-success);
   border-radius: 9999px;
 }
 
@@ -2260,29 +2422,29 @@ input[type="number"] {
   font-weight: 700;
   letter-spacing: 0.025em;
   text-transform: uppercase;
-  color: #cbd5e1;
+  color: var(--color-content);
   margin: 0;
 }
 
 .realtime-badge-pill {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(242, 79, 19, 0.1);
+  border: 1px solid rgba(242, 79, 19, 0.25);
   border-radius: 9999px;
   padding: 0.15rem 0.65rem;
 }
 
 .realtime-badge-pill span {
   font-size: 0.6875rem; /* 11px */
-  font-weight: 500;
-  color: #a78bfa;
+  font-weight: 600;
+  color: var(--color-brand);
 }
 
 /* Mockup Card (Figma Preview Phone / Card Mockup) */
 .preview-mockup-card {
-  background: #151120;
-  border: 1px solid #2d2443;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
-  box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 10px 30px -5px rgba(70, 51, 79, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2291,8 +2453,8 @@ input[type="number"] {
 /* Visual Mockup Hero Image Area (176px en Figma) */
 .mockup-hero-area {
   height: 176px;
-  background: #1a1528;
-  border-bottom: 1px solid rgba(45, 36, 67, 0.6);
+  background: var(--color-surface-sunken);
+  border-bottom: 1px solid var(--color-border-subtle);
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -2310,14 +2472,14 @@ input[type="number"] {
 }
 
 .hero-surprise-badge {
-  background: #7c3aed;
-  border: 1px solid rgba(167, 139, 250, 0.3);
+  background: var(--color-brand);
+  border: 1px solid rgba(242, 79, 19, 0.3);
   border-radius: 16px;
   padding: 0.5rem 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0px 4px 20px -2px rgba(124, 58, 237, 0.25);
+  box-shadow: 0px 4px 14px -2px rgba(242, 79, 19, 0.25);
 }
 
 .hero-badge-emoji {
@@ -2327,12 +2489,12 @@ input[type="number"] {
 .hero-badge-text {
   font-size: 0.875rem; /* 14px */
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-surface);
 }
 
 .hero-subtitle {
   font-size: 0.6875rem; /* 11px */
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   margin-top: 0.35rem;
 }
 
@@ -2346,9 +2508,9 @@ input[type="number"] {
 .store-circle-avatar {
   width: 20px;
   height: 20px;
-  background: #10b981;
+  background: var(--color-success);
   border-radius: 9999px;
-  color: #000000;
+  color: var(--color-surface);
   font-weight: 800;
   font-size: 0.625rem; /* 10px */
   display: flex;
@@ -2359,7 +2521,7 @@ input[type="number"] {
 .store-name-label {
   font-size: 0.75rem; /* 12px */
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--color-content);
 }
 
 /* Mockup Body Content */
@@ -2373,13 +2535,13 @@ input[type="number"] {
 .mockup-title-text {
   font-size: 1.125rem; /* 18px */
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-content);
   line-height: 1.75rem; /* 28px */
 }
 
 .mockup-desc-text {
   font-size: 0.75rem; /* 12px */
-  color: #94a3b8;
+  color: var(--color-content-secondary);
   line-height: 1.25rem; /* 19.5px */
 }
 
@@ -2392,27 +2554,28 @@ input[type="number"] {
 
 .mockup-allergens-label {
   font-size: 0.6875rem;
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .mockup-tag-pill {
   font-size: 0.625rem;
-  background: #2d2443;
-  color: #cbd5e1;
+  background: var(--color-surface-sunken);
+  color: var(--color-content);
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .mockup-weight-info {
   font-size: 0.75rem;
-  color: #cbd5e1;
+  color: var(--color-content);
   font-weight: 500;
 }
 
 /* Time Pickup Window Chip (Figma Time Pickup Window Chip) */
 .mockup-pickup-chip {
-  background: rgba(34, 28, 51, 0.9);
-  border: 1px solid rgba(45, 36, 67, 0.8);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   padding: 0.75rem;
   display: flex;
@@ -2428,17 +2591,17 @@ input[type="number"] {
 }
 
 .pickup-prefix {
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .pickup-value {
-  color: #ffffff;
+  color: var(--color-content);
   font-weight: 600;
 }
 
 /* Price & Inventory Row (Figma Price & Inventory Row) */
 .mockup-price-stock-row {
-  border-top: 1px solid rgba(45, 36, 67, 0.5);
+  border-top: 1px solid var(--color-border-subtle);
   padding-top: 0.75rem;
   display: flex;
   justify-content: space-between;
@@ -2454,31 +2617,31 @@ input[type="number"] {
 .mockup-active-price {
   font-size: 1.5rem; /* 24px */
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-content);
   line-height: 2rem;
   letter-spacing: -0.025em;
 }
 
 .mockup-original-strikethrough {
   font-size: 0.6875rem; /* 11px */
-  color: #64748b;
+  color: var(--color-content-secondary);
   text-decoration: line-through;
 }
 
 .mockup-stock-pill {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(31, 157, 107, 0.12);
+  border: 1px solid rgba(31, 157, 107, 0.3);
   border-radius: 8px;
   padding: 0.25rem 0.625rem;
-  color: #34d399;
+  color: var(--color-success);
   font-size: 0.75rem; /* 12px */
   font-weight: 700;
 }
 
 /* Preview Footer Meta Table (Figma Preview Footer Meta Table) */
 .mockup-footer-table {
-  background: #1a1528;
-  border-top: 1px solid #2d2443;
+  background: var(--color-surface-sunken);
+  border-top: 1px solid var(--color-border-subtle);
   padding: 0.875rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -2493,11 +2656,11 @@ input[type="number"] {
 }
 
 .meta-table-label {
-  color: #94a3b8;
+  color: var(--color-content-secondary);
 }
 
 .meta-table-value {
-  color: #e2e8f0;
+  color: var(--color-content);
   font-weight: 600;
 }
 </style>

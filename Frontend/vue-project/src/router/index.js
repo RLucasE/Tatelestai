@@ -85,6 +85,11 @@ router.beforeEach(async (to) => {
   // Asegura la verificación de sesión (0ms si RAM está presente o si no hay pista de sesión en localStorage)
   await authStore.ensureSessionVerified();
 
+  // Rutas accesibles libremente tanto para invitados como autenticados (ej: /design-system)
+  if (to.matched.some((record) => record.meta?.allowAny === true)) {
+    return true;
+  }
+
   const isExplicitPublicRoute = to.matched.every((record) => record.meta?.requiresAuth === false);
   const isLoggedIn = authStore.isLoggedIn();
 

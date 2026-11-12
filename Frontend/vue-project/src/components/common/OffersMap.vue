@@ -41,8 +41,8 @@ function createStoreIcon() {
     html: `
       <div class="store-pin-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42" fill="none">
-          <path d="M16 0C7.16344 0 0 7.16344 0 16C0 25.5 16 42 16 42C16 42 32 25.5 32 16C32 7.16344 24.8366 0 16 0Z" fill="#10b981"/>
-          <circle cx="16" cy="15" r="6" fill="#ffffff"/>
+          <path d="M16 0C7.16344 0 0 7.16344 0 16C0 25.5 16 42 16 42C16 42 32 25.5 32 16C32 7.16344 24.8366 0 16 0Z" fill="var(--color-success)"/>
+          <circle cx="16" cy="15" r="6" fill="var(--color-surface)"/>
         </svg>
       </div>
     `,
@@ -97,55 +97,55 @@ const DEFAULT_CENTER = [-24.7885, -65.4105] // Salta Capital
 const DEFAULT_ZOOM = 13
 
 const POPUP_STYLES = `
-  background-color: #2d2438;
-  color: #e8eaf6;
+  background-color: var(--color-surface);
+  color: var(--color-content);
   font-family: inherit;
   padding: 4px 0;
   min-width: 220px;
 `
 
 const POPUP_TITLE_STYLES = `
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
   margin: 0 0 2px 0;
-  color: #e8eaf6;
+  color: var(--color-content);
 `
 
 const POPUP_ADDRESS_STYLES = `
   font-size: 0.78rem;
-  color: #a89ec0;
+  color: var(--color-content-secondary);
   margin: 0 0 8px 0;
 `
 
 const POPUP_OFFER_STYLES = `
   padding: 6px 0;
-  border-top: 1px solid #3d3450;
+  border-top: 1px solid var(--color-border-subtle);
 `
 
 const POPUP_OFFER_TITLE_STYLES = `
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0 0 2px 0;
-  color: #e8eaf6;
+  color: var(--color-content);
 `
 
 const POPUP_META_STYLES = `
   font-size: 0.75rem;
-  color: #a89ec0;
+  color: var(--color-content-secondary);
   margin: 0 0 4px 0;
 `
 
 const POPUP_BTN_STYLES = `
   display: inline-block;
-  background-color: #7c3aed;
-  color: #fff;
+  background-color: var(--color-brand);
+  color: var(--color-surface);
   border: none;
-  padding: 4px 12px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: 10px;
   font-size: 0.75rem;
   cursor: pointer;
-  margin-top: 2px;
-  font-weight: 500;
+  margin-top: 4px;
+  font-weight: 600;
   transition: background-color 0.2s;
 `
 
@@ -192,8 +192,8 @@ function buildPopupContent(group) {
         <p style="${POPUP_OFFER_TITLE_STYLES}">${escapeHtml(offer.title)}</p>
         <p style="${POPUP_META_STYLES}">${priceText}${distanceMeta}</p>
         <button style="${POPUP_BTN_STYLES}" data-offer-id="${offer.id}"
-          onmouseover="this.style.backgroundColor='#6d28d9'"
-          onmouseout="this.style.backgroundColor='#7c3aed'">
+          onmouseover="this.style.backgroundColor='var(--color-brand-hover)'"
+          onmouseout="this.style.backgroundColor='var(--color-brand)'">
           Ver detalle
         </button>
       </div>
@@ -431,10 +431,10 @@ onUnmounted(() => {
 .map-container {
   width: 100%;
   height: 520px;
-  border-radius: 14px;
+  border-radius: 20px;
   overflow: hidden;
-  border: 1px solid var(--color-secondary);
-  background-color: var(--color-bg);
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-canvas);
 }
 
 :deep(.custom-store-pin) {
@@ -443,7 +443,7 @@ onUnmounted(() => {
 }
 
 :deep(.store-pin-wrapper) {
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 4px 6px rgba(70, 51, 79, 0.25));
   transition: transform 0.15s ease;
   cursor: pointer;
   display: flex;
@@ -456,22 +456,24 @@ onUnmounted(() => {
 }
 
 :deep(.leaflet-control-attribution) {
-  background-color: rgba(26, 22, 37, 0.8) !important;
-  color: var(--color-text-secondary) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  color: var(--color-content-secondary) !important;
+  font-size: 0.65rem !important;
 }
 
 :deep(.leaflet-control-attribution a) {
-  color: var(--color-accent-light) !important;
+  color: var(--color-brand) !important;
 }
 
 :deep(.leaflet-bar a) {
-  background-color: var(--color-primary) !important;
-  color: var(--color-text) !important;
-  border-bottom: 1px solid var(--color-secondary) !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-content) !important;
+  border-bottom: 1px solid var(--color-border-subtle) !important;
 }
 
 :deep(.leaflet-bar a:hover) {
-  background-color: var(--color-focus) !important;
+  background-color: var(--color-canvas) !important;
+  color: var(--color-brand) !important;
 }
 
 /* Badge flotante de estado en el centro superior del mapa */
@@ -483,28 +485,28 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background-color: rgba(26, 22, 37, 0.92);
-  border: 1px solid var(--color-secondary);
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 20px;
   padding: 6px 16px;
   font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--color-text);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  font-weight: 600;
+  color: var(--color-content);
+  box-shadow: 0 4px 16px rgba(70, 51, 79, 0.08);
   z-index: 1000;
   pointer-events: none;
   backdrop-filter: blur(6px);
 }
 
 .map-status-badge.searching {
-  border-color: var(--color-accent);
-  color: var(--color-accent-light);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
 }
 
 .spinner-dot {
   width: 8px;
   height: 8px;
-  background-color: var(--color-accent);
+  background-color: var(--color-brand);
   border-radius: 50%;
   animation: pulse-spinner 1.2s infinite ease-in-out;
 }
@@ -539,15 +541,17 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: rgba(26, 22, 37, 0.9);
-  border: 1px solid var(--color-secondary);
-  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
   padding: 6px 14px;
   font-size: 0.75rem;
-  color: var(--color-text-secondary);
+  font-weight: 500;
+  color: var(--color-content-secondary);
   z-index: 500;
   pointer-events: none;
   backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(70, 51, 79, 0.08);
 }
 
 .legend-item {
@@ -560,22 +564,22 @@ onUnmounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #3b82f6;
-  border: 1.5px solid #fff;
-  box-shadow: 0 0 4px rgba(59, 130, 246, 0.8);
+  background-color: var(--color-brand);
+  border: 1.5px solid var(--color-surface);
+  box-shadow: 0 0 4px rgba(242, 79, 19, 0.6);
 }
 
 .store-legend-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #10b981;
-  border: 1.5px solid #fff;
-  box-shadow: 0 0 4px rgba(16, 185, 129, 0.8);
+  background-color: var(--color-success);
+  border: 1.5px solid var(--color-surface);
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
 }
 
 .legend-separator {
-  color: var(--color-focus);
+  color: var(--color-border-subtle);
   margin-left: 2px;
 }
 
@@ -588,21 +592,21 @@ onUnmounted(() => {
 :deep(.user-marker-dot) {
   width: 14px;
   height: 14px;
-  background-color: #3b82f6;
-  border: 3px solid #fff;
+  background-color: var(--color-brand);
+  border: 3px solid var(--color-surface);
   border-radius: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 6px rgba(242, 79, 19, 0.6);
   z-index: 2;
 }
 
 :deep(.user-marker-pulse) {
   width: 24px;
   height: 24px;
-  background-color: rgba(59, 130, 246, 0.3);
+  background-color: rgba(242, 79, 19, 0.3);
   border-radius: 50%;
   position: absolute;
   top: 50%;
@@ -625,10 +629,10 @@ onUnmounted(() => {
 
 /* Popup de Leaflet personalizado */
 :deep(.leaflet-popup-content-wrapper) {
-  background-color: #2d2438 !important;
-  border: 1px solid #3d3450 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 25px rgba(70, 51, 79, 0.12) !important;
   padding: 0 !important;
 }
 
@@ -638,16 +642,16 @@ onUnmounted(() => {
 }
 
 :deep(.leaflet-popup-tip) {
-  background-color: #2d2438 !important;
-  border: 1px solid #3d3450 !important;
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border-subtle) !important;
 }
 
 :deep(.leaflet-popup-close-button) {
-  color: #a89ec0 !important;
+  color: var(--color-content-secondary) !important;
   padding: 6px 8px 0 0 !important;
 }
 
 :deep(.leaflet-popup-close-button:hover) {
-  color: #fff !important;
+  color: var(--color-content) !important;
 }
 </style>

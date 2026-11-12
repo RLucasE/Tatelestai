@@ -45,14 +45,18 @@ const getEventIconClass = (eventType) => {
   switch (eventType) {
     case 'new_sale':
     case 'order_picked_up':
-      return 'bg-[#10B981]/20 text-[#34D399] border-[#10B981]/30';
+    case 'claim_approved':
+      return 'bg-success/15 text-success border-success/30';
     case 'cancelled_by_seller':
-      return 'bg-[#EF4444]/20 text-[#F87171] border-[#EF4444]/30';
+    case 'claim_rejected':
+      return 'bg-danger/15 text-danger border-danger/30';
     case 'cancelled_by_customer':
     case 'offer_sold_out':
-      return 'bg-[#F59E0B]/20 text-[#FBBF24] border-[#F59E0B]/30';
+    case 'claim_created':
+    case 'claim_refunded_seller':
+      return 'bg-warning/15 text-brand border-warning/35';
     default:
-      return 'bg-[#7C3AED]/20 text-[#C4B5FD] border-[#7C3AED]/30';
+      return 'bg-brand/15 text-brand border-brand/30';
   }
 };
 </script>
@@ -62,8 +66,8 @@ const getEventIconClass = (eventType) => {
     <!-- Botón de Campanita -->
     <button
       type="button"
-      class="relative flex items-center justify-center w-10 h-10 rounded-xl transition-all select-none border border-transparent text-[#A5A8C2] hover:text-white hover:bg-white/[0.06] hover:border-white/[0.08] active:scale-95 cursor-pointer"
-      :class="{ 'bg-white/[0.08] text-white border-white/[0.1]': isOpen }"
+      class="relative flex items-center justify-center w-9 h-9 rounded-full transition-all select-none border border-transparent text-content hover:bg-canvas hover:border-border-subtle active:scale-95 cursor-pointer"
+      :class="{ 'bg-canvas border-border-subtle': isOpen }"
       aria-label="Notificaciones"
       @click="toggleDropdown"
     >
@@ -71,7 +75,7 @@ const getEventIconClass = (eventType) => {
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
-          stroke-width="2"
+          stroke-width="1.8"
           d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
         />
       </svg>
@@ -79,7 +83,7 @@ const getEventIconClass = (eventType) => {
       <!-- Badge de no leídas -->
       <span
         v-if="notificationStore.unreadCount > 0"
-        class="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1 text-[10px] font-black text-white bg-[#7C3AED] rounded-full border-2 border-[#1A1625] animate-pulse"
+        class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-surface bg-brand rounded-full border-2 border-surface"
       >
         {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
       </span>
@@ -96,15 +100,15 @@ const getEventIconClass = (eventType) => {
     >
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-[#2D2438] border border-[#3D3450] shadow-2xl py-3 z-50 overflow-hidden text-[#E8EAF6]"
+        class="absolute right-0 mt-2 w-80 sm:w-96 rounded-[20px] bg-surface border border-border-subtle shadow-card py-3 z-50 overflow-hidden text-content"
       >
         <!-- Encabezado del Dropdown -->
-        <div class="flex items-center justify-between px-4 pb-2.5 border-b border-[#3D3450]/60">
+        <div class="flex items-center justify-between px-4 pb-2.5 border-b border-border-subtle">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-white uppercase tracking-wider">Notificaciones</span>
+            <span class="type-overline text-content">Notificaciones</span>
             <span
               v-if="notificationStore.unreadCount > 0"
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#7C3AED]/20 text-[#C4B5FD] border border-[#7C3AED]/30"
+              class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand/14 text-brand border border-brand/30 tabular-nums"
             >
               {{ notificationStore.unreadCount }} nuevas
             </span>
@@ -113,7 +117,7 @@ const getEventIconClass = (eventType) => {
           <button
             v-if="notificationStore.unreadCount > 0"
             type="button"
-            class="text-[11px] font-bold text-[#A78BFA] hover:text-white transition-colors cursor-pointer"
+            class="text-xs font-bold text-brand hover:text-brand-hover transition-colors cursor-pointer"
             @click="notificationStore.markAllAsRead"
           >
             Marcar todas leídas
@@ -121,10 +125,10 @@ const getEventIconClass = (eventType) => {
         </div>
 
         <!-- Lista de Notificaciones -->
-        <div class="max-h-80 overflow-y-auto divide-y divide-[#3D3450]/40">
+        <div class="max-h-80 overflow-y-auto divide-y divide-border-subtle/60 custom-scrollbar">
           <div
             v-if="notificationStore.notifications.length === 0"
-            class="p-6 text-center text-xs text-[#A5A8C2]"
+            class="p-6 text-center text-xs text-content-secondary"
           >
             <p>No tienes notificaciones por el momento.</p>
           </div>
@@ -132,8 +136,8 @@ const getEventIconClass = (eventType) => {
           <div
             v-for="item in notificationStore.notifications"
             :key="item.id"
-            class="p-3.5 hover:bg-white/[0.04] transition-colors flex items-start gap-3 cursor-pointer"
-            :class="{ 'bg-white/[0.02]': !item.is_read }"
+            class="p-3.5 hover:bg-canvas transition-colors flex items-start gap-3 cursor-pointer"
+            :class="{ 'bg-surface-elevated': !item.is_read }"
             @click="notificationStore.markAsRead(item.id)"
           >
             <!-- Icono semántico según event_type -->
@@ -182,17 +186,17 @@ const getEventIconClass = (eventType) => {
             <!-- Contenido -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between gap-1">
-                <h4 class="text-xs font-bold text-white truncate">{{ item.title }}</h4>
-                <span class="text-[10px] text-[#A5A8C2] shrink-0">{{ formatTime(item.created_at) }}</span>
+                <h4 class="text-xs font-bold text-content truncate">{{ item.title }}</h4>
+                <span class="text-[10px] text-content-secondary shrink-0">{{ formatTime(item.created_at) }}</span>
               </div>
-              <p class="text-xs text-[#E8EAF6]/80 mt-0.5 line-clamp-2 leading-relaxed">
+              <p class="text-xs text-content-secondary mt-0.5 line-clamp-2 leading-relaxed">
                 {{ item.message }}
               </p>
 
               <RouterLink
                 v-if="item.action_url"
                 :to="item.action_url"
-                class="inline-block mt-1 text-[11px] font-bold text-[#A78BFA] hover:text-white"
+                class="inline-block mt-1 text-[11px] font-bold text-brand hover:text-brand-hover"
                 @click="isOpen = false"
               >
                 Ver pedido →
@@ -200,7 +204,7 @@ const getEventIconClass = (eventType) => {
             </div>
 
             <!-- Punto de no leída -->
-            <div v-if="!item.is_read" class="w-2 h-2 rounded-full bg-[#7C3AED] shrink-0 mt-2"></div>
+            <div v-if="!item.is_read" class="w-2 h-2 rounded-full bg-brand shrink-0 mt-2"></div>
           </div>
         </div>
       </div>

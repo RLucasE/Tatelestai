@@ -6,6 +6,7 @@ use App\Enums\TrustScoreCriterion;
 use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\EstablishmentTrustLog;
+use App\Models\EstablishmentType;
 use App\Models\EstablishmentVerificationFile;
 use App\Models\FoodEstablishment;
 use App\Models\User;
@@ -18,6 +19,12 @@ class FoodEstablishmentSeeder extends Seeder
      */
     public function run(): void
     {
+        $typeMap = [
+            1 => EstablishmentType::where('name', 'Restaurante')->value('id') ?? 1,
+            2 => EstablishmentType::where('name', 'Cafetería')->value('id') ?? 2,
+            3 => EstablishmentType::where('name', 'Supermercado')->value('id') ?? 3,
+        ];
+
         // 1. ESTABLECIMIENTOS APROBADOS (APPROVED) - 20 locales oficiales para catálogo y mapa
         $approvedEstablishments = [
             [
@@ -561,7 +568,7 @@ class FoodEstablishmentSeeder extends Seeder
                     'address' => $data['address'],
                     'latitude' => $data['latitude'],
                     'longitude' => $data['longitude'],
-                    'establishment_type_id' => $data['establishment_type_id'],
+                    'establishment_type_id' => $typeMap[$data['establishment_type_id']] ?? $data['establishment_type_id'],
                     'phone' => $data['phone'],
                     'description' => $data['description'],
                     'verification_status' => 'approved',
@@ -630,7 +637,7 @@ class FoodEstablishmentSeeder extends Seeder
                     'address' => $data['address'],
                     'latitude' => $data['latitude'],
                     'longitude' => $data['longitude'],
-                    'establishment_type_id' => $data['establishment_type_id'],
+                    'establishment_type_id' => $typeMap[$data['establishment_type_id']] ?? $data['establishment_type_id'],
                     'phone' => $data['phone'],
                     'description' => $data['description'],
                     'verification_status' => 'pending',
@@ -702,7 +709,7 @@ class FoodEstablishmentSeeder extends Seeder
                     'address' => $data['address'],
                     'latitude' => $data['latitude'],
                     'longitude' => $data['longitude'],
-                    'establishment_type_id' => $data['establishment_type_id'],
+                    'establishment_type_id' => $typeMap[$data['establishment_type_id']] ?? $data['establishment_type_id'],
                     'phone' => $data['phone'],
                     'description' => $data['description'],
                     'verification_status' => 'rejected',

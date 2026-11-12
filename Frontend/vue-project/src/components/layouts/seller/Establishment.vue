@@ -1,276 +1,329 @@
 <script setup>
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import axiosInstance from '@/lib/axios.js';
+import { onMounted, ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import axiosInstance from "@/lib/axios.js";
+import { useAuthStore } from "@/stores/auth.js";
+import EstablishmentHeroCardVertical from "./EstablishmentHeroCardVertical.vue";
+import ManualLocationMapBlock from "@/components/layouts/others/ManualLocationMapBlock.vue";
 
 const router = useRouter();
+const authStore = useAuthStore();
+
 const establishment = ref(null);
+const establishmentTypes = ref([]);
 const loading = ref(true);
+const saving = ref(false);
 const error = ref(null);
+const successMessage = ref("");
+
+const formData = ref({
+  name: "",
+  establishment_type_id: "",
+  address: "",
+  phone: "",
+  latitude: null,
+  longitude: null,
+});
 
 const fetchEstablishment = async () => {
   try {
     loading.value = true;
-    const { data } = await axiosInstance.get('/my-establishment');
+    const { data } = await axiosInstance.get("/my-establishment");
     establishment.value = data || null;
+    if (data) {
+      populateFormFromData(data);
+    }
     error.value = null;
   } catch (err) {
-    console.error('Error fetching establishment:', err);
-    error.value = 'No se pudo cargar el establecimiento';
+    console.error("Error fetching establishment:", err);
+    error.value = "No se pudo cargar la información del establecimiento.";
     establishment.value = null;
   } finally {
     loading.value = false;
   }
 };
 
-const editEstablishment = () => {
-  router.push('/seller/establishment/edit');
+const fetchEstablishmentTypes = async () => {
+  try {
+    const { data } = await axiosInstance.get("/establishment-types");
+    establishmentTypes.value = data || [];
+  } catch (err) {
+    console.error("Error fetching establishment types:", err);
+  }
 };
 
-onMounted(fetchEstablishment);
+const populateFormFromData = (data) => {
+  formData.value.name = data.name || "";
+  formData.value.establishment_type_id =
+    data.establishment_type?.id || data.establishment_type_id || "";
+  formData.value.address = data.address || "";
+  formData.value.phone = data.phone || "+54 387 421-8890";
+  formData.value.latitude = data.latitude ? Number(data.latitude) : -24.7859;
+  formData.value.longitude = data.longitude ? Number(data.longitude) : -65.4117;
+};
+
+const discardChanges = () => {
+  error.value = null;
+  successMessage.value = "";
+  if (establishment.value) {
+    populateFormFromData(establishment.value);
+  }
+};
+
+const previewCategoryName = computed(() => {
+  const found = establishmentTypes.value.find(
+    (t) => Number(t.id) === Number(formData.value.establishment_type_id)
+  );
+  if (found) return found.name;
+  return establishment.value?.establishment_type?.name || "Gastronomía";
+});
+
+const previewEstablishment = computed(() => {
+  return {
+    ...(establishment.value || {}),
+    name: formData.value.name || establishment.value?.name || "Tu Comercio",
+    address: formData.value.address || establishment.value?.address || "Dirección comercial",
+    establishment_type: {
+      name: previewCategoryName.value,
+    },
+  };
+});
+
+const formattedApprovalDate = computed(() => {
+  if (!establishment.value?.created_at) return "12/10/2026";
+  try {
+    return new Date(establishment.value.created_at).toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return "12/10/2026";
+  }
+});
+
+const updateEstablishment = async () => {
+  if (!formData.value.name.trim()) {
+    error.value = "El nombre del establecimiento es requerido.";
+    return;
+  }
+
+  if (!formData.value.establishment_type_id) {
+    error.value = "Debés seleccionar un tipo de establecimiento.";
+    return;
+  }
+
+  if (!formData.value.address.trim()) {
+    error.value = "La dirección del establecimiento es requerida.";
+    return;
+  }
+
+  try {
+    saving.value = true;
+    error.value = null;
+    successMessage.value = "";
+
+    await axiosInstance.put("/my-establishment", {
+      name: formData.value.name.trim(),
+      establishment_type_id: formData.value.establishment_type_id,
+      address: formData.value.address.trim(),
+    });
+
+    successMessage.value =
+      "Establecimiento actualizado correctamente. Redirigiendo a verificación...";
+
+    // Sincronizar estado de usuario (pasa a waiting_for_confirmation en backend) y redirigir
+    await authStore.refreshUser();
+    setTimeout(() => {
+      router.push("/waiting-confirmation");
+    }, 1000);
+  } catch (err) {
+    console.error("Error updating establishment:", err);
+    error.value =
+      err.response?.data?.message || "Error al actualizar el establecimiento.";
+  } finally {
+    saving.value = false;
+  }
+};
+
+onMounted(async () => {
+  await Promise.all([fetchEstablishment(), fetchEstablishmentTypes()]);
+});
 </script>
 
 <template>
-  <div class="establishment-page">
-    <div class="establishment-container">
-      <div class="header">
-        <h1 class="title">Mi Establecimiento</h1>
+  <div class="seller-content-container w-full max-w-[1420px] mx-auto px-4 sm:px-6 lg:px-8 seller:px-0 min-[1420px]:px-0 pt-9 pb-14 text-content">
+    <!-- Estado de Carga -->
+    <div v-if="loading" class="py-20 text-center space-y-3">
+      <div class="w-10 h-10 border-3 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="text-xs text-content-secondary">Cargando información de tu comercio...</p>
+    </div>
+
+    <!-- Error Crítico sin Datos -->
+    <div
+      v-else-if="error && !establishment"
+      class="p-8 rounded-[22px] bg-surface border border-danger text-center space-y-4 max-w-lg mx-auto my-8"
+    >
+      <p class="text-sm font-bold text-danger">{{ error }}</p>
+      <button
+        type="button"
+        class="px-5 py-2.5 rounded-[10px] bg-brand text-surface text-xs font-bold cursor-pointer"
+        @click="fetchEstablishment"
+      >
+        Reintentar
+      </button>
+    </div>
+
+    <!-- Layout Principal de 2 Columnas (Figma StorePreviewAndConfigColumns: exact 620px y 752px con 48px gap) -->
+    <div v-else class="grid grid-cols-1 lg:grid-cols-[minmax(0,620px)_minmax(0,752px)] gap-12 items-start">
+      <!-- COLUMNA IZQUIERDA: Vitrina Pública de tu Comercio (Figma ColLeft 620px) -->
+      <div class="space-y-6">
+        <div class="space-y-1">
+          <h1 class="text-[22px] font-extrabold text-content tracking-tight">
+            Vitrina Pública de tu Comercio
+          </h1>
+          <p class="text-[13.5px] text-content-secondary">
+            Así ven tu identidad y reputación los compradores en Tatelestai
+          </p>
+        </div>
+
+        <!-- Tarjeta Hero Vertical en Vivo -->
+        <EstablishmentHeroCardVertical
+          :establishment="previewEstablishment"
+          :name="previewEstablishment.name"
+          :category="previewCategoryName"
+          :address="previewEstablishment.address"
+          :phone="formData.phone"
+        />
+
+        <!-- Metadatos de Habilitación Comercial -->
+        <div class="space-y-1.5 pt-1">
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-content-secondary">
+            ESTADO DE HABILITACIÓN COMERCIAL
+          </span>
+          <p class="text-[13.5px] font-semibold text-content">
+            Comercio Verificado • ID #{{ establishment?.id || "104" }} • Alta aprobada el {{ formattedApprovalDate }}
+          </p>
+          <p class="text-[12.5px] text-content-secondary leading-relaxed">
+            Importante: Si modificás el nombre comercial, el rubro o la dirección física, tu establecimiento volverá brevemente a revisión administrativa para validar los cambios.
+          </p>
+        </div>
       </div>
 
-      <div v-if="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Cargando información del establecimiento...</p>
-      </div>
+      <!-- COLUMNA DERECHA: Datos del Establecimiento (Figma ColRight 752px) -->
+      <div class="space-y-6">
+        <div class="space-y-1">
+          <h2 class="text-[22px] font-extrabold text-content tracking-tight">
+            Datos del Establecimiento
+          </h2>
+          <p class="text-[13.5px] text-content-secondary">
+            Actualizá la información comercial y el punto de retiro de tus bolsas
+          </p>
+        </div>
 
-      <div v-else-if="error" class="error">
-        <p>{{ error }}</p>
-        <button class="retry-btn" @click="fetchEstablishment">Reintentar</button>
-      </div>
+        <!-- Mensajes de Estado -->
+        <div
+          v-if="successMessage"
+          class="p-4 rounded-[14px] bg-success/12 border border-success/30 text-xs font-bold text-success"
+        >
+          {{ successMessage }}
+        </div>
 
-      <div v-else-if="establishment" class="content">
-        <!-- Información del establecimiento -->
-        <section class="card">
-          <h2 class="section-title">Información del Establecimiento</h2>
-          <div class="data-grid">
-            <div class="data-item">
-              <span class="label">ID del Establecimiento</span>
-              <span class="value">{{ establishment.id }}</span>
+        <div
+          v-if="error"
+          class="p-4 rounded-[14px] bg-danger/10 border border-danger/30 text-xs font-bold text-danger"
+        >
+          {{ error }}
+        </div>
+
+        <form class="space-y-6" @submit.prevent="updateEstablishment">
+          <!-- Fila 1: Nombre y Tipo -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label for="est-name" class="block text-[13px] font-semibold text-content">
+                Nombre del Establecimiento *
+              </label>
+              <input
+                id="est-name"
+                v-model="formData.name"
+                type="text"
+                required
+                :disabled="saving"
+                placeholder="Ej. Panadería San José"
+                class="w-full px-4 py-3 rounded-[14px] bg-surface border border-border-subtle text-[13.5px] text-content placeholder-content-secondary focus:outline-none focus:border-brand transition disabled:opacity-60"
+              />
             </div>
-            <div class="data-item full">
-              <span class="label">Nombre del Establecimiento</span>
-              <span class="value">{{ establishment.name }}</span>
-            </div>
-            <div class="data-item" v-if="establishment.establishment_type">
-              <span class="label">Tipo de Establecimiento</span>
-              <span class="value">{{ establishment.establishment_type.name }}</span>
-            </div>
-            <div class="data-item">
-              <span class="label">Fecha de Creación</span>
-              <span class="value">{{ new Date(establishment.created_at).toLocaleDateString('es-ES') }}</span>
-            </div>
-            <div class="data-item">
-              <span class="label">Última Actualización</span>
-              <span class="value">{{ new Date(establishment.updated_at).toLocaleDateString('es-ES') }}</span>
+
+            <div class="space-y-2">
+              <label for="est-type" class="block text-[13px] font-semibold text-content">
+                Tipo de Establecimiento *
+              </label>
+              <select
+                id="est-type"
+                v-model="formData.establishment_type_id"
+                required
+                :disabled="saving"
+                class="w-full px-4 py-3 rounded-[14px] bg-surface border border-border-subtle text-[13.5px] text-content focus:outline-none focus:border-brand transition cursor-pointer disabled:opacity-60"
+              >
+                <option value="">Seleccioná un rubro</option>
+                <option
+                  v-for="type in establishmentTypes"
+                  :key="type.id"
+                  :value="type.id"
+                >
+                  {{ type.name }}
+                </option>
+              </select>
             </div>
           </div>
-        </section>
 
-        <!-- Botón de editar establecimiento -->
-        <div class="action-section">
-          <button class="edit-btn" @click="editEstablishment">
-            Editar establecimiento
-          </button>
-        </div>
+          <!-- Dirección Principal -->
+          <div class="space-y-2">
+            <label for="est-address" class="block text-[13px] font-semibold text-content">
+              Dirección del Establecimiento *
+            </label>
+            <input
+              id="est-address"
+              v-model="formData.address"
+              type="text"
+              required
+              :disabled="saving"
+              placeholder="Ej. Av. Belgrano 520, Centro, Salta Capital"
+              class="w-full px-4 py-3 rounded-[14px] bg-surface border border-border-subtle text-[13.5px] text-content placeholder-content-secondary focus:outline-none focus:border-brand transition disabled:opacity-60"
+            />
+          </div>
+
+          <!-- Bloque de Ubicación y Mapa Interactivo (Figma ManualLocationMapBlock) -->
+          <ManualLocationMapBlock
+            v-model:name="formData.name"
+            v-model:address="formData.address"
+            v-model:phone="formData.phone"
+            v-model:latitude="formData.latitude"
+            v-model:longitude="formData.longitude"
+            :show-text-inputs="false"
+          />
+
+          <!-- Botones de Acción (Descartar cambios / Guardar Cambios) -->
+          <div class="pt-1 flex items-center justify-between gap-4">
+            <button
+              type="button"
+              class="text-[13.5px] font-semibold text-content-secondary hover:text-content transition cursor-pointer"
+              :disabled="saving"
+              @click="discardChanges"
+            >
+              Descartar cambios
+            </button>
+
+            <button
+              type="submit"
+              :disabled="saving"
+              class="px-6 py-3 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-[13.5px] font-bold transition shadow-sm cursor-pointer disabled:opacity-60"
+            >
+              {{ saving ? "Guardando..." : "Guardar Cambios" }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.establishment-page {
-  min-height: 100vh;
-  background: var(--color-bg);
-  padding: 2rem;
-}
-
-.establishment-container {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--color-text);
-  position: relative;
-}
-
-.back-btn {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-focus));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.edit-btn {
-  position: relative;
-  right: 0;
-  top: 0;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  margin-top: 1.5rem;
-}
-
-.edit-btn:hover {
-  background: var(--color-focus);
-  transform: translateY(-2px);
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: var(--color-text);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
-  border-radius: 50%;
-  border-top-color: var(--color-primary);
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.error {
-  text-align: center;
-  padding: 2rem;
-  background: var(--color-darkest);
-  border: 1px solid var(--color-focus);
-  border-radius: 12px;
-  color: var(--color-text);
-}
-
-.retry-btn {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-focus);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.retry-btn:hover {
-  background: var(--color-focus);
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.card {
-  background: var(--color-background);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(34, 32, 31, 0.2);
-  border: 1px solid var(--color-border);
-}
-
-.section-title {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--color-heading);
-  margin-bottom: 1rem;
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: 0.5rem;
-}
-
-.data-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.data-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.data-item.full {
-  grid-column: 1 / -1;
-}
-
-.label {
-  font-weight: 600;
-  color: var(--color-primary);
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.value {
-  color: var(--color-heading);
-  font-size: 1.1rem;
-}
-
-.action-section {
-  display: flex;
-  justify-content: center;
-  padding: 1rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .establishment-page {
-    padding: 1rem;
-  }
-
-  .data-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .header {
-    margin-bottom: 1rem;
-  }
-
-  .title {
-    font-size: 1.8rem;
-  }
-}
-</style>

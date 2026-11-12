@@ -11,6 +11,12 @@ class SellDetail extends Model
 
     use HasFactory;
 
+    protected $casts = [
+        'allergens' => 'array',
+        'estimated_weight_kg' => 'float',
+        'minimum_value' => 'float',
+    ];
+
     public function sell()
     {
         return $this->belongsTo(Sell::class);

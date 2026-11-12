@@ -36,7 +36,7 @@ const props = defineProps({
   },
   pinColor: {
     type: String,
-    default: '#7C3AED',
+    default: 'var(--color-brand)',
   },
   allowExpand: {
     type: Boolean,
@@ -229,15 +229,15 @@ defineExpose({
     <!-- Barra superior en modo ampliado -->
     <div v-if="isExpanded" class="expanded-top-bar">
       <div class="flex items-center gap-3 min-w-0">
-        <div class="w-8 h-8 rounded-lg bg-[var(--color-focus)]/20 text-[var(--color-focus)] flex items-center justify-center flex-shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </div>
         <div class="min-w-0">
-          <h5 class="text-sm font-bold text-white truncate">Ubicar punto de retiro en el mapa</h5>
-          <p class="text-xs text-[var(--color-text)]/70 truncate">Haz clic o acércate para fijar la entrada exacta de tu establecimiento</p>
+          <h5 class="text-sm font-bold text-content-strong truncate">Ubicar punto de retiro en el mapa</h5>
+          <p class="text-xs text-content-secondary truncate">Haz clic o acércate para fijar la entrada exacta de tu establecimiento</p>
         </div>
       </div>
 
@@ -245,7 +245,7 @@ defineExpose({
         <button
           type="button"
           @click="toggleExpand"
-          class="px-4 py-2 rounded-xl bg-[var(--color-focus)] hover:bg-[var(--color-focus)]/90 text-white text-xs font-semibold shadow-lg transition flex items-center gap-2 cursor-pointer"
+          class="px-4 py-2 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-xs font-bold shadow-btn transition flex items-center gap-2 cursor-pointer"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -281,13 +281,13 @@ defineExpose({
     <div class="map-overlay-badge">
       <div v-if="hasCoordinates()" class="badge-status badge-status--active">
         <span class="status-dot status-dot--active"></span>
-        <span class="status-text font-mono">
+        <span class="status-text font-mono font-semibold">
           {{ props.latitude.toFixed(5) }}, {{ props.longitude.toFixed(5) }}
         </span>
       </div>
       <div v-else class="badge-status badge-status--idle">
         <span class="status-dot status-dot--idle"></span>
-        <span class="status-text">
+        <span class="status-text font-medium">
           {{ props.readonly ? 'Sin ubicación fijada' : 'Haz clic en el mapa para marcar el punto exacto' }}
         </span>
       </div>
@@ -299,10 +299,10 @@ defineExpose({
 .location-map-picker {
   position: relative;
   width: 100%;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg);
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-canvas);
   transition: all 0.2s ease;
 }
 
@@ -317,7 +317,7 @@ defineExpose({
   border: none !important;
   display: flex !important;
   flex-direction: column !important;
-  background-color: #1a1625 !important;
+  background-color: var(--color-canvas) !important;
 }
 
 .expanded-top-bar {
@@ -326,15 +326,15 @@ defineExpose({
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1.25rem;
-  background-color: #2d2438;
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
   z-index: 1000;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 15px rgba(70, 51, 79, 0.06);
 }
 
 .map-surface {
   width: 100%;
-  background-color: #1a1625;
+  background-color: var(--color-canvas);
   transition: height 0.2s ease;
 }
 
@@ -355,20 +355,20 @@ defineExpose({
   align-items: center;
   gap: 0.375rem;
   padding: 0.4rem 0.75rem;
-  background-color: rgba(45, 36, 56, 0.9);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--color-content);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.75rem;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(70, 51, 79, 0.08);
   transition: all 0.2s ease;
 }
 
 .expand-toggle-btn:hover {
-  background-color: #3d3450;
-  color: #ffffff;
-  border-color: var(--color-focus);
+  background-color: var(--color-surface);
+  color: var(--color-brand);
+  border-color: var(--color-brand);
   transform: translateY(-1px);
 }
 
@@ -388,20 +388,19 @@ defineExpose({
   border-radius: 9999px;
   font-size: 0.75rem;
   backdrop-filter: blur(8px);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 4px 12px rgba(70, 51, 79, 0.08);
 }
 
 .badge-status--active {
-  background-color: rgba(45, 36, 56, 0.9);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.4);
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--color-success);
+  border-color: rgba(31, 157, 107, 0.4);
 }
 
 .badge-status--idle {
-  background-color: rgba(45, 36, 56, 0.85);
-  color: var(--color-text);
-  opacity: 0.9;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--color-content-secondary);
 }
 
 .status-dot {
@@ -412,45 +411,45 @@ defineExpose({
 }
 
 .status-dot--active {
-  background-color: #10b981;
-  box-shadow: 0 0 6px #10b981;
+  background-color: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
 }
 
 .status-dot--idle {
-  background-color: #f59e0b;
-  box-shadow: 0 0 6px #f59e0b;
+  background-color: var(--color-warning);
+  box-shadow: 0 0 6px var(--color-warning);
 }
 
-/* Estilos de controles Leaflet en modo oscuro */
+/* Estilos de controles Leaflet */
 :deep(.leaflet-bar) {
-  border: 1px solid var(--color-border) !important;
-  border-radius: 0.5rem !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: 0.75rem !important;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(70, 51, 79, 0.08) !important;
 }
 
 :deep(.leaflet-bar a) {
-  background-color: #2d2438 !important;
-  color: #e8eaf6 !important;
-  border-bottom: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-content) !important;
+  border-bottom: 1px solid var(--color-border-subtle) !important;
   transition: all 0.15s ease;
 }
 
 :deep(.leaflet-bar a:hover) {
-  background-color: #3d3450 !important;
-  color: #ffffff !important;
+  background-color: var(--color-canvas) !important;
+  color: var(--color-brand) !important;
 }
 
 :deep(.leaflet-control-attribution) {
-  background: rgba(26, 22, 37, 0.8) !important;
-  color: rgba(232, 234, 246, 0.6) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: var(--color-content-secondary) !important;
   font-size: 0.65rem !important;
   padding: 0 0.5rem !important;
   backdrop-filter: blur(4px);
 }
 
 :deep(.leaflet-control-attribution a) {
-  color: #a78bfa !important;
+  color: var(--color-brand) !important;
 }
 
 /* Animación de pulso para el pin */
