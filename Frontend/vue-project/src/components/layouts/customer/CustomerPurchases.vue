@@ -54,191 +54,6 @@ const initialRatingValue = ref(0);
 const showClaimModal = ref(false);
 const selectedSellForClaim = ref(null);
 
-// Datos de demostración y fallback con paridad exacta a Figma
-const defaultActivePurchases = [
-  {
-    id: 4825,
-    state: 'ready',
-    is_picked_up: false,
-    pickup_code: '2X3Y4Z5A6B7C',
-    distance: 'A 800m',
-    pickup_schedule_text: 'Hoy 20:00 a 20:45 hs',
-    pickup_urgency_badge: 'Cierra en 10m',
-    establishment: {
-      id: 1,
-      name: 'Panadería & Confitería San José',
-      address: 'Av. Santa Fe 2341, Palermo',
-      schedules: 'Lun a Sáb: 08:00 a 21:00 hs',
-    },
-    sell_details: [
-      {
-        id: 101,
-        pack_name: 'Pack Sorpresa de Panadería Artesanal',
-        pack_description: 'Medialunas de manteca, pan de mesa, muffins variados y facturas recién horneadas',
-        offer_quantity: 1,
-        pack_price: 2500,
-        tags: ['Contiene Gluten', 'Contiene Lácteos', 'Apto Vegetariano'],
-      },
-      {
-        id: 102,
-        pack_name: 'Caja Degustación Pastelería & Tortas',
-        pack_description: 'Porciones de cheesecake, brownies, alfajores de maicena y tarta de manzana',
-        offer_quantity: 1,
-        pack_price: 3200,
-        tags: ['Contiene Lácteos', 'Contiene Huevo'],
-      },
-      {
-        id: 103,
-        pack_name: 'Bolsa Sándwiches de Miga Surtidos',
-        pack_description: 'Triples de jamón y queso, jamón crudo y queso, y vegetales en pan blanco y negro',
-        offer_quantity: 2,
-        pack_price: 4200,
-        tags: ['Contiene Gluten', 'Contiene Lácteos'],
-      },
-    ],
-  },
-  {
-    id: 4924,
-    state: 'confirmed',
-    is_picked_up: false,
-    pickup_code: '9X1Y8Z2A3B4C',
-    distance: 'A 1.2km',
-    pickup_schedule_text: 'Hoy 21:30 a 22:30 hs',
-    pickup_urgency_badge: 'Abre en 1h 15m',
-    establishment: {
-      id: 2,
-      name: 'Komorebi Nikkei Bar',
-      address: 'Honduras 4920, Palermo Soho',
-      schedules: 'Mar a Dom: 19:30 a 00:00 hs',
-    },
-    sell_details: [
-      {
-        id: 201,
-        pack_name: 'Bolsa Gourmet Sushi Rolls (15 piezas)',
-        pack_description: 'Combinación de rolls de salmón fresco, vegetarianos y nigiris elaborados en la jornada.',
-        offer_quantity: 2,
-        pack_price: 4490,
-        tags: ['Contiene Pescado', 'Contiene Soja'],
-      },
-      {
-        id: 202,
-        pack_name: 'Box Entradas Calientes: Gyozas & Ebi Furai',
-        pack_description: '6 gyozas de cerdo al vapor/grilladas y 4 langostinos rebozados en panko con salsa tare.',
-        offer_quantity: 1,
-        pack_price: 5500,
-        tags: ['Contiene Mariscos', 'Contiene Gluten'],
-      },
-    ],
-  },
-  {
-    id: 4841,
-    state: 'confirmed',
-    is_picked_up: false,
-    pickup_code: '4K7L9M2N5P8Q',
-    distance: 'A 1.6km',
-    pickup_schedule_text: 'Mañana 18:00 a 19:20 hs',
-    pickup_urgency_badge: 'Mañana',
-    establishment: {
-      id: 3,
-      name: 'Verdulería La Cosecha Verde',
-      address: 'Gorriti 4310, Palermo',
-      schedules: 'Lun a Sáb: 09:00 a 20:00 hs',
-    },
-    sell_details: [
-      {
-        id: 301,
-        pack_name: 'Pack Frutas & Huerta Orgánica',
-        pack_description: 'Bolsa surtida de estación con paltas maduras, frutillas del día, tomates cherry y hojas verdes.',
-        offer_quantity: 1,
-        pack_price: 1990,
-        tags: ['100% Vegano', 'Sin TACC'],
-      },
-    ],
-  },
-];
-
-const defaultHistoryPurchases = [
-  {
-    id: 4792,
-    state: 'picked_up',
-    is_picked_up: true,
-    retirado_texto: '22 oct, 19:40 hs',
-    establishment: {
-      id: 4,
-      name: 'Coffee Roasters Lab',
-      address: 'Thames 1620, Palermo',
-    },
-    review: null,
-    rating: null,
-    sell_details: [
-      {
-        id: 401,
-        pack_name: 'Pack Dulce & Especialidad de Tarde',
-        pack_description: 'Cinnamon rolls glaseados, cookies de avellanas y carrot cake artesanal.',
-        offer_quantity: 1,
-        pack_price: 2400,
-        tags: ['Contiene Gluten', 'Frutos Secos'],
-      },
-      {
-        id: 402,
-        pack_name: 'Bolsa Panificados de Masa Madre',
-        pack_description: 'Hogazas de centeno y semillas con 24hs de fermentación natural.',
-        offer_quantity: 1,
-        pack_price: 2400,
-        tags: ['100% Vegano', 'Contiene Gluten'],
-      },
-    ],
-  },
-  {
-    id: 4726,
-    state: 'picked_up',
-    is_picked_up: true,
-    retirado_texto: '18 oct, 21:12 hs',
-    establishment: {
-      id: 5,
-      name: 'La Posta de Güemes Bar & Grill',
-      address: 'Güemes 3810, Palermo',
-    },
-    review: null,
-    rating: null,
-    sell_details: [
-      {
-        id: 501,
-        pack_name: 'Pizza Box Sorpresa Artesanal',
-        pack_description: 'Porciones de pizzas a la piedra y calzones recién horneados al horno de barro con mozzarella.',
-        offer_quantity: 1,
-        pack_price: 2900,
-        tags: ['Contiene Gluten', 'Contiene Lácteos'],
-      },
-    ],
-  },
-  {
-    id: 4672,
-    state: 'picked_up',
-    is_picked_up: true,
-    retirado_texto: '15 oct, 20:35 hs',
-    establishment: {
-      id: 6,
-      name: 'Il Pastificio Trattoria',
-      address: 'Scalabrini Ortiz 1480, Palermo',
-    },
-    review: {
-      rating: 5.0,
-    },
-    rating: 5.0,
-    sell_details: [
-      {
-        id: 601,
-        pack_name: 'Caja Focaccias & Sándwiches Artesanales',
-        pack_description: 'Sándwiches gourmet en focaccia con jamón crudo, rúcula y queso provolone.',
-        offer_quantity: 1,
-        pack_price: 3200,
-        tags: ['Contiene Gluten', 'Contiene Lácteos'],
-      },
-    ],
-  },
-];
-
 // Carga de compras activas e historial
 const fetchPurchases = async (silent = false) => {
   const isSilent = silent === true;
@@ -246,35 +61,20 @@ const fetchPurchases = async (silent = false) => {
     if (!isSilent) loading.value = true;
     error.value = null;
 
-    // 1. Reservas activas
-    try {
-      const activeRes = await axiosInstance.get('/customer/pack-reservations');
-      const data = activeRes.data?.data || activeRes.data || [];
-      if (Array.isArray(data) && data.length > 0) {
-        purchases.value = data;
-      } else {
-        purchases.value = defaultActivePurchases;
-      }
-    } catch (actErr) {
-      console.warn('Usando compras activas de demostración:', actErr);
-      purchases.value = defaultActivePurchases;
-    }
+    const [activeRes, historyRes] = await Promise.all([
+      axiosInstance.get('/customer/pack-reservations'),
+      axiosInstance.get('/customer/pack-reservations/history'),
+    ]);
 
-    // 2. Historial de compras completadas
-    try {
-      const historyRes = await axiosInstance.get('/customer/pack-reservations/history');
-      const histData = historyRes.data?.data || historyRes.data || [];
-      if (Array.isArray(histData) && histData.length > 0) {
-        historyPurchases.value = histData;
-      } else {
-        historyPurchases.value = defaultHistoryPurchases;
-      }
-    } catch (histErr) {
-      console.warn('Usando historial de compras de demostración:', histErr);
-      historyPurchases.value = defaultHistoryPurchases;
-    }
+    const activeData = activeRes.data?.data ?? activeRes.data ?? [];
+    purchases.value = Array.isArray(activeData) ? activeData : [];
+
+    const histData = historyRes.data?.data ?? historyRes.data ?? [];
+    historyPurchases.value = Array.isArray(histData) ? histData : [];
   } catch (err) {
     console.error('Error general cargando compras:', err);
+    purchases.value = [];
+    historyPurchases.value = [];
     error.value = 'No se pudieron sincronizar tus compras con el servidor.';
   } finally {
     if (!isSilent) loading.value = false;
@@ -615,6 +415,21 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Error de carga -->
+      <div
+        v-if="error"
+        class="bg-danger/10 border border-danger/30 text-danger rounded-card px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3"
+      >
+        <span>{{ error }}</span>
+        <button
+          type="button"
+          class="px-3 py-1 rounded-lg bg-danger/15 hover:bg-danger/25 text-xs font-bold transition cursor-pointer"
+          @click="fetchPurchases()"
+        >
+          Reintentar
+        </button>
       </div>
 
       <!-- Skeletons durante Carga -->

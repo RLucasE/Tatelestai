@@ -1,34 +1,70 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { shallowRef, ref, onMounted, computed, watch } from 'vue';
 import axiosInstance from '@/lib/axios.js';
 import ReportCard from '@/components/layouts/admin/ReportCard.vue';
 
 const reports = ref([]);
-const loading = ref(true);
-const error = ref(null);
-const currentPage = ref(1);
-const perPage = ref(15);
-const total = ref(0);
-const totalPages = ref(0);
+const loading = shallowRef(true);
+const error = shallowRef(null);
+const currentPage = shallowRef(1);
+const perPage = shallowRef(15);
+const total = shallowRef(0);
+const fromItem = shallowRef(0);
+const toItem = shallowRef(0);
+const totalPages = shallowRef(0);
+
+// Contadores globales por estado
+const counts = ref({
+  all: 0,
+  pending: 0,
+  reviewing: 0,
+  resolved: 0,
+  dismissed: 0,
+});
 
 // Filtros
-const statusFilter = ref('all');
-const typeFilter = ref('all');
-
-const statusOptions = [
-  { value: 'all', label: 'Todos los estados' },
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'reviewing', label: 'En revisión' },
-  { value: 'resolved', label: 'Resueltos' },
-  { value: 'dismissed', label: 'Descartados' }
-];
+const statusFilter = shallowRef('all');
+const typeFilter = shallowRef('all');
+const reasonFilter = shallowRef('all');
 
 const typeOptions = [
-  { value: 'all', label: 'Todos los tipos' },
-  { value: 'App\\Models\\Offer', label: 'Ofertas' },
-  { value: 'App\\Models\\FoodEstablishment', label: 'Establecimientos' },
-  { value: 'App\\Models\\User', label: 'Usuarios' }
+  { value: 'all', label: 'Tipo: Todos los tipos' },
+  { value: 'App\\Models\\Offer', label: 'Tipo: Ofertas' },
+  { value: 'App\\Models\\FoodEstablishment', label: 'Tipo: Establecimientos' },
+  { value: 'App\\Models\\User', label: 'Tipo: Usuarios' },
 ];
+
+const reasonOptions = [
+  { value: 'all', label: 'Motivo: Todos los motivos' },
+  { value: 'false_information', label: 'Motivo: Información falsa' },
+  { value: 'inappropriate', label: 'Motivo: Contenido inapropiado' },
+  { value: 'fraud', label: 'Motivo: Fraude' },
+  { value: 'spam', label: 'Motivo: Spam' },
+  { value: 'offensive', label: 'Motivo: Ofensivo' },
+  { value: 'other', label: 'Motivo: Otro' },
+];
+
+const fetchStatusCounts = async () => {
+  try {
+    const [allRes, pendRes, revRes, resRes, disRes] = await Promise.allSettled([
+      axiosInstance.get('/adm/reports', { params: { per_page: 1 } }),
+      axiosInstance.get('/adm/reports', { params: { status: 'pending', per_page: 1 } }),
+      axiosInstance.get('/adm/reports', { params: { status: 'reviewing', per_page: 1 } }),
+      axiosInstance.get('/adm/reports', { params: { status: 'resolved', per_page: 1 } }),
+      axiosInstance.get('/adm/reports', { params: { status: 'dismissed', per_page: 1 } }),
+    ]);
+
+    counts.value = {
+      all: allRes.status === 'fulfilled' ? Number(allRes.value.data?.total || 0) : 0,
+      pending: pendRes.status === 'fulfilled' ? Number(pendRes.value.data?.total || 0) : 0,
+      reviewing: revRes.status === 'fulfilled' ? Number(revRes.value.data?.total || 0) : 0,
+      resolved: resRes.status === 'fulfilled' ? Number(resRes.value.data?.total || 0) : 0,
+      dismissed: disRes.status === 'fulfilled' ? Number(disRes.value.data?.total || 0) : 0,
+    };
+  } catch (err) {
+    console.warn('No se pudieron cargar los contadores de reportes:', err);
+  }
+};
 
 const getReports = async (page = 1) => {
   try {
@@ -37,7 +73,7 @@ const getReports = async (page = 1) => {
 
     const params = {
       page,
-      per_page: perPage.value
+      per_page: perPage.value,
     };
 
     if (statusFilter.value !== 'all') {
@@ -49,64 +85,49 @@ const getReports = async (page = 1) => {
     }
 
     const response = await axiosInstance.get('/adm/reports', { params });
+    const data = response.data;
 
-    reports.value = response.data.data || [];
-    currentPage.value = response.data.current_page || 1;
-    total.value = response.data.total || 0;
-    totalPages.value = response.data.last_page || 1;
-    perPage.value = response.data.per_page || 15;
-
+    reports.value = Array.isArray(data?.data) ? data.data : [];
+    currentPage.value = Number(data?.current_page) || 1;
+    total.value = Number(data?.total) || 0;
+    fromItem.value = Number(data?.from) || 0;
+    toItem.value = Number(data?.to) || 0;
+    totalPages.value = Number(data?.last_page) || 1;
   } catch (err) {
     console.error('Error fetching reports:', err);
-    error.value = 'No se pudieron cargar los reportes';
+    error.value = 'No se pudieron cargar los reportes.';
     reports.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const handleStatusUpdate = async (reportId, newStatus, adminNotes) => {
-  try {
-    await axiosInstance.patch(`/adm/reports/${reportId}/status`, {
-      status: newStatus,
-      admin_notes: adminNotes || undefined
-    });
+const filteredReports = computed(() => {
+  if (reasonFilter.value === 'all') return reports.value;
+  return reports.value.filter((r) => r.reason === reasonFilter.value);
+});
 
-    // Recargar los reportes después de actualizar
-    await getReports(currentPage.value);
-  } catch (err) {
-    console.error('Error updating report status:', err);
-    throw err; // Re-lanzar para que el componente hijo lo maneje
-  }
+const handleStatusUpdate = async (reportId, newStatus, adminNotes) => {
+  await axiosInstance.patch(`/adm/reports/${reportId}/status`, {
+    status: newStatus,
+    admin_notes: adminNotes || undefined,
+  });
+  await Promise.all([getReports(currentPage.value), fetchStatusCounts()]);
 };
 
 const handleActionTaken = async (reportId) => {
-  try {
-    await axiosInstance.post(`/adm/reports/${reportId}/take-action`);
-
-    // Recargar los reportes después de tomar medidas
-    await getReports(currentPage.value);
-  } catch (err) {
-    console.error('Error taking action on report:', err);
-    throw err; // Re-lanzar para que el componente hijo lo maneje
-  }
+  await axiosInstance.post(`/adm/reports/${reportId}/take-action`);
+  await Promise.all([getReports(currentPage.value), fetchStatusCounts()]);
 };
 
 const changePage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
+  if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
     currentPage.value = page;
     getReports(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
 
-const resetFilters = () => {
-  statusFilter.value = 'all';
-  typeFilter.value = 'all';
-  currentPage.value = 1;
-  getReports(1);
-};
-
-// Watch para recargar cuando cambien los filtros
 watch([statusFilter, typeFilter], () => {
   currentPage.value = 1;
   getReports(1);
@@ -125,99 +146,131 @@ const paginationPages = computed(() => {
   for (let i = start; i <= end; i++) {
     pages.push(i);
   }
-
   return pages;
 });
 
 onMounted(() => {
   getReports();
+  fetchStatusCounts();
 });
 </script>
 
 <template>
-  <div class="reports-page">
-    <div class="page-header">
-      <h1 class="page-title">Gestión de Reportes</h1>
-      <p class="page-subtitle">
-        Administra los reportes realizados por los usuarios
-      </p>
-    </div>
+  <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-6">
+    <!-- Header + Contadores -->
+    <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-content-strong tracking-tight font-heading">
+          Reportes y Moderación
+        </h1>
+        <p class="text-xs sm:text-sm text-content-secondary mt-1">
+          Supervisión de denuncias sobre ofertas, establecimientos y usuarios de la plataforma
+        </p>
+      </div>
 
-    <!-- Filtros -->
-    <div class="filters-section">
-      <div class="filters-row">
-        <div class="filter-group">
-          <label for="status-filter">Estado:</label>
-          <select
-            id="status-filter"
-            v-model="statusFilter"
-            class="filter-select"
-          >
-            <option
-              v-for="option in statusOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
+      <div class="grid grid-cols-4 gap-4 sm:gap-7 text-right">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-content-secondary block">PENDIENTES</span>
+          <span class="text-xl sm:text-2xl font-extrabold text-brand font-heading tabular-nums">{{ counts.pending }}</span>
         </div>
-
-        <div class="filter-group">
-          <label for="type-filter">Tipo:</label>
-          <select
-            id="type-filter"
-            v-model="typeFilter"
-            class="filter-select"
-          >
-            <option
-              v-for="option in typeOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-content-secondary block">EN REVISIÓN</span>
+          <span class="text-xl sm:text-2xl font-extrabold text-content-strong font-heading tabular-nums">{{ counts.reviewing }}</span>
         </div>
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-content-secondary block">RESUELTOS</span>
+          <span class="text-xl sm:text-2xl font-extrabold text-success font-heading tabular-nums">{{ counts.resolved }}</span>
+        </div>
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-content-secondary block">DESCARTADOS</span>
+          <span class="text-xl sm:text-2xl font-extrabold text-content-secondary font-heading tabular-nums">{{ counts.dismissed }}</span>
+        </div>
+      </div>
+    </header>
 
+    <!-- Toolbar de Filtros -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2">
         <button
-          class="reset-filters-btn"
-          @click="resetFilters"
+          v-for="tab in [
+            { value: 'all', label: `Todos (${counts.all})` },
+            { value: 'pending', label: `Pendientes (${counts.pending})` },
+            { value: 'reviewing', label: `En revisión (${counts.reviewing})` },
+            { value: 'resolved', label: `Resueltos (${counts.resolved})` },
+            { value: 'dismissed', label: `Descartados (${counts.dismissed})` },
+          ]"
+          :key="tab.value"
+          type="button"
+          class="h-9 px-4 rounded-full text-xs font-semibold font-heading transition-all cursor-pointer"
+          :class="
+            statusFilter === tab.value
+              ? 'bg-brand text-surface shadow-xs'
+              : 'bg-surface border border-border-subtle text-content-strong hover:border-content-muted'
+          "
+          @click="statusFilter = tab.value"
         >
-          Limpiar filtros
+          {{ tab.label }}
         </button>
       </div>
 
-      <div class="results-info">
-        <span v-if="!loading">
-          Mostrando {{ reports.length }} de {{ total }} reportes
-        </span>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <select
+          v-model="typeFilter"
+          class="h-9 px-4 rounded-full bg-surface border border-border-subtle text-xs font-semibold text-content-strong focus:outline-none focus:border-brand cursor-pointer"
+        >
+          <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+
+        <select
+          v-model="reasonFilter"
+          class="h-9 px-4 rounded-full bg-surface border border-border-subtle text-xs font-semibold text-content-strong focus:outline-none focus:border-brand cursor-pointer"
+        >
+          <option v-for="opt in reasonOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
       </div>
     </div>
 
-    <!-- Estado de carga -->
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando reportes...</p>
-    </div>
-
-    <!-- Estado de error -->
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-      <button class="retry-btn" @click="getReports(currentPage)">
+    <!-- Error -->
+    <div
+      v-if="error"
+      class="bg-danger/10 border border-danger/30 text-danger rounded-card px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3"
+    >
+      <span>{{ error }}</span>
+      <button
+        type="button"
+        class="px-3 py-1 rounded-lg bg-danger/15 hover:bg-danger/25 text-xs font-bold cursor-pointer"
+        @click="getReports(currentPage)"
+      >
         Reintentar
       </button>
     </div>
 
-    <!-- Sin resultados -->
-    <div v-else-if="reports.length === 0" class="empty-state">
-      <p>No se encontraron reportes con los filtros seleccionados</p>
+    <!-- Skeletons -->
+    <div v-if="loading" class="space-y-3.5">
+      <div v-for="n in 4" :key="n" class="bg-surface border border-border-subtle rounded-card p-6 h-28 animate-pulse"></div>
     </div>
 
-    <!-- Lista de reportes -->
-    <div v-else class="reports-list">
+    <!-- Vacío -->
+    <div
+      v-else-if="filteredReports.length === 0"
+      class="bg-surface border border-border-subtle rounded-card p-12 text-center space-y-2 shadow-card"
+    >
+      <h3 class="text-base font-bold text-content-strong font-heading">
+        No hay reportes que coincidan con los filtros
+      </h3>
+      <p class="text-xs text-content-secondary">
+        Probá seleccionando otro estado, tipo o motivo.
+      </p>
+    </div>
+
+    <!-- Listado de Reportes -->
+    <div v-else class="space-y-3.5">
       <ReportCard
-        v-for="report in reports"
+        v-for="report in filteredReports"
         :key="report.id"
         :report="report"
         @status-updated="handleStatusUpdate"
@@ -226,294 +279,48 @@ onMounted(() => {
     </div>
 
     <!-- Paginación -->
-    <div v-if="totalPages > 1 && !loading" class="pagination">
-      <button
-        class="pagination-btn"
-        :disabled="currentPage === 1"
-        @click="changePage(currentPage - 1)"
-      >
-        Anterior
-      </button>
+    <footer
+      v-if="!loading && total > 0"
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2"
+    >
+      <span class="text-xs text-content-secondary">
+        Mostrando {{ fromItem }}–{{ toItem }} de {{ total }} reportes registrados
+      </span>
 
-      <button
-        v-if="paginationPages[0] > 1"
-        class="pagination-btn"
-        @click="changePage(1)"
-      >
-        1
-      </button>
+      <div v-if="totalPages > 1" class="flex items-center gap-1.5">
+        <button
+          type="button"
+          :disabled="currentPage <= 1"
+          class="h-8 px-3 rounded-full bg-surface border border-border-subtle text-xs font-semibold text-content-strong disabled:opacity-40 hover:border-brand transition-colors cursor-pointer"
+          @click="changePage(currentPage - 1)"
+        >
+          ← Anterior
+        </button>
 
-      <span v-if="paginationPages[0] > 2" class="pagination-ellipsis">...</span>
+        <button
+          v-for="page in paginationPages"
+          :key="page"
+          type="button"
+          class="w-8 h-8 rounded-full text-xs font-bold transition-colors cursor-pointer"
+          :class="
+            page === currentPage
+              ? 'bg-brand text-surface shadow-xs'
+              : 'bg-surface border border-border-subtle text-content-strong hover:border-brand'
+          "
+          @click="changePage(page)"
+        >
+          {{ page }}
+        </button>
 
-      <button
-        v-for="page in paginationPages"
-        :key="page"
-        class="pagination-btn"
-        :class="{ active: page === currentPage }"
-        @click="changePage(page)"
-      >
-        {{ page }}
-      </button>
-
-      <span v-if="paginationPages[paginationPages.length - 1] < totalPages - 1" class="pagination-ellipsis">...</span>
-
-      <button
-        v-if="paginationPages[paginationPages.length - 1] < totalPages"
-        class="pagination-btn"
-        @click="changePage(totalPages)"
-      >
-        {{ totalPages }}
-      </button>
-
-      <button
-        class="pagination-btn"
-        :disabled="currentPage === totalPages"
-        @click="changePage(currentPage + 1)"
-      >
-        Siguiente
-      </button>
-    </div>
+        <button
+          type="button"
+          :disabled="currentPage >= totalPages"
+          class="h-8 px-3 rounded-full bg-surface border border-border-subtle text-xs font-semibold text-content-strong disabled:opacity-40 hover:border-brand transition-colors cursor-pointer"
+          @click="changePage(currentPage + 1)"
+        >
+          Siguiente →
+        </button>
+      </div>
+    </footer>
   </div>
 </template>
-
-<style scoped>
-.reports-page {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--color-border);
-}
-
-.page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 0.5rem 0;
-}
-
-.page-subtitle {
-  font-size: 1rem;
-  color: var(--color-text);
-  opacity: 0.7;
-  margin: 0;
-}
-
-/* Filtros */
-.filters-section {
-  background: var(--color-primary);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-border);
-  margin-bottom: 1.5rem;
-}
-
-.filters-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 200px;
-}
-
-.filter-group label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.filter-select {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  color: var(--color-text);
-  background-color: var(--color-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.filter-select:hover {
-  border-color: var(--color-border-hover);
-  background-color: var(--color-focus);
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(242, 79, 19, 0.2);
-}
-
-.reset-filters-btn {
-  padding: 0.625rem 1.25rem;
-  background: var(--color-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  color: var(--color-text);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.reset-filters-btn:hover {
-  background: var(--color-focus);
-}
-
-.results-info {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
-  font-size: 0.875rem;
-  color: var(--color-text);
-  opacity: 0.8;
-}
-
-/* Estados */
-.loading-state,
-.error-state,
-.empty-state {
-  text-align: center;
-  padding: 3rem 1.5rem;
-  background: var(--color-primary);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-border);
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-secondary);
-  border-top-color: var(--color-accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.error-state p {
-  color: var(--color-danger);
-  margin-bottom: 1rem;
-}
-
-.retry-btn {
-  padding: 0.625rem 1.25rem;
-  background: var(--color-accent);
-  color: var(--color-text);
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.retry-btn:hover {
-  background: var(--color-accent-hover);
-}
-
-.empty-state p {
-  color: var(--color-text);
-  opacity: 0.7;
-  font-size: 1rem;
-}
-
-/* Lista de reportes */
-.reports-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Paginación */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: var(--color-primary);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-border);
-}
-
-.pagination-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 40px;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: var(--color-focus);
-  border-color: var(--color-border-hover);
-}
-
-.pagination-btn.active {
-  background: var(--color-accent);
-  color: var(--color-text);
-  border-color: var(--color-accent);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-ellipsis {
-  padding: 0.5rem;
-  color: var(--color-text);
-  opacity: 0.5;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .reports-page {
-    padding: 1rem;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .filters-row {
-    flex-direction: column;
-  }
-
-  .filter-group {
-    width: 100%;
-  }
-
-  .pagination {
-    flex-wrap: wrap;
-  }
-}
-</style>
-
