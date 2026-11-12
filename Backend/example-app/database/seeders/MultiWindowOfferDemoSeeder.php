@@ -2,7 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ClaimReason;
+use App\Enums\ClaimStatus;
 use App\Enums\OfferState;
+use App\Enums\PaymentStatus;
+use App\Enums\SellState;
 use App\Enums\TrustScoreCriterion;
 use App\Enums\UserRole;
 use App\Enums\UserState;
@@ -11,7 +15,11 @@ use App\Models\EstablishmentType;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
 use App\Models\PackTemplate;
+use App\Models\PurchaseClaim;
+use App\Models\Sell;
+use App\Models\SellDetail;
 use App\Models\User;
+use App\Models\UserCart;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
@@ -186,8 +194,10 @@ class MultiWindowOfferDemoSeeder extends Seeder
 
         $baseTime = now()->startOfMinute();
         $totalOffers = 0;
+        $seededEstablishments = [];
+        $seededOffersByEst = [];
 
-        foreach ($establishmentsData as $data) {
+        foreach ($establishmentsData as $estIndex => $data) {
             $seller = User::updateOrCreate(
                 ['email' => $data['seller']['email']],
                 [
@@ -217,6 +227,9 @@ class MultiWindowOfferDemoSeeder extends Seeder
                     'google_place_id' => 'ChIJ_multiturno_'.$seller->id,
                 ]
             );
+
+            $seededEstablishments[$estIndex] = $establishment;
+            $seededOffersByEst[$estIndex] = [];
 
             // Asegurar nivel de confianza verde (80 pts)
             foreach ([
@@ -279,6 +292,7 @@ class MultiWindowOfferDemoSeeder extends Seeder
                     );
 
                     $seededOfferIds[] = $offer->id;
+                    $seededOffersByEst[$estIndex][] = $offer;
                     $totalOffers++;
                 }
             }
@@ -293,6 +307,8 @@ class MultiWindowOfferDemoSeeder extends Seeder
                 ->delete();
         }
 
+        $this->seedDemoPurchasesAndClaims($seededEstablishments, $seededOffersByEst, $adminUser, $baseTime);
+
         try {
             Offer::makeAllSearchable();
         } catch (\Throwable $e) {
@@ -302,5 +318,248 @@ class MultiWindowOfferDemoSeeder extends Seeder
         $this->command?->info("MultiWindowOfferDemoSeeder: 2 establecimientos y {$totalOffers} ofertas en múltiples horarios creados exitosamente.");
         $this->command?->info('Credenciales Vendedor 1 (3 turnos): multiturno1@gmail.com / 12345678');
         $this->command?->info('Credenciales Vendedor 2 (2 turnos): multiturno2@gmail.com / 12345678');
+    }
+
+    /**
+     * Siembra compras activas, retiradas elegibles para reclamo y reclamos de ejemplo de forma idempotente.
+     *
+     * @param  array<int, FoodEstablishment>  $establishments
+     * @param  array<int, array<int, Offer>>  $offersByEst
+     */
+    private function seedDemoPurchasesAndClaims(
+        array $establishments,
+        array $offersByEst,
+        ?User $adminUser,
+        \Carbon\Carbon $baseTime
+    ): void {
+        $primaryCustomer = User::firstOrCreate(
+            ['email' => 'lucascabjnmro2@gmail.com'],
+            [
+                'name' => 'Lucas',
+                'last_name' => 'Ricalde',
+                'state' => UserState::ACTIVE->value,
+                'password' => '12345678',
+                'email_verified_at' => $baseTime,
+            ]
+        );
+        if (! $primaryCustomer->hasRole(UserRole::CUSTOMER->value)) {
+            $primaryCustomer->assignRole(UserRole::CUSTOMER->value);
+        }
+        UserCart::firstOrCreate(['user_id' => $primaryCustomer->id]);
+
+        $secondaryCustomer = User::firstOrCreate(
+            ['email' => 'cliente.demo2@gmail.com'],
+            [
+                'name' => 'Sofía',
+                'last_name' => 'Méndez',
+                'state' => UserState::ACTIVE->value,
+                'password' => '12345678',
+                'email_verified_at' => $baseTime,
+            ]
+        );
+        if (! $secondaryCustomer->hasRole(UserRole::CUSTOMER->value)) {
+            $secondaryCustomer->assignRole(UserRole::CUSTOMER->value);
+        }
+        UserCart::firstOrCreate(['user_id' => $secondaryCustomer->id]);
+
+        $est1 = $establishments[0];
+        $est2 = $establishments[1];
+        $est1Offers = $offersByEst[0];
+        $est2Offers = $offersByEst[1];
+
+        $commissionPct = (float) config('services.mercadopago.commission_percentage', 15.0);
+
+        $createDemoSell = function (array $config) use ($commissionPct): Sell {
+            $grossAmount = 0.0;
+            foreach ($config['items'] as $item) {
+                $grossAmount += (int) $item['quantity'] * (float) $item['offer']->price;
+            }
+            $grossAmount = round($grossAmount, 2);
+            $commissionAmount = round($grossAmount * ($commissionPct / 100), 2);
+            $netAmount = round($grossAmount - $commissionAmount, 2);
+
+            $sell = Sell::updateOrCreate(
+                ['pickup_code' => $config['pickup_code']],
+                [
+                    'bought_by' => $config['customer']->id,
+                    'sold_by' => $config['establishment']->id,
+                    'state' => $config['state']->value,
+                    'payment_status' => $config['payment_status']->value,
+                    'payment_method' => 'mercadopago',
+                    'payment_id' => 'MP-'.$config['pickup_code'],
+                    'preference_id' => 'PREF-'.$config['pickup_code'],
+                    'gross_amount' => $grossAmount,
+                    'commission_percentage' => $commissionPct,
+                    'commission_amount' => $commissionAmount,
+                    'net_amount' => $netAmount,
+                    'refunded_amount' => $config['refunded_amount'] ?? 0,
+                    'refunded_at' => $config['refunded_at'] ?? null,
+                    'is_picked_up' => $config['is_picked_up'],
+                    'picked_up_at' => $config['picked_up_at'] ?? null,
+                    'max_pickup_datetime' => $config['max_pickup_datetime'],
+                    'created_at' => $config['created_at'],
+                    'updated_at' => $config['picked_up_at'] ?? $config['created_at'],
+                ]
+            );
+
+            $sell->sellDetails()->delete();
+            foreach ($config['items'] as $item) {
+                /** @var Offer $offer */
+                $offer = $item['offer'];
+                SellDetail::create([
+                    'sell_id' => $sell->id,
+                    'offer_id' => $offer->id,
+                    'offer_quantity' => $item['quantity'],
+                    'pack_price' => $offer->price,
+                    'pack_name' => $offer->title,
+                    'pack_description' => $offer->description,
+                    'allergens' => $offer->allergens,
+                    'estimated_weight_kg' => $offer->estimated_weight_kg,
+                    'minimum_value' => $offer->minimum_value,
+                ]);
+            }
+
+            return $sell;
+        };
+
+        // 1. Compra activa READY para retirar hoy
+        $createDemoSell([
+            'pickup_code' => 'DEMO-MW-001',
+            'customer' => $primaryCustomer,
+            'establishment' => $est1,
+            'state' => SellState::READY,
+            'payment_status' => PaymentStatus::APPROVED,
+            'is_picked_up' => false,
+            'max_pickup_datetime' => $est1Offers[0]->expiration_datetime,
+            'created_at' => $baseTime->copy()->subMinutes(20),
+            'items' => [
+                ['offer' => $est1Offers[0], 'quantity' => 1],
+            ],
+        ]);
+
+        // 2. Compra activa CONFIRMED para turno posterior
+        $createDemoSell([
+            'pickup_code' => 'DEMO-MW-002',
+            'customer' => $primaryCustomer,
+            'establishment' => $est2,
+            'state' => SellState::CONFIRMED,
+            'payment_status' => PaymentStatus::APPROVED,
+            'is_picked_up' => false,
+            'max_pickup_datetime' => $est2Offers[1]->expiration_datetime,
+            'created_at' => $baseTime->copy()->subMinutes(10),
+            'items' => [
+                ['offer' => $est2Offers[1], 'quantity' => 1],
+            ],
+        ]);
+
+        // 3. Compra retirada hace 1 día (elegible para reclamo: can_claim = true)
+        $pickedUpAt1 = $baseTime->copy()->subDay();
+        $sellPicked1 = $createDemoSell([
+            'pickup_code' => 'DEMO-MW-003',
+            'customer' => $primaryCustomer,
+            'establishment' => $est1,
+            'state' => SellState::PICKED_UP,
+            'payment_status' => PaymentStatus::APPROVED,
+            'is_picked_up' => true,
+            'picked_up_at' => $pickedUpAt1,
+            'max_pickup_datetime' => $pickedUpAt1->copy()->addHour(),
+            'created_at' => $pickedUpAt1->copy()->subHours(2),
+            'items' => [
+                ['offer' => $est1Offers[0], 'quantity' => 1],
+                ['offer' => $est1Offers[2], 'quantity' => 1],
+            ],
+        ]);
+        PurchaseClaim::where('sell_id', $sellPicked1->id)->delete();
+
+        // 4. Compra retirada hace 3 días en comercio 2 (elegible para reclamo: can_claim = true)
+        $pickedUpAt2 = $baseTime->copy()->subDays(3);
+        $sellPicked2 = $createDemoSell([
+            'pickup_code' => 'DEMO-MW-004',
+            'customer' => $primaryCustomer,
+            'establishment' => $est2,
+            'state' => SellState::PICKED_UP,
+            'payment_status' => PaymentStatus::APPROVED,
+            'is_picked_up' => true,
+            'picked_up_at' => $pickedUpAt2,
+            'max_pickup_datetime' => $pickedUpAt2->copy()->addHour(),
+            'created_at' => $pickedUpAt2->copy()->subHours(2),
+            'items' => [
+                ['offer' => $est2Offers[0], 'quantity' => 1],
+            ],
+        ]);
+        PurchaseClaim::where('sell_id', $sellPicked2->id)->delete();
+
+        // 5. Compra retirada hace 5 días con un reclamo PENDING (visible para cliente y para evaluar en admin)
+        $pickedUpAt3 = $baseTime->copy()->subDays(5);
+        $sellWithPendingClaim = $createDemoSell([
+            'pickup_code' => 'DEMO-MW-005',
+            'customer' => $primaryCustomer,
+            'establishment' => $est1,
+            'state' => SellState::PICKED_UP,
+            'payment_status' => PaymentStatus::APPROVED,
+            'is_picked_up' => true,
+            'picked_up_at' => $pickedUpAt3,
+            'max_pickup_datetime' => $pickedUpAt3->copy()->addHour(),
+            'created_at' => $pickedUpAt3->copy()->subHours(2),
+            'items' => [
+                ['offer' => $est1Offers[3], 'quantity' => 1],
+            ],
+        ]);
+        PurchaseClaim::updateOrCreate(
+            ['sell_id' => $sellWithPendingClaim->id],
+            [
+                'customer_id' => $primaryCustomer->id,
+                'food_establishment_id' => $est1->id,
+                'reason' => ClaimReason::MISSING_ITEMS->value,
+                'description' => 'Faltaban varios panificados respecto al peso estimado informado en el pack sorpresa.',
+                'status' => ClaimStatus::PENDING->value,
+                'was_picked_up_at_claim' => true,
+                'refund_amount' => null,
+                'gateway_refund_id' => null,
+                'refunded_at' => null,
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'resolution_notes' => null,
+                'is_abusive' => false,
+            ]
+        );
+
+        // 6. Compra del cliente secundario con reclamo APPROVED (reembolso parcial) para historial de admin
+        $pickedUpAt4 = $baseTime->copy()->subDays(6);
+        $partialRefundAmount = round((float) $est2Offers[2]->price * 0.5, 2);
+        $sellWithApprovedClaim = $createDemoSell([
+            'pickup_code' => 'DEMO-MW-006',
+            'customer' => $secondaryCustomer,
+            'establishment' => $est2,
+            'state' => SellState::PICKED_UP,
+            'payment_status' => PaymentStatus::PARTIALLY_REFUNDED,
+            'refunded_amount' => $partialRefundAmount,
+            'refunded_at' => $baseTime->copy()->subDays(2),
+            'is_picked_up' => true,
+            'picked_up_at' => $pickedUpAt4,
+            'max_pickup_datetime' => $pickedUpAt4->copy()->addHour(),
+            'created_at' => $pickedUpAt4->copy()->subHours(2),
+            'items' => [
+                ['offer' => $est2Offers[2], 'quantity' => 1],
+            ],
+        ]);
+        PurchaseClaim::updateOrCreate(
+            ['sell_id' => $sellWithApprovedClaim->id],
+            [
+                'customer_id' => $secondaryCustomer->id,
+                'food_establishment_id' => $est2->id,
+                'reason' => ClaimReason::NOT_AS_DESCRIBED->value,
+                'description' => 'El box incluía solo guarniciones y no el producto principal publicado.',
+                'status' => ClaimStatus::APPROVED->value,
+                'was_picked_up_at_claim' => true,
+                'refund_amount' => $partialRefundAmount,
+                'gateway_refund_id' => 'REF-DEMO-MW-006',
+                'refunded_at' => $baseTime->copy()->subDays(2),
+                'reviewed_by' => $adminUser?->id,
+                'reviewed_at' => $baseTime->copy()->subDays(2),
+                'resolution_notes' => 'Reembolso parcial del 50% aprobado por diferencia significativa en el contenido del pack.',
+                'is_abusive' => false,
+            ]
+        );
     }
 }

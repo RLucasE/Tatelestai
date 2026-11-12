@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Actions\Sell\GeneratePickupCodeAction;
 use App\DTOs\PreparePurchaseDTO;
+use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
 use App\Enums\UserState;
 use App\Models\FoodEstablishment;
@@ -53,7 +54,10 @@ class SellFactory extends Factory
             'bought_by' => $customer->id,
             'sold_by' => $establishment->id,
             'pickup_code' => $pickupCode,
+            'max_pickup_datetime' => now()->addHours(4),
             'state' => \App\Enums\SellState::PENDING->value,
+            'payment_status' => PaymentStatus::APPROVED->value,
+            'payment_method' => 'mercadopago',
             'is_picked_up' => false,
             'picked_up_at' => null,
             'created_at' => now(),
@@ -98,16 +102,37 @@ class SellFactory extends Factory
                     ]);
             }
 
+            $grossAmount = 0;
+
             foreach ($offers as $offer) {
+                $quantity = $this->faker->numberBetween(1, 3);
+                $price = (float) ($offer->price ?? $this->faker->numberBetween(1500, 4000));
+                $grossAmount += $quantity * $price;
+
                 \App\Models\SellDetail::factory()->create([
                     'sell_id' => $sell->id,
                     'offer_id' => $offer->id,
-                    'offer_quantity' => $this->faker->numberBetween(1, 5),
-                    'pack_price' => $offer->price ?? $this->faker->numberBetween(300, 2000),
+                    'offer_quantity' => $quantity,
+                    'pack_price' => $price,
                     'pack_name' => $offer->title,
                     'pack_description' => $offer->description,
+                    'allergens' => $offer->allergens,
+                    'estimated_weight_kg' => $offer->estimated_weight_kg,
+                    'minimum_value' => $offer->minimum_value,
                 ]);
             }
+
+            $grossAmount = round($grossAmount, 2);
+            $commissionPercentage = (float) config('services.mercadopago.commission_percentage', 15.0);
+            $commissionAmount = round($grossAmount * ($commissionPercentage / 100), 2);
+            $netAmount = round($grossAmount - $commissionAmount, 2);
+
+            $sell->update([
+                'gross_amount' => $grossAmount,
+                'commission_percentage' => $commissionPercentage,
+                'commission_amount' => $commissionAmount,
+                'net_amount' => $netAmount,
+            ]);
         });
     }
 }

@@ -1,75 +1,106 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { shallowRef, computed } from 'vue';
 
 const props = defineProps({
   report: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 });
 
 const emit = defineEmits(['status-updated', 'action-taken']);
 
-const showDetails = ref(false);
-const isUpdating = ref(false);
-const isTakingAction = ref(false);
-const showUpdateModal = ref(false);
-const showActionModal = ref(false);
-const selectedStatus = ref('');
-const adminNotes = ref('');
-const updateError = ref(null);
-const actionError = ref(null);
-const actionConfirmText = ref('');
+const showDetails = shallowRef(false);
+const isUpdating = shallowRef(false);
+const isTakingAction = shallowRef(false);
+const showUpdateModal = shallowRef(false);
+const showActionModal = shallowRef(false);
+const selectedStatus = shallowRef('');
+const adminNotes = shallowRef('');
+const updateError = shallowRef(null);
+const actionError = shallowRef(null);
+const actionConfirmText = shallowRef('');
 
 const reportableTypeName = computed(() => {
-  const type = props.report.reportable_type;
+  const type = props.report.reportable_type || '';
   if (type.includes('Offer')) return 'Oferta';
   if (type.includes('FoodEstablishment')) return 'Establecimiento';
   if (type.includes('User')) return 'Usuario';
-  return 'Desconocido';
+  return 'Otro';
 });
 
 const statusLabel = computed(() => {
   const labels = {
-    'pending': 'Pendiente',
-    'reviewing': 'En revisión',
-    'resolved': 'Resuelto',
-    'dismissed': 'Descartado'
+    pending: 'Pendiente',
+    reviewing: 'En revisión',
+    resolved: 'Resuelto',
+    dismissed: 'Descartado',
   };
   return labels[props.report.status] || props.report.status;
 });
 
 const statusBadgeClass = computed(() => {
   const classes = {
-    'pending': 'badge-pending',
-    'reviewing': 'badge-reviewing',
-    'resolved': 'badge-resolved',
-    'dismissed': 'badge-dismissed'
+    pending: 'bg-warning/15 text-warning',
+    reviewing: 'bg-surface-sunken text-content-strong',
+    resolved: 'bg-success/15 text-success',
+    dismissed: 'bg-surface-sunken text-content-secondary',
   };
-  return classes[props.report.status] || 'badge-default';
+  return classes[props.report.status] || 'bg-surface-sunken text-content-secondary';
 });
 
 const reasonLabel = computed(() => {
   const labels = {
-    'inappropriate': 'Contenido inapropiado',
-    'fraud': 'Fraude',
-    'false_information': 'Información falsa',
-    'spam': 'Spam',
-    'offensive': 'Ofensivo',
-    'other': 'Otro'
+    inappropriate: 'Contenido inapropiado',
+    fraud: 'Fraude',
+    false_information: 'Información falsa',
+    spam: 'Spam',
+    offensive: 'Ofensivo',
+    other: 'Otro',
   };
   return labels[props.report.reason] || props.report.reason;
+});
+
+const reasonBadgeClass = computed(() => {
+  if (props.report.reason === 'fraud' || props.report.reason === 'false_information') {
+    return 'bg-brand/12 text-brand';
+  }
+  if (props.report.reason === 'inappropriate' || props.report.reason === 'offensive') {
+    return 'bg-danger/12 text-danger';
+  }
+  return 'bg-warning/15 text-warning';
+});
+
+const targetTitle = computed(() => {
+  const r = props.report.reportable;
+  if (!r) return `Elemento #${props.report.reportable_id}`;
+  if (props.report.reportable_type?.includes('User')) {
+    const fullName = `${r.name || ''} ${r.last_name || ''}`.trim() || `Usuario #${props.report.reportable_id}`;
+    return r.email ? `${fullName} (${r.email})` : fullName;
+  }
+  if (r.title) {
+    const estName = r.food_establishment?.name;
+    return estName ? `${r.title} — ${estName}` : r.title;
+  }
+  if (r.name) {
+    return r.address ? `${r.name} (${r.address})` : r.name;
+  }
+  return `Elemento #${props.report.reportable_id}`;
+});
+
+const isResolvedOrDismissed = computed(() => {
+  return props.report.status === 'resolved' || props.report.status === 'dismissed';
 });
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  return date.toLocaleString('es-ES', {
+  return date.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
@@ -89,31 +120,25 @@ const closeUpdateModal = () => {
 
 const updateStatus = async () => {
   if (!selectedStatus.value) {
-    updateError.value = 'Debes seleccionar un estado';
+    updateError.value = 'Debes seleccionar un estado.';
     return;
   }
 
   try {
     isUpdating.value = true;
     updateError.value = null;
-
     await emit('status-updated', props.report.id, selectedStatus.value, adminNotes.value);
-
     closeUpdateModal();
   } catch (err) {
     console.error('Error updating status:', err);
-    updateError.value = err.response?.data?.message || 'Error al actualizar el estado';
+    updateError.value = err.response?.data?.message || 'Error al actualizar el estado.';
   } finally {
     isUpdating.value = false;
   }
 };
 
-const toggleDetails = () => {
-  showDetails.value = !showDetails.value;
-};
-
 const actionMessage = computed(() => {
-  const type = props.report.reportable_type;
+  const type = props.report.reportable_type || '';
   if (type.includes('Offer')) {
     return '¿Estás seguro de que deseas desactivar esta oferta?';
   }
@@ -127,7 +152,7 @@ const actionMessage = computed(() => {
 });
 
 const canTakeAction = computed(() => {
-  const type = props.report.reportable_type;
+  const type = props.report.reportable_type || '';
   return type.includes('Offer') || type.includes('FoodEstablishment') || type.includes('User');
 });
 
@@ -144,21 +169,19 @@ const closeActionModal = () => {
 };
 
 const takeAction = async () => {
-  if (actionConfirmText.value.toLowerCase() !== 'confirmar') {
-    actionError.value = 'Debes escribir "CONFIRMAR" para continuar';
+  if (actionConfirmText.value.toLowerCase().trim() !== 'confirmar') {
+    actionError.value = 'Debés escribir "CONFIRMAR" para continuar.';
     return;
   }
 
   try {
     isTakingAction.value = true;
     actionError.value = null;
-
     await emit('action-taken', props.report.id);
-
     closeActionModal();
   } catch (err) {
     console.error('Error taking action:', err);
-    actionError.value = err.response?.data?.message || 'Error al tomar medidas sobre el reporte';
+    actionError.value = err.response?.data?.message || 'Error al tomar medidas sobre el reporte.';
   } finally {
     isTakingAction.value = false;
   }
@@ -166,142 +189,135 @@ const takeAction = async () => {
 </script>
 
 <template>
-  <div class="report-card">
-    <div class="report-header">
-      <div class="report-info">
-        <div class="report-id">
-          <span class="label">ID:</span>
-          <span class="value">#{{ report.id }}</span>
-        </div>
-        <div class="report-type">
-          <span class="type-badge">{{ reportableTypeName }}</span>
-        </div>
-        <div class="report-status">
-          <span class="status-badge" :class="statusBadgeClass">
+  <article class="bg-surface border border-border-subtle hover:border-brand/40 rounded-card px-6 py-5 shadow-2xs transition-colors space-y-4">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <!-- Contenido Principal -->
+      <div class="min-w-0 space-y-1.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-content-muted font-heading tabular-nums">
+            #REP-{{ report.id }}
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-surface-sunken text-content-strong">
+            {{ reportableTypeName }}
+          </span>
+          <span
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+            :class="reasonBadgeClass"
+          >
+            {{ reasonLabel }}
+          </span>
+          <span
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+            :class="statusBadgeClass"
+          >
             {{ statusLabel }}
           </span>
         </div>
+
+        <h3 class="text-base font-extrabold text-content-strong font-heading truncate">
+          {{ targetTitle }}
+        </h3>
+
+        <p class="text-xs text-content-secondary leading-relaxed">
+          <span v-if="report.description" class="italic text-content-strong/90">
+            "{{ report.description }}"
+          </span>
+          <span v-if="report.admin_notes" class="text-content-strong">
+            {{ report.description ? ' — ' : '' }}Nota interna: {{ report.admin_notes }}
+          </span>
+          <span class="text-content-secondary">
+            {{ (report.description || report.admin_notes) ? ' • ' : '' }}Reportado por {{ report.reporter?.name || 'Usuario' }} • {{ formatDate(report.created_at) }}
+          </span>
+        </p>
       </div>
 
-      <div class="report-actions">
+      <!-- Acciones Derecha -->
+      <div class="flex flex-wrap items-center justify-end gap-2.5 shrink-0">
         <button
-          class="action-btn"
-          @click="toggleDetails"
-        >
-          {{ showDetails ? 'Ocultar' : 'Ver detalles' }}
-        </button>
-        <button
-          v-if="canTakeAction"
-          class="action-btn danger"
-          @click="openActionModal"
-        >
-          Tomar medidas
-        </button>
-        <button
-          class="action-btn primary"
+          type="button"
+          class="h-9 px-4 rounded-full bg-surface border border-border-subtle hover:border-brand text-xs font-semibold text-content-strong inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           @click="openUpdateModal"
         >
-          Actualizar estado
+          <span>Cambiar estado</span>
+          <svg class="w-3.5 h-3.5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <button
+          v-if="!isResolvedOrDismissed && canTakeAction"
+          type="button"
+          class="h-9 px-5 rounded-full bg-brand hover:bg-brand-hover text-surface text-xs font-bold font-heading shadow-xs transition-colors cursor-pointer"
+          @click="openActionModal"
+        >
+          Tomar medida
+        </button>
+
+        <button
+          v-else
+          type="button"
+          class="h-9 px-4 rounded-full bg-surface-sunken hover:bg-border-subtle/50 text-content-strong text-xs font-semibold transition-colors cursor-pointer"
+          @click="showDetails = !showDetails"
+        >
+          {{ showDetails ? 'Ocultar detalle' : 'Ver historial' }}
         </button>
       </div>
     </div>
 
-    <div class="report-summary">
-      <div class="summary-item">
-        <span class="summary-label">Razón:</span>
-        <span class="summary-value">{{ reasonLabel }}</span>
+    <!-- Detalle Expandido -->
+    <div
+      v-if="showDetails"
+      class="pt-3 border-t border-border-subtle grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"
+    >
+      <div class="bg-canvas rounded-xl p-3.5 space-y-1.5">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-content-secondary block">
+          Elemento Reportado
+        </span>
+        <p class="text-content-strong font-medium">Tipo: {{ reportableTypeName }} (ID #{{ report.reportable_id }})</p>
+        <p v-if="report.reporter?.email" class="text-content-secondary">
+          Reportado por: {{ report.reporter.name }} ({{ report.reporter.email }})
+        </p>
       </div>
-      <div class="summary-item">
-        <span class="summary-label">Reportado por:</span>
-        <span class="summary-value">{{ report.reporter?.name || 'N/A' }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Fecha:</span>
-        <span class="summary-value">{{ formatDate(report.created_at) }}</span>
+
+      <div class="bg-canvas rounded-xl p-3.5 space-y-1.5">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-content-secondary block">
+          Auditoría Administrativa
+        </span>
+        <p class="text-content-strong font-medium">
+          Revisado por: {{ report.reviewer?.name || 'Pendiente de revisión' }}
+        </p>
+        <p v-if="report.reviewed_at" class="text-content-secondary">
+          Fecha revisión: {{ formatDate(report.reviewed_at) }}
+        </p>
+        <p v-if="report.admin_notes" class="text-content-strong">
+          Notas: {{ report.admin_notes }}
+        </p>
       </div>
     </div>
 
-    <div v-if="report.description" class="report-description">
-      <p>{{ report.description }}</p>
-    </div>
-
-    <!-- Detalles expandidos -->
-    <div v-if="showDetails" class="report-details">
-      <div class="details-section">
-        <h4 class="section-title">Información del Reportable</h4>
-        <div class="details-grid">
-          <div class="detail-item">
-            <span class="detail-label">Tipo:</span>
-            <span class="detail-value">{{ report.reportable_type }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">ID:</span>
-            <span class="detail-value">{{ report.reportable_id }}</span>
-          </div>
-          <div v-if="report.reportable" class="detail-item full-width">
-            <span class="detail-label">Detalles:</span>
-            <pre class="detail-value code">{{ JSON.stringify(report.reportable, null, 2) }}</pre>
-          </div>
-        </div>
-      </div>
-
-      <div class="details-section">
-        <h4 class="section-title">Información del Reportador</h4>
-        <div class="details-grid">
-          <div class="detail-item">
-            <span class="detail-label">Nombre:</span>
-            <span class="detail-value">{{ report.reporter?.name || 'N/A' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Email:</span>
-            <span class="detail-value">{{ report.reporter?.email || 'N/A' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">ID:</span>
-            <span class="detail-value">{{ report.reported_by }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="report.reviewer" class="details-section">
-        <h4 class="section-title">Información de Revisión</h4>
-        <div class="details-grid">
-          <div class="detail-item">
-            <span class="detail-label">Revisado por:</span>
-            <span class="detail-value">{{ report.reviewer?.name || 'N/A' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Fecha de revisión:</span>
-            <span class="detail-value">{{ formatDate(report.reviewed_at) }}</span>
-          </div>
-          <div v-if="report.admin_notes" class="detail-item full-width">
-            <span class="detail-label">Notas del administrador:</span>
-            <p class="detail-value">{{ report.admin_notes }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal de actualización de estado -->
+    <!-- Modal Cambiar Estado -->
     <Teleport to="body">
-      <div v-if="showUpdateModal" class="modal-overlay" @click.self="closeUpdateModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Actualizar estado del reporte #{{ report.id }}</h3>
-            <button class="close-btn" @click="closeUpdateModal">&times;</button>
+      <div
+        v-if="showUpdateModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-darkest/60 backdrop-blur-xs"
+        @click.self="closeUpdateModal"
+      >
+        <div class="w-full max-w-md bg-surface border border-border-subtle rounded-modal p-6 shadow-card space-y-4">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-3">
+            <h4 class="text-base font-extrabold text-content-strong font-heading">
+              Actualizar estado • #REP-{{ report.id }}
+            </h4>
+            <button type="button" class="text-content-secondary hover:text-content-strong cursor-pointer" @click="closeUpdateModal">
+              ✕
+            </button>
           </div>
 
-          <div class="modal-body">
-            <div v-if="updateError" class="error-message">
-              {{ updateError }}
-            </div>
-
-            <div class="form-group">
-              <label for="status-select">Nuevo estado:</label>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-content-secondary uppercase">Estado</label>
               <select
-                id="status-select"
                 v-model="selectedStatus"
-                class="form-select"
+                class="w-full h-10 px-3 rounded-xl bg-canvas border border-border-subtle text-sm text-content-strong focus:outline-none focus:border-brand"
               >
                 <option value="pending">Pendiente</option>
                 <option value="reviewing">En revisión</option>
@@ -310,543 +326,100 @@ const takeAction = async () => {
               </select>
             </div>
 
-            <div class="form-group">
-              <label for="admin-notes">Notas del administrador:</label>
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-content-secondary uppercase">Notas internas</label>
               <textarea
-                id="admin-notes"
                 v-model="adminNotes"
-                class="form-textarea"
-                rows="4"
-                maxlength="1000"
-                placeholder="Escribe aquí las notas sobre este reporte (opcional)..."
-              ></textarea>
-              <span class="char-count">{{ adminNotes.length }}/1000</span>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button
-              class="btn btn-secondary"
-              @click="closeUpdateModal"
-              :disabled="isUpdating"
-            >
-              Cancelar
-            </button>
-            <button
-              class="btn btn-primary"
-              @click="updateStatus"
-              :disabled="isUpdating"
-            >
-              {{ isUpdating ? 'Actualizando...' : 'Actualizar' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- Modal de tomar medidas -->
-    <Teleport to="body">
-      <div v-if="showActionModal" class="modal-overlay" @click.self="closeActionModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>⚠️ Tomar medidas sobre el reporte #{{ report.id }}</h3>
-            <button class="close-btn" @click="closeActionModal">&times;</button>
-          </div>
-
-          <div class="modal-body">
-            <div v-if="actionError" class="error-message">
-              {{ actionError }}
-            </div>
-
-            <div class="warning-message">
-              <p class="warning-text">{{ actionMessage }}</p>
-              <p class="warning-subtext">Esta acción no se puede deshacer.</p>
-            </div>
-
-            <div class="form-group">
-              <label for="confirm-text">Escribe "CONFIRMAR" para continuar:</label>
-              <input
-                id="confirm-text"
-                v-model="actionConfirmText"
-                type="text"
-                class="form-input"
-                placeholder="CONFIRMAR"
-                @keyup.enter="takeAction"
+                rows="3"
+                placeholder="Detalle o resolución administrativa..."
+                class="w-full p-3 rounded-xl bg-canvas border border-border-subtle text-sm text-content-strong focus:outline-none focus:border-brand resize-none"
               />
             </div>
+
+            <div v-if="updateError" class="p-3 rounded-xl bg-danger/10 border border-danger/30 text-xs text-danger font-medium">
+              {{ updateError }}
+            </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="flex items-center justify-end gap-2.5 pt-2">
             <button
-              class="btn btn-secondary"
-              @click="closeActionModal"
-              :disabled="isTakingAction"
+              type="button"
+              :disabled="isUpdating"
+              class="h-9 px-4 rounded-full bg-surface-sunken text-xs font-semibold text-content-strong cursor-pointer"
+              @click="closeUpdateModal"
             >
               Cancelar
             </button>
             <button
-              class="btn btn-danger"
-              @click="takeAction"
-              :disabled="isTakingAction"
+              type="button"
+              :disabled="isUpdating"
+              class="h-9 px-5 rounded-full bg-brand hover:bg-brand-hover text-surface text-xs font-bold cursor-pointer disabled:opacity-50"
+              @click="updateStatus"
             >
-              {{ isTakingAction ? 'Procesando...' : 'Tomar medidas' }}
+              {{ isUpdating ? 'Guardando...' : 'Guardar estado' }}
             </button>
           </div>
         </div>
       </div>
     </Teleport>
-  </div>
+
+    <!-- Modal Tomar Medida -->
+    <Teleport to="body">
+      <div
+        v-if="showActionModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-darkest/60 backdrop-blur-xs"
+        @click.self="closeActionModal"
+      >
+        <div class="w-full max-w-md bg-surface border border-border-subtle rounded-modal p-6 shadow-card space-y-4">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-3">
+            <h4 class="text-base font-extrabold text-danger font-heading">
+              Confirmar medida • #REP-{{ report.id }}
+            </h4>
+            <button type="button" class="text-content-secondary hover:text-content-strong cursor-pointer" @click="closeActionModal">
+              ✕
+            </button>
+          </div>
+
+          <p class="text-xs text-content-strong leading-relaxed bg-danger/10 border border-danger/20 rounded-xl p-3">
+            {{ actionMessage }}
+          </p>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-content-secondary">
+              Escribí <strong class="text-content-strong">CONFIRMAR</strong> para ejecutar la medida
+            </label>
+            <input
+              v-model="actionConfirmText"
+              type="text"
+              placeholder="CONFIRMAR"
+              class="w-full h-10 px-3 rounded-xl bg-canvas border border-border-subtle text-sm text-content-strong focus:outline-none focus:border-danger"
+            />
+          </div>
+
+          <div v-if="actionError" class="p-3 rounded-xl bg-danger/10 border border-danger/30 text-xs text-danger font-medium">
+            {{ actionError }}
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2">
+            <button
+              type="button"
+              :disabled="isTakingAction"
+              class="h-9 px-4 rounded-full bg-surface-sunken text-xs font-semibold text-content-strong cursor-pointer"
+              @click="closeActionModal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              :disabled="isTakingAction"
+              class="h-9 px-5 rounded-full bg-danger hover:opacity-90 text-surface text-xs font-bold cursor-pointer disabled:opacity-50"
+              @click="takeAction"
+            >
+              {{ isTakingAction ? 'Ejecutando...' : 'Ejecutar medida' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </article>
 </template>
-
-<style scoped>
-.report-card {
-  background: var(--color-primary);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
-  transition: all 0.2s;
-}
-
-.report-card:hover {
-  border-color: var(--color-border-hover);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.report-header {
-  padding: 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border);
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.report-info {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.report-id {
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.report-id .label {
-  color: var(--color-text);
-  opacity: 0.7;
-  margin-right: 0.25rem;
-}
-
-.type-badge {
-  padding: 0.25rem 0.75rem;
-  background: color-mix(in oklab, var(--color-info), transparent 70%);
-  color: var(--color-info);
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.badge-pending {
-  background: color-mix(in oklab, var(--color-warning), transparent 70%);
-  color: var(--color-warning);
-}
-
-.badge-reviewing {
-  background: color-mix(in oklab, var(--color-info), transparent 70%);
-  color: var(--color-info);
-}
-
-.badge-resolved {
-  background: color-mix(in oklab, var(--color-success), transparent 70%);
-  color: var(--color-success);
-}
-
-.badge-dismissed {
-  background: color-mix(in oklab, var(--color-danger), transparent 70%);
-  color: var(--color-danger);
-}
-
-.report-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.action-btn:hover {
-  background: var(--color-focus);
-}
-
-.action-btn.primary {
-  background: var(--color-accent);
-  color: #ffffff;
-  border-color: var(--color-accent);
-}
-
-.action-btn.primary:hover {
-  background: var(--color-accent-hover);
-}
-
-.action-btn.danger {
-  background: var(--color-danger);
-  color: white;
-  border-color: var(--color-danger);
-}
-
-.action-btn.danger:hover {
-  background: color-mix(in oklab, var(--color-danger), black 15%);
-}
-
-.report-summary {
-  padding: 1rem 1.25rem;
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  background: var(--color-secondary);
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.summary-label {
-  font-size: 0.75rem;
-  color: var(--color-text);
-  opacity: 0.7;
-  font-weight: 500;
-}
-
-.summary-value {
-  font-size: 0.875rem;
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-.report-description {
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.report-description p {
-  margin: 0;
-  color: var(--color-text);
-  opacity: 0.9;
-  line-height: 1.6;
-}
-
-.report-details {
-  padding: 1.25rem;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-secondary);
-}
-
-.details-section {
-  margin-bottom: 1.5rem;
-}
-
-.details-section:last-child {
-  margin-bottom: 0;
-}
-
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 1rem 0;
-}
-
-.details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.detail-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.detail-label {
-  font-size: 0.75rem;
-  color: var(--color-text);
-  opacity: 0.7;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.detail-value {
-  font-size: 0.875rem;
-  color: var(--color-text);
-}
-
-.detail-value.code {
-  background: var(--color-surface-sunken-base, #F2ECE4);
-  color: var(--color-text);
-  padding: 0.75rem;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-border);
-  font-family: 'Courier New', monospace;
-  font-size: 0.75rem;
-  overflow-x: auto;
-  margin: 0.5rem 0 0 0;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-content {
-  background: var(--color-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--color-text);
-  opacity: 0.7;
-  cursor: pointer;
-  padding: 0;
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: var(--color-secondary);
-  opacity: 1;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.error-message {
-  padding: 0.75rem 1rem;
-  background: color-mix(in oklab, var(--color-danger), transparent 70%);
-  color: var(--color-danger);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-danger);
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-}
-
-.warning-message {
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1.5rem;
-}
-
-.warning-text {
-  color: #f59e0b;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-}
-
-.warning-subtext {
-  color: var(--color-text);
-  opacity: 0.8;
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
-}
-
-.form-select,
-.form-textarea,
-.form-input {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  color: var(--color-text);
-  background: var(--color-secondary);
-  transition: all 0.2s;
-}
-
-.form-select:focus,
-.form-textarea:focus,
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(242, 79, 19, 0.2);
-}
-
-.form-textarea {
-  resize: vertical;
-  font-family: inherit;
-}
-
-.char-count {
-  display: block;
-  text-align: right;
-  font-size: 0.75rem;
-  color: var(--color-text);
-  opacity: 0.7;
-  margin-top: 0.25rem;
-}
-
-.modal-footer {
-  padding: 1.5rem;
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.btn {
-  padding: 0.625rem 1.25rem;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-secondary);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-focus);
-}
-
-.btn-primary {
-  background: var(--color-accent);
-  color: #ffffff;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-accent-hover);
-}
-
-.btn-danger {
-  background: var(--color-danger);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: color-mix(in oklab, var(--color-danger), black 15%);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .report-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .report-info {
-    width: 100%;
-  }
-
-  .report-actions {
-    width: 100%;
-  }
-
-  .action-btn {
-    flex: 1;
-  }
-
-  .report-summary {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .details-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
-

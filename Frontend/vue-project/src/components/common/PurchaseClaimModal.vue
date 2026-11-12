@@ -34,9 +34,16 @@ const evidenceFiles = ref([]);
 const submitting = ref(false);
 const errorMessage = ref(null);
 const fileInputRef = ref(null);
+let nextEvidenceId = 1;
 
 const descriptionLength = computed(() => description.value.trim().length);
 const isValidDescription = computed(() => descriptionLength.value >= 10 && descriptionLength.value <= 1000);
+
+const clearFileInput = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+};
 
 const clearPreviews = () => {
   evidenceFiles.value.forEach((item) => {
@@ -45,21 +52,23 @@ const clearPreviews = () => {
     }
   });
   evidenceFiles.value = [];
+  clearFileInput();
 };
 
 const resetForm = () => {
   reason.value = 'spoiled_food';
   description.value = '';
   errorMessage.value = null;
+  submitting.value = false;
   clearPreviews();
 };
 
 watch(
   () => props.modelValue,
   (isOpen) => {
-    if (isOpen) {
-      errorMessage.value = null;
-    } else {
+    errorMessage.value = null;
+    if (!isOpen) {
+      submitting.value = false;
       clearPreviews();
     }
   }
@@ -79,11 +88,12 @@ const handleFileSelection = (event) => {
   const selected = Array.from(event.target.files || []);
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   const maxBytes = 5 * 1024 * 1024;
+  let skippedByLimit = 0;
 
   for (const file of selected) {
     if (evidenceFiles.value.length >= 5) {
-      errorMessage.value = 'Podés adjuntar como máximo 5 fotos de evidencia.';
-      break;
+      skippedByLimit += 1;
+      continue;
     }
     if (!allowedTypes.includes(file.type)) {
       errorMessage.value = `El archivo "${file.name}" no es una imagen válida (JPG, PNG o WEBP).`;
@@ -94,15 +104,18 @@ const handleFileSelection = (event) => {
       continue;
     }
     evidenceFiles.value.push({
+      id: nextEvidenceId++,
       file,
       name: file.name,
       previewUrl: URL.createObjectURL(file),
     });
   }
 
-  if (fileInputRef.value) {
-    fileInputRef.value.value = '';
+  if (skippedByLimit > 0) {
+    errorMessage.value = 'Podés adjuntar como máximo 5 fotos de evidencia.';
   }
+
+  clearFileInput();
 };
 
 const removeEvidence = (index) => {
@@ -111,6 +124,8 @@ const removeEvidence = (index) => {
     URL.revokeObjectURL(item.previewUrl);
   }
   evidenceFiles.value.splice(index, 1);
+  errorMessage.value = null;
+  clearFileInput();
 };
 
 const submitClaim = async () => {
@@ -130,10 +145,7 @@ const submitClaim = async () => {
 
     const response = await axiosInstance.post(
       `/customer/pack-reservations/${props.sellId}/claims`,
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
+      formData
     );
 
     const createdClaim = response.data?.data || response.data;
@@ -141,6 +153,10 @@ const submitClaim = async () => {
     resetForm();
     emit('update:modelValue', false);
   } catch (err) {
+    if (err.response?.status === 413) {
+      errorMessage.value = 'Las imágenes seleccionadas superan el peso total permitido. Probá enviando menos fotos o de menor tamaño.';
+      return;
+    }
     const backendMsg = err.response?.data?.message;
     const errors = err.response?.data?.errors;
     if (errors) {
@@ -258,7 +274,7 @@ const submitClaim = async () => {
           <div v-if="evidenceFiles.length > 0" class="grid grid-cols-3 sm:grid-cols-5 gap-2 pt-1">
             <div
               v-for="(item, idx) in evidenceFiles"
-              :key="idx"
+              :key="item.id"
               class="relative group rounded-xl overflow-hidden border border-border-subtle bg-canvas aspect-square"
             >
               <img :src="item.previewUrl" :alt="item.name" class="w-full h-full object-cover" />

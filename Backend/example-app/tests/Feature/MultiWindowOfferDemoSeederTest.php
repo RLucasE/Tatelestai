@@ -84,3 +84,28 @@ test('MultiWindowOfferDemoSeeder is idempotent and preserves offer IDs when exec
     expect($secondRunOffers->first()->state)->toBe(OfferState::ACTIVE->value);
     expect($secondRunOffers->first()->quantity)->toBeGreaterThan(0);
 });
+
+test('MultiWindowOfferDemoSeeder seeds claimable picked up purchases and sample claims idempotently', function () {
+    $this->seed(MultiWindowOfferDemoSeeder::class);
+    $this->seed(MultiWindowOfferDemoSeeder::class);
+
+    $customer = User::where('email', 'lucascabjnmro2@gmail.com')->first();
+    expect($customer)->not->toBeNull();
+
+    $customerSells = \App\Models\Sell::with(['sellDetails', 'claim'])
+        ->where('bought_by', $customer->id)
+        ->get();
+
+    expect($customerSells)->toHaveCount(5);
+    expect($customerSells->where('is_picked_up', false))->toHaveCount(2);
+    expect($customerSells->where('is_picked_up', true))->toHaveCount(3);
+
+    $policy = app(\App\Policies\PurchaseClaimPolicy::class);
+    $claimableCount = $customerSells
+        ->where('is_picked_up', true)
+        ->filter(fn ($sell) => $policy->canClaim($sell, $customer))
+        ->count();
+
+    expect($claimableCount)->toBe(2);
+    expect(\App\Models\PurchaseClaim::count())->toBe(2);
+});
