@@ -1,13 +1,29 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { RouterLink, RouterView, useRouter } from "vue-router";
 import DropdownMenu from "@/components/common/DropdownMenu.vue";
 import Logo from "@/components/common/Logo.vue";
+import NotificationBell from "@/components/common/NotificationBell.vue";
+import RealtimeToastContainer from "@/components/common/RealtimeToastContainer.vue";
 import { useAuthStore } from '@/stores/auth.js';
+import { useNotificationStore } from '@/stores/notifications';
 
 const isSidebarOpen = ref(false);
 const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
+
+onMounted(() => {
+  const user = authStore.getUser();
+  if (user?.id) {
+    notificationStore.fetchNotifications();
+    notificationStore.connectRealtime(user.id);
+  }
+});
+
+onUnmounted(() => {
+  notificationStore.disconnect();
+});
 
 const handleLogout = async () => {
   try {
@@ -38,6 +54,9 @@ const handleLogout = async () => {
         <RouterLink to="/adm/dashboard" class="logo-link">
           <Logo />
         </RouterLink>
+        <div class="ml-auto flex items-center">
+          <NotificationBell />
+        </div>
       </nav>
     </header>
 
@@ -51,6 +70,7 @@ const handleLogout = async () => {
           <li><RouterLink to="/adm/offers" class="menu-link">Ofertas</RouterLink></li>
           <li><RouterLink to="/adm/pending-offers" class="menu-link">Verificar Ofertas</RouterLink></li>
           <li><RouterLink to="/adm/reports" class="menu-link">Reportes</RouterLink></li>
+          <li><RouterLink to="/adm/claims" class="menu-link">Reclamos</RouterLink></li>
           <li>
             <DropdownMenu
                 title="Establecimientos"
@@ -78,6 +98,7 @@ const handleLogout = async () => {
     <main class="content">
       <RouterView />
     </main>
+    <RealtimeToastContainer />
   </div>
 </template>
 

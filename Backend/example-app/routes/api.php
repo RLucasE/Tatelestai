@@ -2,10 +2,12 @@
 
 use App\Enums\UserState;
 use App\Http\Controllers\AdmOfferController;
+use App\Http\Controllers\AdmPurchaseClaimController;
 use App\Http\Controllers\AdmReportController;
 use App\Http\Controllers\AdmUserController;
 use App\Http\Controllers\CustomerCartController;
 use App\Http\Controllers\CustomerPaymentController;
+use App\Http\Controllers\CustomerPurchaseClaimController;
 use App\Http\Controllers\CustomerReportController;
 use App\Http\Controllers\CustomerSellController;
 use App\Http\Controllers\DashboardExportController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\PackCustomerController;
 use App\Http\Controllers\PackSellerController;
 use App\Http\Controllers\PackTemplateController;
 use App\Http\Controllers\PublicDataController;
+use App\Http\Controllers\PurchaseClaimEvidenceController;
 use App\Http\Controllers\SellController;
 use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerSellController;
@@ -48,7 +51,15 @@ Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
                         'RESOURCE_NOT_FOUND'
                     );
                 });
+            Route::post('/{sell}/claims', [CustomerPurchaseClaimController::class, 'store'])
+                ->missing(function () {
+                    throw \App\Exceptions\BusinessRuleException::notFound(
+                        'La compra especificada no existe o no fue encontrada.',
+                        'RESOURCE_NOT_FOUND'
+                    );
+                });
         });
+        Route::get('/customer/claims', [CustomerPurchaseClaimController::class, 'index']);
         Route::post('/customer/payment/create-preference', [CustomerPaymentController::class, 'createPreference']);
         Route::post('/customer/payment/verify', [CustomerPaymentController::class, 'verifyPayment']);
         Route::delete('/customer-cart/{offerId}', [CustomerCartController::class, 'removeFromCart']);
@@ -66,6 +77,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+    Route::get('/claims/{claim}/evidences/{evidence}', [PurchaseClaimEvidenceController::class, 'show'])
+        ->missing(function () {
+            throw \App\Exceptions\BusinessRuleException::notFound(
+                'El reclamo o evidencia solicitada no existe.',
+                'RESOURCE_NOT_FOUND'
+            );
+        });
 });
 
 Route::middleware(['auth:sanctum', 'role:seller'])->group(function () {
@@ -131,6 +149,28 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/adm/reports', [AdmReportController::class, 'index']);
         Route::patch('/adm/reports/{id}/status', [AdmReportController::class, 'updateStatus']);
         Route::post('/adm/reports/{id}/take-action', [AdmReportController::class, 'takeAction']);
+        Route::get('/adm/claims', [AdmPurchaseClaimController::class, 'index']);
+        Route::get('/adm/claims/{claim}', [AdmPurchaseClaimController::class, 'show'])
+            ->missing(function () {
+                throw \App\Exceptions\BusinessRuleException::notFound(
+                    'El reclamo especificado no existe.',
+                    'RESOURCE_NOT_FOUND'
+                );
+            });
+        Route::patch('/adm/claims/{claim}/under-review', [AdmPurchaseClaimController::class, 'markUnderReview'])
+            ->missing(function () {
+                throw \App\Exceptions\BusinessRuleException::notFound(
+                    'El reclamo especificado no existe.',
+                    'RESOURCE_NOT_FOUND'
+                );
+            });
+        Route::post('/adm/claims/{claim}/resolve', [AdmPurchaseClaimController::class, 'resolve'])
+            ->missing(function () {
+                throw \App\Exceptions\BusinessRuleException::notFound(
+                    'El reclamo especificado no existe.',
+                    'RESOURCE_NOT_FOUND'
+                );
+            });
         Route::get('/adm/pending-establishments', [AdmUserController::class, 'pendingEstablishments']);
         Route::get('/adm/pending-establishments/{id}', [AdmUserController::class, 'showPendingEstablishment']);
         Route::post('/adm/establishments/{id}/files/{fileId}/review', [AdmUserController::class, 'reviewFile']);

@@ -76,6 +76,20 @@ const offersList = computed(() => {
   return [];
 });
 
+const schedulesCount = computed(() => {
+  if (purchaseData.value?.schedules_count && Number(purchaseData.value.schedules_count) > 1) {
+    return Number(purchaseData.value.schedules_count);
+  }
+  const windows = new Set(
+    offersList.value
+      .map((o) => o.pickup_window)
+      .filter(Boolean)
+  );
+  return Math.max(1, windows.size);
+});
+
+const hasMultipleSchedules = computed(() => schedulesCount.value > 1);
+
 const totalPacksCount = computed(() => {
   return offersList.value.reduce((total, offer) => total + Number(offer.quantity || 1), 0);
 });
@@ -294,6 +308,22 @@ const goBack = () => {
               </svg>
               <span>Retiro: {{ pickupWindow }}</span>
             </div>
+
+            <!-- Advertencia si se están comprando múltiples turnos de retiro juntos -->
+            <div
+              v-if="hasMultipleSchedules"
+              class="p-3.5 rounded-xl bg-warning/15 border border-warning/40 flex items-start gap-2.5"
+            >
+              <span class="text-base leading-none mt-0.5">⚠️</span>
+              <div class="space-y-0.5">
+                <p class="text-xs font-bold text-warning">
+                  Estás comprando {{ schedulesCount }} turnos de retiro distintos
+                </p>
+                <p class="text-[11.5px] text-content-secondary leading-snug">
+                  Se generarán <strong>{{ schedulesCount }} códigos QR independientes</strong> (uno para cada horario de retiro). Recordá acercarte al comercio dentro de la ventana correspondiente a cada bolsa.
+                </p>
+              </div>
+            </div>
           </div>
 
           <!-- Lista de Productos en la Reserva: Figma node 4021:2150 (ProductsListSection) -->
@@ -305,13 +335,19 @@ const goBack = () => {
             >
               <!-- ItemDetails: Figma node 4021:2152 -->
               <div class="min-w-0 flex-1 space-y-1">
-                <div class="flex items-baseline gap-2">
+                <div class="flex flex-wrap items-baseline gap-2">
                   <span class="text-base font-bold text-content-strong tabular-nums shrink-0">
                     {{ offer.quantity }}x
                   </span>
                   <h3 class="text-sm sm:text-base font-bold text-content-strong">
                     {{ offer.title }}
                   </h3>
+                  <span
+                    v-if="offer.pickup_window"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-surface-sunken border border-border-subtle text-[11px] font-semibold text-content-secondary"
+                  >
+                    🕒 {{ offer.pickup_window }}
+                  </span>
                 </div>
 
                 <p v-if="offer.description" class="text-xs text-content-secondary line-clamp-2 max-w-lg">
@@ -391,7 +427,11 @@ const goBack = () => {
                 TOTAL A ABONAR
               </span>
               <span class="text-[11px] text-content-secondary">
-                Recibirás 1 código QR y PIN de retiro
+                {{
+                  schedulesCount > 1
+                    ? `Recibirás ${schedulesCount} códigos QR y PIN de retiro`
+                    : 'Recibirás 1 código QR y PIN de retiro'
+                }}
               </span>
             </div>
             <div class="text-right">

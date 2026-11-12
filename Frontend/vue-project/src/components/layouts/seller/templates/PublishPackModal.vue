@@ -11,6 +11,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  activeOffers: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "published"]);
@@ -28,6 +32,76 @@ const form = reactive({
   pickup_end_datetime: "",
   visibility_mode: "now",
   visible_from: "",
+});
+
+const pad = (n) => String(n).padStart(2, "0");
+
+const formatDateTimeLocal = (date) => {
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const formatScheduleWindowLabel = (startDt, endDt) => {
+  try {
+    const s = new Date(startDt);
+    const e = new Date(endDt);
+    const isToday = s.toDateString() === new Date().toDateString();
+    const dayStr = isToday
+      ? "Hoy"
+      : s.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
+    const sTime = s.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const eTime = e.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    return `${dayStr} ${sTime}–${eTime}`;
+  } catch {
+    return `${startDt} - ${endDt}`;
+  }
+};
+
+const existingActiveSchedules = computed(() => {
+  const now = new Date();
+  const map = new Map();
+  for (const o of props.activeOffers || []) {
+    if (o.state && o.state !== "active") continue;
+    if (Number(o.quantity ?? 0) <= 0) continue;
+    if (!o.pickup_start_datetime || !o.expiration_datetime) continue;
+    const sDate = new Date(o.pickup_start_datetime);
+    const eDate = new Date(o.expiration_datetime);
+    if (isNaN(sDate.getTime()) || isNaN(eDate.getTime()) || eDate <= now) continue;
+    const startLocal = formatDateTimeLocal(sDate);
+    const endLocal = formatDateTimeLocal(eDate);
+    const key = `${startLocal}|${endLocal}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        startLocal,
+        endLocal,
+        label: formatScheduleWindowLabel(sDate, eDate),
+        count: 1,
+      });
+    } else {
+      map.get(key).count++;
+    }
+  }
+  return Array.from(map.values());
+});
+
+const applyExistingSchedule = (sched) => {
+  activeShortcut.value = `existing:${sched.key}`;
+  form.pickup_start_datetime = sched.startLocal;
+  form.pickup_end_datetime = sched.endLocal;
+  delete validationErrors.pickup_start_datetime;
+  delete validationErrors.pickup_end_datetime;
+};
+
+const hasScheduleConflict = computed(() => {
+  if (!existingActiveSchedules.value.length) return false;
+  if (!form.pickup_start_datetime || !form.pickup_end_datetime) return false;
+  const currentKey = `${form.pickup_start_datetime}|${form.pickup_end_datetime}`;
+  return existingActiveSchedules.value.some((s) => s.key !== currentKey);
 });
 
 const discountPercentage = computed(() => {
@@ -50,7 +124,6 @@ const applyScheduleShortcut = (type) => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const pad = (n) => String(n).padStart(2, "0");
   const formatDatePart = (d) =>
     `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -80,7 +153,11 @@ watch(
       form.minimum_value = props.template?.minimum_value ?? 8000;
       form.visibility_mode = "now";
       form.visible_from = "";
-      applyScheduleShortcut("today-afternoon");
+      if (existingActiveSchedules.value.length > 0) {
+        applyExistingSchedule(existingActiveSchedules.value[0]);
+      } else {
+        applyScheduleShortcut("today-afternoon");
+      }
     }
   }
 );
@@ -163,7 +240,7 @@ const handlePublish = async () => {
 
   try {
     const res = await axiosInstance.post("/packs", payload);
-    emit("published", res.data?.data || res.data);
+    emit("published", res.data);
     closeModal();
   } catch (err) {
     console.error("Error al publicar pack desde plantilla:", err);
@@ -282,6 +359,47 @@ const handlePublish = async () => {
             Ventana horaria de retiro *
           </label>
 
+          <!-- Horarios de tus otras ofertas activas -->
+          <div
+            v-if="existingActiveSchedules.length > 0"
+            class="p-3 rounded-[14px] bg-brand/8 border border-brand/25 flex flex-col gap-2"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-[0.04em] text-brand">
+                🕒 Coincidir con tus packs activos
+              </span>
+              <span class="text-[10.5px] text-content-secondary">
+                1 clic para unificar retiro
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="sched in existingActiveSchedules"
+                :key="sched.key"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-[11.5px] transition-colors cursor-pointer flex items-center gap-1.5 border"
+                :class="
+                  activeShortcut === `existing:${sched.key}`
+                    ? 'bg-brand text-surface font-bold border-brand'
+                    : 'bg-surface text-content font-semibold border-border-subtle hover:border-brand/50'
+                "
+                @click="applyExistingSchedule(sched)"
+              >
+                <span>{{ sched.label }}</span>
+                <span
+                  class="px-1.5 py-0.5 rounded-full text-[10px]"
+                  :class="
+                    activeShortcut === `existing:${sched.key}`
+                      ? 'bg-surface/20 text-surface'
+                      : 'bg-surface-sunken text-content-secondary'
+                  "
+                >
+                  {{ sched.count }} {{ sched.count === 1 ? "pack" : "packs" }}
+                </span>
+              </button>
+            </div>
+          </div>
+
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
@@ -345,6 +463,23 @@ const handlePublish = async () => {
               />
               <p v-if="validationErrors.pickup_end_datetime" class="text-[11px] text-danger">
                 {{ validationErrors.pickup_end_datetime }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Advertencia de horarios distintos -->
+          <div
+            v-if="hasScheduleConflict"
+            class="p-3.5 rounded-[14px] bg-warning/15 border border-warning/40 flex items-start gap-2.5 text-left"
+          >
+            <span class="text-base leading-none mt-0.5">⚠️</span>
+            <div class="flex flex-col gap-1">
+              <span class="text-[12px] font-bold text-warning">
+                Horario de retiro diferente a tus otras ofertas activas
+              </span>
+              <p class="text-[11.5px] text-content-secondary leading-[1.4]">
+                Ya tenés ofertas activas en otro horario ({{ existingActiveSchedules.map((s) => s.label).join(" / ") }}).
+                Los clientes verán los turnos por separado y no podrán retirarlos juntos en un mismo viaje.
               </p>
             </div>
           </div>

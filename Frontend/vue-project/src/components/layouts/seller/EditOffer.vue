@@ -15,14 +15,76 @@ const router = useRouter();
 const loading = ref(true);
 const error = ref(null);
 const offer = ref(null);
+const otherActiveOffers = ref([]);
 const deleting = ref(false);
 const saving = ref(false);
 const actionMessage = ref("");
+const scheduleWarningMessage = ref("");
 
 const editForm = ref({
   quantity: 1,
   price: 0,
   minimum_value: 0,
+  pickup_start_datetime: "",
+  pickup_end_datetime: "",
+});
+
+const toLocalDatetimeInputValue = (dateObj) => {
+  const pad = (n) => String(n).padStart(2, "0");
+  const year = dateObj.getFullYear();
+  const month = pad(dateObj.getMonth() + 1);
+  const day = pad(dateObj.getDate());
+  const hours = pad(dateObj.getHours());
+  const minutes = pad(dateObj.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const existingActiveSchedules = computed(() => {
+  const now = new Date();
+  const map = new Map();
+  for (const o of otherActiveOffers.value) {
+    if (!o || Number(o.id) === Number(props.id)) continue;
+    if (o.state && o.state !== "active") continue;
+    if (Number(o.quantity || 0) <= 0) continue;
+    if (!o.pickup_start_datetime || !o.expiration_datetime) continue;
+    const start = new Date(o.pickup_start_datetime);
+    const end = new Date(o.expiration_datetime);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= now) continue;
+
+    const startInput = toLocalDatetimeInputValue(start);
+    const endInput = toLocalDatetimeInputValue(end);
+    const key = `${startInput}|${endInput}`;
+    if (!map.has(key)) {
+      const isToday = start.toDateString() === now.toDateString();
+      const dateLabel = isToday
+        ? "Hoy"
+        : start.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
+      const startTime = start.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+      const endTime = end.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+      map.set(key, {
+        key,
+        startInput,
+        endInput,
+        label: `${dateLabel} ${startTime}–${endTime} hs`,
+        offers_count: 1,
+      });
+    } else {
+      map.get(key).offers_count += 1;
+    }
+  }
+  return Array.from(map.values());
+});
+
+const applyExistingSchedule = (sched) => {
+  editForm.value.pickup_start_datetime = sched.startInput;
+  editForm.value.pickup_end_datetime = sched.endInput;
+};
+
+const hasScheduleConflict = computed(() => {
+  if (existingActiveSchedules.value.length === 0) return false;
+  if (!editForm.value.pickup_start_datetime || !editForm.value.pickup_end_datetime) return false;
+  const currentKey = `${editForm.value.pickup_start_datetime.slice(0, 16)}|${editForm.value.pickup_end_datetime.slice(0, 16)}`;
+  return existingActiveSchedules.value.some((s) => s.key !== currentKey);
 });
 
 const isExpired = computed(() => {
@@ -79,12 +141,24 @@ const formattedPickupWindow = computed(() => {
 const fetchOffer = async () => {
   try {
     loading.value = true;
-    const response = await axiosInstance.get(`/my-packs/${props.id}`);
+    const [response, allRes] = await Promise.all([
+      axiosInstance.get(`/my-packs/${props.id}`),
+      axiosInstance.get("/my-packs").catch(() => ({ data: [] })),
+    ]);
     offer.value = response.data?.data ?? response.data;
+    const list = allRes.data?.data ?? allRes.data;
+    otherActiveOffers.value = Array.isArray(list) ? list : [];
+
     if (offer.value) {
       editForm.value.quantity = offer.value.quantity;
       editForm.value.price = offer.value.price;
       editForm.value.minimum_value = offer.value.minimum_value;
+      editForm.value.pickup_start_datetime = offer.value.pickup_start_datetime
+        ? toLocalDatetimeInputValue(new Date(offer.value.pickup_start_datetime))
+        : "";
+      editForm.value.pickup_end_datetime = offer.value.expiration_datetime
+        ? toLocalDatetimeInputValue(new Date(offer.value.expiration_datetime))
+        : "";
     }
     error.value = null;
   } catch (err) {
@@ -103,12 +177,24 @@ const onUpdatePack = async () => {
   try {
     saving.value = true;
     actionMessage.value = "";
-    await axiosInstance.patch(`/packs/${offer.value.id}`, {
+    scheduleWarningMessage.value = "";
+    const payload = {
       quantity: Number(editForm.value.quantity),
       price: Number(editForm.value.price),
       minimum_value: Number(editForm.value.minimum_value),
-    });
+    };
+    const formatApiDate = (dtLocalStr) => {
+      return dtLocalStr.replace("T", " ") + (dtLocalStr.length === 16 ? ":00" : "");
+    };
+    if (editForm.value.pickup_start_datetime && editForm.value.pickup_end_datetime) {
+      payload.pickup_start_datetime = formatApiDate(editForm.value.pickup_start_datetime);
+      payload.pickup_end_datetime = formatApiDate(editForm.value.pickup_end_datetime);
+    }
+    const res = await axiosInstance.patch(`/packs/${offer.value.id}`, payload);
     actionMessage.value = "Pack actualizado correctamente";
+    if (res.data?.schedule_warning?.has_conflict && res.data?.schedule_warning?.warning_message) {
+      scheduleWarningMessage.value = res.data.schedule_warning.warning_message;
+    }
     await fetchOffer();
   } catch (err) {
     console.error("Error al actualizar oferta:", err);
@@ -276,9 +362,9 @@ onMounted(fetchOffer);
       <!-- Panel de Ajustes Rápidos -->
       <aside class="lg:col-span-5 p-6 sm:p-8 rounded-[22px] bg-surface border border-border-subtle space-y-4">
         <div class="space-y-1">
-          <h3 class="text-lg font-extrabold text-content">Modificar Cupos y Precios</h3>
+          <h3 class="text-lg font-extrabold text-content">Modificar Cupos, Precios y Horario</h3>
           <p class="text-xs text-content-secondary">
-            Ajustá la cantidad disponible o el precio de esta oferta mientras esté activa.
+            Ajustá la cantidad disponible, el precio o unificá el horario de retiro de esta oferta mientras esté activa.
           </p>
         </div>
 
@@ -287,6 +373,13 @@ onMounted(fetchOffer);
           class="p-3 rounded-[12px] bg-success/12 border border-success/30 text-xs font-bold text-success"
         >
           {{ actionMessage }}
+        </div>
+
+        <div
+          v-if="scheduleWarningMessage"
+          class="p-3 rounded-[12px] bg-warning/15 border border-warning/40 text-xs font-bold text-warning"
+        >
+          ⚠️ {{ scheduleWarningMessage }}
         </div>
 
         <form class="space-y-4" @submit.prevent="onUpdatePack">
@@ -321,6 +414,72 @@ onMounted(fetchOffer);
               :disabled="isInactive"
               class="w-full px-4 py-2.5 rounded-[10px] bg-surface-sunken border border-border-subtle text-sm font-bold text-content focus:outline-none focus:border-brand"
             />
+          </div>
+
+          <!-- Ventana de retiro editable + coincidir con otras ofertas -->
+          <div class="pt-2 border-t border-border-subtle space-y-3">
+            <label class="block text-xs font-bold text-content">Ventana de Retiro</label>
+
+            <div
+              v-if="existingActiveSchedules.length > 0"
+              class="p-3 rounded-[12px] bg-brand/8 border border-brand/25 space-y-2"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-bold uppercase text-brand">
+                  🕒 Coincidir con tus otros packs activos
+                </span>
+                <span class="text-[10.5px] text-content-secondary">1 clic</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="sched in existingActiveSchedules"
+                  :key="sched.key"
+                  type="button"
+                  :disabled="isInactive"
+                  class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface border border-border-subtle hover:border-brand text-content transition cursor-pointer"
+                  @click="applyExistingSchedule(sched)"
+                >
+                  {{ sched.label }} ({{ sched.offers_count }})
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="space-y-1">
+                <span class="block text-[11px] font-semibold text-content-secondary">Inicio de retiro</span>
+                <input
+                  v-model="editForm.pickup_start_datetime"
+                  type="datetime-local"
+                  :disabled="isInactive"
+                  class="w-full px-3 py-2 rounded-[10px] bg-surface-sunken border border-border-subtle text-xs font-semibold text-content focus:outline-none focus:border-brand"
+                />
+              </div>
+              <div class="space-y-1">
+                <span class="block text-[11px] font-semibold text-content-secondary">Fin de retiro</span>
+                <input
+                  v-model="editForm.pickup_end_datetime"
+                  type="datetime-local"
+                  :disabled="isInactive"
+                  class="w-full px-3 py-2 rounded-[10px] bg-surface-sunken border border-border-subtle text-xs font-semibold text-content focus:outline-none focus:border-brand"
+                />
+              </div>
+            </div>
+
+            <div
+              v-if="hasScheduleConflict"
+              class="p-3 rounded-[12px] bg-warning/15 border border-warning/40 flex items-start gap-2"
+            >
+              <span class="text-sm leading-none mt-0.5">⚠️</span>
+              <div class="space-y-0.5">
+                <p class="text-[11.5px] font-bold text-warning">
+                  Horario de retiro distinto a tus otros packs activos
+                </p>
+                <p class="text-[11px] text-content-secondary leading-snug">
+                  Tenés otras ofertas en {{ existingActiveSchedules.map((s) => s.label).join(" / ") }}.
+                  Los clientes verán los turnos por separado al comprar.
+                </p>
+              </div>
+            </div>
           </div>
 
           <button

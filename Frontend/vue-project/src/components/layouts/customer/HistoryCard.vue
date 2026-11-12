@@ -33,9 +33,22 @@
         </div>
       </div>
 
-      <!-- Badge de Estado: Rescatado / Entregado -->
+      <!-- Badge de Estado: Rescatado / Reembolsado -->
       <div class="flex items-center self-start sm:self-center gap-2">
         <span
+          v-if="isRefunded"
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-danger/15 text-danger border border-danger/30"
+        >
+          <span>Reembolsado por reclamo</span>
+        </span>
+        <span
+          v-else-if="isPartiallyRefunded"
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-warning/15 text-brand border border-warning/30"
+        >
+          <span>Reembolso parcial aplicado</span>
+        </span>
+        <span
+          v-else
           class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-success/15 text-success border border-success/30"
         >
           <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +109,13 @@
 
     <!-- Footer con Total Abonado -->
     <footer class="mt-auto pt-3 border-t border-border-subtle flex items-center justify-between gap-4">
-      <div class="flex items-center gap-1.5 text-xs text-success font-semibold">
+      <div v-if="isRefunded" class="flex items-center gap-1.5 text-xs text-danger font-semibold">
+        <span>Reembolso emitido</span>
+      </div>
+      <div v-else-if="isPartiallyRefunded" class="flex items-center gap-1.5 text-xs text-brand font-semibold">
+        <span>Reembolso parcial: ${{ Number(purchase.refunded_amount || 0).toLocaleString('es-AR') }}</span>
+      </div>
+      <div v-else class="flex items-center gap-1.5 text-xs text-success font-semibold">
         <svg class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -111,17 +130,18 @@
       </div>
     </footer>
 
-    <!-- Franja de Calificación -->
-    <div class="pt-2.5 border-t border-border-subtle/60 flex items-center justify-between gap-3 text-xs">
-      <div v-if="localRating || purchase.user_rating" class="flex items-center gap-1.5 text-brand-light font-bold">
-        <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
-          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-        </svg>
-        <span>Tu calificación: {{ localRating || purchase.user_rating }}/5</span>
-      </div>
+    <!-- Franja de Calificación y Reclamo -->
+    <div class="pt-2.5 border-t border-border-subtle/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <div v-if="localRating || purchase.user_rating" class="flex items-center gap-1.5 text-brand-light font-bold">
+          <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+          <span>Tu calificación: {{ localRating || purchase.user_rating }}/5</span>
+        </div>
 
-      <div v-else-if="purchase.can_review && !isReviewedLocal" class="w-full flex justify-end">
         <button
+          v-else-if="purchase.can_review && !isReviewedLocal"
           type="button"
           @click="showRatingModal = true"
           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[10px] text-xs font-bold text-brand-light bg-brand-light/10 hover:bg-brand-light/20 border border-brand-light/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
@@ -131,14 +151,41 @@
           </svg>
           <span>Calificar compra</span>
         </button>
+
+        <div v-else-if="purchase.is_reviewed || isReviewedLocal" class="flex items-center gap-1 text-success font-semibold">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Calificado</span>
+        </div>
       </div>
 
-      <div v-else-if="purchase.is_reviewed || isReviewedLocal" class="flex items-center gap-1 text-success font-semibold">
-        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>Calificado</span>
+      <div class="flex items-center gap-2 ml-auto">
+        <span
+          v-if="activeClaim"
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[10px] text-xs font-bold border"
+          :class="claimBadgeClass"
+        >
+          Reclamo: {{ claimStatusText }}
+        </span>
+
+        <button
+          v-else-if="purchase.can_claim"
+          type="button"
+          @click="showClaimModal = true"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[10px] text-xs font-bold text-danger bg-danger/10 hover:bg-danger/20 border border-danger/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+        >
+          <span>Hacer reclamo</span>
+        </button>
       </div>
+    </div>
+
+    <div
+      v-if="activeClaim?.admin_resolution_notes"
+      class="text-xs text-content-secondary bg-surface-sunken border border-border-subtle rounded-xl px-3 py-2"
+    >
+      <span class="font-semibold text-content-strong">Resolución del reclamo:</span>
+      {{ activeClaim.admin_resolution_notes }}
     </div>
 
     <!-- Modal de Calificación -->
@@ -148,17 +195,30 @@
       :establishment-name="establishmentName"
       @reviewed="handleReviewed"
     />
+
+    <!-- Modal de Reclamo -->
+    <PurchaseClaimModal
+      v-model="showClaimModal"
+      :sell-id="purchase.sell_id || purchase.id"
+      :establishment-name="establishmentName"
+      @submitted="handleClaimSubmitted"
+    />
   </article>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import QuickRatingModal from '@/components/common/QuickRatingModal.vue';
+import PurchaseClaimModal from '@/components/common/PurchaseClaimModal.vue';
+
+const emit = defineEmits(['claim-created']);
 
 const showRatingModal = ref(false);
 const localRating = ref(null);
 const isReviewedLocal = ref(false);
+const showClaimModal = ref(false);
+const localClaim = ref(null);
 
 const handleReviewed = ({ rating }) => {
   localRating.value = rating;
@@ -171,6 +231,44 @@ const props = defineProps({
     required: true,
   },
 });
+
+watch(
+  () => props.purchase.claim,
+  (newClaim) => {
+    if (newClaim) {
+      localClaim.value = null;
+    }
+  }
+);
+
+const activeClaim = computed(() => localClaim.value || props.purchase.claim || null);
+const isRefunded = computed(() => props.purchase.payment_status === 'refunded');
+const isPartiallyRefunded = computed(() => props.purchase.payment_status === 'partially_refunded');
+
+const claimStatusText = computed(() => {
+  const status = activeClaim.value?.status;
+  if (status === 'pending') return 'Pendiente de revisión';
+  if (status === 'under_review') return 'En revisión';
+  if (status === 'approved') {
+    return activeClaim.value?.refund_type === 'partial'
+      ? 'Aprobado (reembolso parcial)'
+      : 'Aprobado (reembolso total)';
+  }
+  if (status === 'rejected') return 'Rechazado';
+  return status || 'Registrado';
+});
+
+const claimBadgeClass = computed(() => {
+  const status = activeClaim.value?.status;
+  if (status === 'approved') return 'bg-success/15 text-success border-success/30';
+  if (status === 'rejected') return 'bg-danger/15 text-danger border-danger/30';
+  return 'bg-warning/15 text-brand border-warning/30';
+});
+
+const handleClaimSubmitted = (createdClaim) => {
+  localClaim.value = createdClaim;
+  emit('claim-created', createdClaim);
+};
 
 // Información del local
 const establishment = computed(() => {

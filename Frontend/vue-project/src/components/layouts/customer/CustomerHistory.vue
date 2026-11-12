@@ -204,6 +204,7 @@
         v-for="purchase in history"
         :key="purchase.sell_id || purchase.id"
         :purchase="purchase"
+        @claim-created="getHistory(true)"
       />
     </div>
   </div>
@@ -224,6 +225,7 @@ const error = ref(null);
 
 const totalPacksRescued = computed(() => {
   return history.value.reduce((total, p) => {
+    if (p.payment_status === 'refunded') return total;
     const offers = p.offers || p.sell_details || [];
     return total + offers.reduce((sub, o) => sub + Number(o.offer_quantity || 1), 0);
   }, 0);
@@ -231,7 +233,9 @@ const totalPacksRescued = computed(() => {
 
 const totalAmountSpent = computed(() => {
   return history.value.reduce((total, p) => {
-    return total + Number(p.total_price || 0);
+    if (p.payment_status === 'refunded') return total;
+    const effective = Math.max(0, Number(p.total_price || 0) - Number(p.refunded_amount || 0));
+    return total + effective;
   }, 0);
 });
 

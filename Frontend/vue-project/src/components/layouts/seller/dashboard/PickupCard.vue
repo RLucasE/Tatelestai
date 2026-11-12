@@ -34,6 +34,8 @@ const isPickedUp = computed(
   () => Boolean(props.pickup.is_picked_up) || props.pickup.status === 'picked_up'
 );
 const isCancelled = computed(() => props.pickup.status === 'cancelled');
+const isRefunded = computed(() => props.pickup.payment_status === 'refunded');
+const isPartiallyRefunded = computed(() => props.pickup.payment_status === 'partially_refunded');
 
 const isExpired = computed(() => {
   if (isPickedUp.value || isCancelled.value) return false;
@@ -44,16 +46,24 @@ const isExpired = computed(() => {
 
 const statusLabel = computed(() => {
   if (isCancelled.value) return 'Cancelado / Reembolsado';
-  if (isPickedUp.value) return 'Retirado';
-  if (isExpired.value) return 'Expirado (No-Show)';
+  if (isRefunded.value) return 'Reembolsado por reclamo';
+  if (isPickedUp.value) {
+    return isPartiallyRefunded.value ? 'Retirado (Reembolso parcial)' : 'Retirado';
+  }
+  if (isExpired.value) {
+    return isPartiallyRefunded.value ? 'Expirado (Reembolso parcial)' : 'Expirado (No-Show)';
+  }
   if (props.pickup.status === 'ready') return 'Listo para retirar';
   if (props.pickup.status === 'confirmed') return 'Confirmado';
   return 'Pendiente de retiro';
 });
 
 const statusPillClass = computed(() => {
-  if (isCancelled.value || isExpired.value) {
+  if (isCancelled.value || isExpired.value || isRefunded.value) {
     return 'bg-danger/15 text-danger';
+  }
+  if (isPartiallyRefunded.value) {
+    return 'bg-warning/15 text-brand';
   }
   if (isPickedUp.value) {
     return 'bg-success/15 text-success';
@@ -66,7 +76,9 @@ const canRedeem = computed(() => {
     ['ready', 'confirmed', 'pending'].includes(props.pickup.status) &&
     !isPickedUp.value &&
     !isExpired.value &&
-    !isCancelled.value
+    !isCancelled.value &&
+    !isRefunded.value &&
+    !isPartiallyRefunded.value
   );
 });
 

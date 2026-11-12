@@ -71,6 +71,17 @@ class ProcessExpiredSellsAction
                     return;
                 }
 
+                // Si ya fue reembolsado total o parcialmente (ej. por reclamo aprobado antes del fin de franja),
+                // solo cerramos su estado operativo a EXPIRED sin volver a reembolsar ni pisar payment_status/refunded_amount.
+                if ($current->isRefundedOrPartiallyRefunded()) {
+                    $current->update([
+                        'state' => SellState::EXPIRED->value,
+                    ]);
+                    $processedCount++;
+
+                    return;
+                }
+
                 // Evaluar si alguna oferta asociada fue desactivada por el comercio sin entregar
                 $merchantFailed = false;
                 foreach ($sell->sellDetails as $detail) {
@@ -91,6 +102,7 @@ class ProcessExpiredSellsAction
                     $current->update([
                         'state' => SellState::CANCELLED->value,
                         'payment_status' => PaymentStatus::REFUNDED->value,
+                        'refunded_amount' => $current->getGrossAmount(),
                         'refunded_at' => now(),
                         'cancelled_by' => 'system',
                         'cancellation_reason' => 'Oferta desactivada / comercio no entregó el pedido',
@@ -98,7 +110,12 @@ class ProcessExpiredSellsAction
 
                     if ($current->payment_id) {
                         try {
-                            $this->paymentService->refundPayment($current->payment_id);
+                            $sharedPaymentCount = $current->preference_id
+                                ? Sell::where('preference_id', $current->preference_id)->count()
+                                : Sell::where('payment_id', $current->payment_id)->count();
+
+                            $refundAmount = $sharedPaymentCount > 1 ? $current->getGrossAmount() : null;
+                            $this->paymentService->refundPayment($current->payment_id, $refundAmount);
                         } catch (\Throwable $e) {
                             Log::error('Fallo al emitir reembolso lazy por no entrega del comercio:', [
                                 'sell_id' => $current->id,

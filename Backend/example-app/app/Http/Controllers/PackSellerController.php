@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Offers\GetUserEstablishmentAction;
 use App\Actions\Offers\ValidateOfferOwnershipAction;
+use App\Actions\Packs\CheckEstablishmentScheduleConflictAction;
 use App\Actions\Packs\PublishPackAction;
 use App\Actions\Packs\UpdatePackAction;
 use App\DTOs\PackDTO;
@@ -28,6 +29,7 @@ class PackSellerController extends Controller
         private readonly UpdatePackAction $updatePackAction,
         private readonly ValidateOfferOwnershipAction $validateOfferOwnership,
         private readonly GetUserEstablishmentAction $getUserEstablishmentAction,
+        private readonly ?CheckEstablishmentScheduleConflictAction $checkScheduleConflictAction = null,
     ) {}
 
     public function store(StorePackRequest $request): JsonResponse
@@ -37,9 +39,18 @@ class PackSellerController extends Controller
                 PackDTO::fromRequest($request)
             );
 
+            $conflictChecker = $this->checkScheduleConflictAction ?? app(CheckEstablishmentScheduleConflictAction::class);
+            $scheduleWarning = $conflictChecker->execute(
+                (int) $pack->food_establishment_id,
+                $pack->pickup_start_datetime,
+                $pack->expiration_datetime,
+                (int) $pack->id
+            );
+
             return response()->json([
                 'message' => 'Pack publicado exitosamente',
                 'data' => new PackOfferResource($pack),
+                'schedule_warning' => $scheduleWarning,
             ], 201);
         } catch (ApiException|ValidationException|QueryException $exception) {
             throw $exception;
@@ -107,9 +118,18 @@ class PackSellerController extends Controller
                 PackDTO::fromRequest($request)
             );
 
+            $conflictChecker = $this->checkScheduleConflictAction ?? app(CheckEstablishmentScheduleConflictAction::class);
+            $scheduleWarning = $conflictChecker->execute(
+                (int) $pack->food_establishment_id,
+                $pack->pickup_start_datetime,
+                $pack->expiration_datetime,
+                (int) $pack->id
+            );
+
             return response()->json([
                 'message' => 'Pack actualizado exitosamente',
                 'data' => new PackOfferResource($pack),
+                'schedule_warning' => $scheduleWarning,
             ], 200);
         } catch (ApiException|ValidationException|QueryException $exception) {
             throw $exception;

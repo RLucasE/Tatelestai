@@ -40,11 +40,29 @@ class SellerSellController extends Controller
         // Sincronización lazy de pedidos vencidos antes de listar
         $this->processExpiredSellsAction->execute(soldBy: $foodEstablishment->id);
 
-        $sells = Sell::with(['sellDetails.offer'])
+        $sells = Sell::with(['sellDetails.offer', 'claim'])
             ->where('sold_by', $foodEstablishment->id)
             ->orderBy('created_at', 'desc')->get();
 
         $formattedSells = $sells->map(function ($sell) {
+            $claimSummary = null;
+            if ($sell->claim) {
+                $claimReason = $sell->claim->reason instanceof \App\Enums\ClaimReason
+                    ? $sell->claim->reason
+                    : \App\Enums\ClaimReason::tryFrom((string) $sell->claim->reason);
+                $claimStatus = $sell->claim->status instanceof \App\Enums\ClaimStatus
+                    ? $sell->claim->status
+                    : \App\Enums\ClaimStatus::tryFrom((string) $sell->claim->status);
+
+                $claimSummary = [
+                    'status' => $claimStatus?->value ?? $sell->claim->status,
+                    'status_label' => $claimStatus?->label() ?? $sell->claim->status,
+                    'reason' => $claimReason?->value ?? $sell->claim->reason,
+                    'reason_label' => $claimReason?->label() ?? $sell->claim->reason,
+                    'refund_amount' => $sell->claim->refund_amount !== null ? (float) $sell->claim->refund_amount : null,
+                ];
+            }
+
             return [
                 'id' => $sell->id,
                 'created_at' => $sell->created_at,
@@ -53,11 +71,15 @@ class SellerSellController extends Controller
                 'state' => $sell->state?->value ?? $sell->state,
                 'payment_status' => $sell->payment_status?->value ?? 'approved',
                 'gross_amount' => $sell->getGrossAmount(),
+                'refunded_amount' => $sell->getEffectiveRefundedAmount(),
+                'refunded_at' => $sell->refunded_at,
+                'effective_gross_amount' => $sell->getEffectiveGrossAmount(),
                 'commission_percentage' => (float) ($sell->commission_percentage ?: config('services.mercadopago.commission_percentage', 15.0)),
-                'commission_amount' => $sell->getCommissionAmount(),
-                'net_amount' => $sell->getNetAmount(),
+                'commission_amount' => $sell->getEffectiveCommissionAmount(),
+                'net_amount' => $sell->getEffectiveNetAmount(),
                 'cancelled_by' => $sell->cancelled_by,
                 'cancellation_reason' => $sell->cancellation_reason,
+                'claim' => $claimSummary,
                 'sell_details' => $sell->sellDetails->map(function ($detail) {
                     return [
                         'id' => $detail->id,

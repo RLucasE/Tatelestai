@@ -514,4 +514,115 @@ class CustomerSellControllerTest extends TestCase
                 'data' => [],
             ]);
     }
+
+    #[Test]
+    public function it_creates_single_sell_when_buying_multiple_offers_with_same_pickup_schedule(): void
+    {
+        Event::fake([PurchaseCompleted::class]);
+        $this->actingAs($this->customer);
+
+        $pickupStart = now()->addHours(2)->startOfMinute();
+        $pickupEnd = now()->addHours(4)->startOfMinute();
+
+        $offer1 = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'pickup_start_datetime' => $pickupStart,
+            'expiration_datetime' => $pickupEnd,
+            'quantity' => 5,
+            'price' => 2000,
+        ]);
+
+        $offer2 = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'pickup_start_datetime' => $pickupStart,
+            'expiration_datetime' => $pickupEnd,
+            'quantity' => 5,
+            'price' => 3000,
+        ]);
+
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
+            'food_establishment_id' => $this->establishment->id,
+            'offers' => [
+                ['id' => $offer1->id, 'quantity' => 1],
+                ['id' => $offer2->id, 'quantity' => 2],
+            ],
+        ]);
+
+        $purchaseToken = $prepareResponse->json('data.purchase_token');
+
+        $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
+            'purchase_token' => $purchaseToken,
+        ]);
+
+        $buyResponse->assertStatus(200)
+            ->assertJsonPath('data.sells_count', 1)
+            ->assertJsonCount(1, 'data.sells');
+
+        $this->assertNotNull($buyResponse->json('data.sell_id'));
+        $this->assertNotNull($buyResponse->json('data.pickup_code'));
+        $this->assertEquals(1, \App\Models\Sell::where('bought_by', $this->customer->id)->count());
+    }
+
+    #[Test]
+    public function it_splits_into_multiple_sells_with_independent_pickup_codes_when_offers_have_different_pickup_schedules(): void
+    {
+        Event::fake([PurchaseCompleted::class]);
+        $this->actingAs($this->customer);
+
+        $lunchStart = now()->addHours(2)->startOfMinute();
+        $lunchEnd = now()->addHours(4)->startOfMinute();
+
+        $dinnerStart = now()->addHours(8)->startOfMinute();
+        $dinnerEnd = now()->addHours(10)->startOfMinute();
+
+        $lunchOffer = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pack Almuerzo',
+            'pickup_start_datetime' => $lunchStart,
+            'expiration_datetime' => $lunchEnd,
+            'quantity' => 5,
+            'price' => 2500,
+        ]);
+
+        $dinnerOffer = Offer::factory()->active()->create([
+            'food_establishment_id' => $this->establishment->id,
+            'title' => 'Pack Cena',
+            'pickup_start_datetime' => $dinnerStart,
+            'expiration_datetime' => $dinnerEnd,
+            'quantity' => 5,
+            'price' => 3500,
+        ]);
+
+        $prepareResponse = $this->postJson('/api/customer/pack-reservations/prepare', [
+            'food_establishment_id' => $this->establishment->id,
+            'offers' => [
+                ['id' => $lunchOffer->id, 'quantity' => 1],
+                ['id' => $dinnerOffer->id, 'quantity' => 2],
+            ],
+        ]);
+
+        $purchaseToken = $prepareResponse->json('data.purchase_token');
+
+        $buyResponse = $this->postJson('/api/customer/pack-reservations/confirm', [
+            'purchase_token' => $purchaseToken,
+        ]);
+
+        $buyResponse->assertStatus(200)
+            ->assertJsonPath('data.sells_count', 2)
+            ->assertJsonCount(2, 'data.sells');
+
+        $sellsData = $buyResponse->json('data.sells');
+        $this->assertNotEquals($sellsData[0]['pickup_code'], $sellsData[1]['pickup_code']);
+        $this->assertNotEquals($sellsData[0]['sell_id'], $sellsData[1]['sell_id']);
+
+        $sellsInDb = \App\Models\Sell::where('bought_by', $this->customer->id)->orderBy('id')->get();
+        $this->assertCount(2, $sellsInDb);
+        $this->assertNotEquals($sellsInDb[0]->pickup_code, $sellsInDb[1]->pickup_code);
+
+        $maxPickupDates = $sellsInDb->map(fn ($s) => $s->max_pickup_datetime->toDateTimeString())->toArray();
+        $this->assertContains($lunchEnd->toDateTimeString(), $maxPickupDates);
+        $this->assertContains($dinnerEnd->toDateTimeString(), $maxPickupDates);
+
+        Event::assertDispatchedTimes(PurchaseCompleted::class, 2);
+    }
 }

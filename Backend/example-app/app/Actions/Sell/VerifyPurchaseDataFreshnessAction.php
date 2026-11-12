@@ -47,6 +47,18 @@ class VerifyPurchaseDataFreshnessAction
                 throw new Exception('El precio de la oferta ha cambiado. Por favor, actualiza tu carrito.');
             }
 
+            // Verificar si los alérgenos declarados han cambiado
+            if ($offerDTO->allergens !== null) {
+                $currentAllergens = is_array($currentOffer->allergens) ? array_values($currentOffer->allergens) : [];
+                $dtoAllergens = array_values($offerDTO->allergens);
+                sort($currentAllergens);
+                sort($dtoAllergens);
+
+                if ($currentAllergens !== $dtoAllergens) {
+                    throw new Exception('Los alérgenos declarados de la oferta han cambiado. Por favor, actualiza tu carrito.');
+                }
+            }
+
             // Verificar si la oferta sigue perteneciendo al mismo establecimiento
             if ($currentOffer->food_establishment_id != $preparePurchaseDTO->food_establishment_id) {
                 throw new Exception('La oferta ya no pertenece al mismo establecimiento. Por favor, actualiza tu carrito.');

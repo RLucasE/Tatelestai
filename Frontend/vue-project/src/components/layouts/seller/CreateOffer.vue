@@ -21,6 +21,7 @@ const steps = [
 const loadingTemplates = ref(true);
 const submitting = ref(false);
 const templates = ref([]);
+const activeOffers = ref([]);
 const errorMessage = ref("");
 const successMessage = ref("");
 const validationErrors = reactive({});
@@ -98,6 +99,23 @@ const fetchTemplates = async () => {
   }
 };
 
+// Cargar ofertas activas del comercio para reutilizar horarios y detectar conflictos
+const fetchActiveOffers = async () => {
+  try {
+    const response = await axiosInstance.get("/my-packs");
+    const list = response.data?.data || response.data || [];
+    const now = new Date();
+    activeOffers.value = list.filter((o) => {
+      if (o.state && o.state !== "active") return false;
+      if (Number(o.quantity ?? 0) <= 0) return false;
+      if (!o.pickup_start_datetime || !o.expiration_datetime) return false;
+      return new Date(o.expiration_datetime) > now;
+    });
+  } catch (err) {
+    console.error("Error al cargar ofertas activas:", err);
+  }
+};
+
 // Seleccionar plantilla
 const selectTemplate = (template) => {
   if (!template) {
@@ -136,6 +154,69 @@ const formatDateTimeLocal = (date) => {
 const minPickupStart = computed(() => {
   const now = new Date();
   return formatDateTimeLocal(now);
+});
+
+const formatScheduleWindowLabel = (startDt, endDt) => {
+  try {
+    const s = new Date(startDt);
+    const e = new Date(endDt);
+    const isToday = s.toDateString() === new Date().toDateString();
+    const dayStr = isToday
+      ? "Hoy"
+      : s.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });
+    const sTime = s.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const eTime = e.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    return `${dayStr} ${sTime} – ${eTime} hs`;
+  } catch {
+    return `${startDt} - ${endDt}`;
+  }
+};
+
+// Horarios únicos de ofertas activas vigentes del establecimiento
+const existingActiveSchedules = computed(() => {
+  const map = new Map();
+  for (const o of activeOffers.value) {
+    const sDate = new Date(o.pickup_start_datetime);
+    const eDate = new Date(o.expiration_datetime);
+    if (isNaN(sDate.getTime()) || isNaN(eDate.getTime())) continue;
+    const startLocal = formatDateTimeLocal(sDate);
+    const endLocal = formatDateTimeLocal(eDate);
+    const key = `${startLocal}|${endLocal}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        startLocal,
+        endLocal,
+        label: formatScheduleWindowLabel(sDate, eDate),
+        count: 1,
+      });
+    } else {
+      map.get(key).count++;
+    }
+  }
+  return Array.from(map.values());
+});
+
+const applyExistingSchedule = (sched) => {
+  form.pickup_start_datetime = sched.startLocal;
+  form.pickup_end_datetime = sched.endLocal;
+  delete validationErrors.pickup_start_datetime;
+  delete validationErrors.pickup_end_datetime;
+};
+
+const isScheduleMatchingForm = (sched) => {
+  return (
+    form.pickup_start_datetime === sched.startLocal &&
+    form.pickup_end_datetime === sched.endLocal
+  );
+};
+
+// Detectar si el horario configurado difiere de otras ofertas activas vigentes
+const hasScheduleConflict = computed(() => {
+  if (!existingActiveSchedules.value.length) return false;
+  if (!form.pickup_start_datetime || !form.pickup_end_datetime) return false;
+  const currentKey = `${form.pickup_start_datetime}|${form.pickup_end_datetime}`;
+  return existingActiveSchedules.value.some((s) => s.key !== currentKey);
 });
 
 // Atajos para configurar ventana de retiro rápido
@@ -389,9 +470,12 @@ const handleSubmit = async () => {
 
   try {
     submitting.value = true;
-    await axiosInstance.post("/packs", payload);
+    const response = await axiosInstance.post("/packs", payload);
+    const warningMsg = response.data?.schedule_warning?.warning_message;
 
-    successMessage.value = "¡Oferta publicada exitosamente! Ya está visible para los clientes.";
+    successMessage.value = warningMsg
+      ? `¡Oferta publicada exitosamente! Aviso: ${warningMsg}`
+      : "¡Oferta publicada exitosamente! Ya está visible para los clientes.";
 
     setTimeout(() => {
       router.push({ name: "my-offers" });
@@ -412,6 +496,7 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   fetchTemplates();
+  fetchActiveOffers();
   applyQuickSchedule("today-afternoon");
 });
 </script>
@@ -924,6 +1009,42 @@ onMounted(() => {
             </p>
           </div>
 
+          <!-- Horarios de tus otras ofertas activas (1 clic para hacerlos coincidir) -->
+          <div
+            v-if="existingActiveSchedules.length > 0"
+            class="mb-4 p-4 rounded-xl bg-surface-sunken border border-brand/30 space-y-2.5"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-content flex items-center gap-1.5">
+                <span>🕒</span>
+                <span>Horarios usados en tus otras ofertas activas hoy:</span>
+              </span>
+              <span class="text-[11px] font-semibold text-brand">
+                Clic para igualar turno
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="sched in existingActiveSchedules"
+                :key="sched.key"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border"
+                :class="
+                  isScheduleMatchingForm(sched)
+                    ? 'bg-brand text-surface border-brand shadow-xs'
+                    : 'bg-surface text-content border-border-subtle hover:border-brand'
+                "
+                @click="applyExistingSchedule(sched)"
+              >
+                <span>{{ sched.label }}</span>
+                <span class="text-[10px] opacity-80">
+                  ({{ sched.count }} {{ sched.count === 1 ? 'oferta' : 'ofertas' }})
+                </span>
+                <span v-if="isScheduleMatchingForm(sched)" class="font-bold">✓</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Atajos rápidos -->
           <div class="quick-shortcuts-panel">
             <span class="quick-shortcuts-title">Atajos rápidos de retiro:</span>
@@ -987,6 +1108,23 @@ onMounted(() => {
               <span v-if="validationErrors.pickup_end_datetime" class="custom-field-error">
                 {{ validationErrors.pickup_end_datetime }}
               </span>
+            </div>
+          </div>
+
+          <!-- Advertencia de diferentes horarios de retiro -->
+          <div
+            v-if="hasScheduleConflict"
+            class="mt-4 p-4 rounded-xl bg-warning/15 border border-warning/40 text-xs text-content flex items-start gap-3"
+          >
+            <span class="text-base shrink-0">⚠️</span>
+            <div class="space-y-1">
+              <p class="font-bold text-warning">
+                Atención: Vas a tener ofertas activas en diferentes horarios de retiro
+              </p>
+              <p class="text-content-secondary leading-relaxed">
+                Tu comercio ya tiene ofertas publicadas en otro horario ({{ existingActiveSchedules.map(s => s.label).join(', ') }}).
+                A los clientes les aparecerán separadas por turno de retiro y no podrán retirarlas juntas en un mismo viaje a menos que confirmen compras separadas.
+              </p>
             </div>
           </div>
 

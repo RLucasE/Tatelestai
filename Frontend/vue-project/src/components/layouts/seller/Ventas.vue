@@ -58,7 +58,7 @@ const effectiveMetricVentas = computed(() => {
 // Resumen Financiero e Impacto (5 KPIs de Figma)
 const kpiMetrics = computed(() => {
   const all = effectiveMetricVentas.value;
-  const validVentas = all.filter((v) => v.state !== "cancelled");
+  const validVentas = all.filter((v) => v.state !== "cancelled" && v.payment_status !== "refunded");
 
   let gross = 0;
   let commission = 0;
@@ -68,7 +68,7 @@ const kpiMetrics = computed(() => {
   let noShowCount = 0;
 
   validVentas.forEach((v) => {
-    const itemGross =
+    const rawGross =
       Number(v.gross_amount || 0) ||
       (Array.isArray(v.sell_details)
         ? v.sell_details.reduce(
@@ -76,8 +76,18 @@ const kpiMetrics = computed(() => {
             0
           )
         : 0);
-    const itemComm = Number(v.commission_amount || Math.round(itemGross * 0.15));
-    const itemNet = Number(v.net_amount || itemGross - itemComm);
+    const itemGross =
+      v.effective_gross_amount !== undefined && v.effective_gross_amount !== null
+        ? Number(v.effective_gross_amount)
+        : Math.max(0, rawGross - Number(v.refunded_amount || 0));
+    const itemComm =
+      v.commission_amount !== undefined && v.commission_amount !== null
+        ? Number(v.commission_amount)
+        : Math.round(itemGross * 0.15);
+    const itemNet =
+      v.net_amount !== undefined && v.net_amount !== null
+        ? Number(v.net_amount)
+        : Math.max(0, itemGross - itemComm);
 
     gross += itemGross;
     commission += itemComm;
@@ -132,13 +142,15 @@ const weeklyChartBars = computed(() => {
     bagsCount: 0,
   }));
 
-  const valid = effectiveMetricVentas.value.filter((v) => v.state !== "cancelled");
+  const valid = effectiveMetricVentas.value.filter(
+    (v) => v.state !== "cancelled" && v.payment_status !== "refunded"
+  );
   valid.forEach((v) => {
     const d = v.created_at ? new Date(v.created_at) : new Date();
     const jsDay = d.getDay(); // 0=Dom, 1=Lun...
     const bucketIdx = jsDay === 0 ? 6 : jsDay - 1;
 
-    const itemGross =
+    const rawGross =
       Number(v.gross_amount || 0) ||
       (Array.isArray(v.sell_details)
         ? v.sell_details.reduce(
@@ -146,7 +158,14 @@ const weeklyChartBars = computed(() => {
             0
           )
         : 0);
-    const itemNet = Number(v.net_amount || Math.round(itemGross * 0.85));
+    const itemGross =
+      v.effective_gross_amount !== undefined && v.effective_gross_amount !== null
+        ? Number(v.effective_gross_amount)
+        : Math.max(0, rawGross - Number(v.refunded_amount || 0));
+    const itemNet =
+      v.net_amount !== undefined && v.net_amount !== null
+        ? Number(v.net_amount)
+        : Math.round(itemGross * 0.85);
     const bags = Array.isArray(v.sell_details)
       ? v.sell_details.reduce((acc, det) => acc + Number(det.offer_quantity || 1), 0)
       : 1;
@@ -182,7 +201,7 @@ const bagTypeBreakdown = computed(() => {
   let totalBags = 0;
 
   effectiveMetricVentas.value
-    .filter((v) => v.state !== "cancelled")
+    .filter((v) => v.state !== "cancelled" && v.payment_status !== "refunded")
     .forEach((v) => {
       if (Array.isArray(v.sell_details)) {
         v.sell_details.forEach((d) => {
@@ -232,14 +251,15 @@ const filteredSalesHistory = computed(() => {
         v.state === "picked_up" ||
         v.state === "delivered" ||
         v.state === "expired" ||
-        v.state === "cancelled"
+        v.state === "cancelled" ||
+        v.payment_status === "refunded"
       ) {
         return false;
       }
     } else if (statusFilter.value === "expired") {
       if (v.state !== "expired") return false;
     } else if (statusFilter.value === "cancelled") {
-      if (v.state !== "cancelled") return false;
+      if (v.state !== "cancelled" && v.payment_status !== "refunded") return false;
     }
 
     // Filtro por texto

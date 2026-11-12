@@ -520,3 +520,53 @@ test('customer cannot clear another customer cart by establishment', function ()
         'quantity' => 2,
     ]);
 });
+
+test('buying only offers from one pickup window keeps remaining offers from other windows in the active cart', function () {
+    $this->actingAs($this->customer);
+
+    // Configurar dos ofertas del mismo comercio con distintos horarios de retiro
+    $this->offerA1->update([
+        'pickup_start_datetime' => now()->addHours(1)->startOfMinute(),
+        'expiration_datetime' => now()->addHours(3)->startOfMinute(),
+    ]);
+
+    $this->offerA2->update([
+        'pickup_start_datetime' => now()->addHours(6)->startOfMinute(),
+        'expiration_datetime' => now()->addHours(8)->startOfMinute(),
+    ]);
+
+    // Agregar ambas ofertas al carrito del comercio A
+    $this->postJson('/api/add-to-cart', ['offer_id' => $this->offerA1->id, 'quantity' => 1])->assertStatus(200);
+    $this->postJson('/api/add-to-cart', ['offer_id' => $this->offerA2->id, 'quantity' => 2])->assertStatus(200);
+
+    // Preparar y confirmar compra ÚNICAMENTE del primer turno (offerA1)
+    $prep = $this->postJson('/api/customer/pack-reservations/prepare', [
+        'food_establishment_id' => $this->establishmentA->id,
+        'offers' => [
+            ['id' => $this->offerA1->id, 'quantity' => 1],
+        ],
+    ]);
+    $prep->assertStatus(200);
+    $token = $prep->json('data.purchase_token');
+
+    $buy = $this->postJson('/api/customer/pack-reservations/confirm', ['purchase_token' => $token]);
+    $buy->assertStatus(200);
+
+    // El carrito de Panadería San José debe seguir ACTIVO porque aún queda offerA2 sin comprar
+    $cartA = UserCart::where('user_id', $this->customer->id)
+        ->where('food_establishment_id', $this->establishmentA->id)
+        ->first();
+
+    expect($cartA)->not->toBeNull();
+    expect($cartA->state)->toBe(CartState::ACTIVE->value);
+
+    // Consultar /api/customer-cart: solo debe figurar offerA2
+    $cartResponse = $this->getJson('/api/customer-cart');
+    $cartResponse->assertStatus(200);
+
+    $data = $cartResponse->json();
+    expect($data)->toHaveCount(1);
+    expect($data[0])->toHaveCount(1);
+    expect($data[0][0]['offer_id'])->toBe($this->offerA2->id);
+    expect($data[0][0]['quantity'])->toBe(2);
+});

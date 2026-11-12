@@ -45,11 +45,15 @@ const getEventIconClass = (eventType) => {
   switch (eventType) {
     case 'new_sale':
     case 'order_picked_up':
+    case 'claim_approved':
       return 'bg-success/15 text-success border-success/30';
     case 'cancelled_by_seller':
+    case 'claim_rejected':
       return 'bg-danger/15 text-danger border-danger/30';
     case 'cancelled_by_customer':
     case 'offer_sold_out':
+    case 'claim_created':
+    case 'claim_refunded_seller':
       return 'bg-warning/15 text-brand border-warning/35';
     default:
       return 'bg-brand/15 text-brand border-brand/30';

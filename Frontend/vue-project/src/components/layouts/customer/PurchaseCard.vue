@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import axiosInstance from '@/lib/axios';
 import { buildPickupQrPayload } from '@/utils/qrPayload';
 import tokens from '@/assets/tokens.json';
+import PurchaseClaimModal from '@/components/common/PurchaseClaimModal.vue';
 
 const props = defineProps({
   purchase: {
@@ -17,7 +18,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['cancelled']);
+const emit = defineEmits(['cancelled', 'claim-created']);
 
 // Estado de expansión de la tarjeta
 const isExpanded = ref(props.defaultExpanded);
@@ -27,6 +28,8 @@ const showCancelModal = ref(false);
 const cancelling = ref(false);
 const cancelError = ref(null);
 const cancelSuccess = ref(false);
+const showClaimModal = ref(false);
+const localClaim = ref(null);
 
 const currentPurchase = ref({ ...props.purchase });
 
@@ -35,6 +38,9 @@ watch(
   () => props.purchase,
   (newVal) => {
     currentPurchase.value = { ...newVal };
+    if (newVal?.claim) {
+      localClaim.value = null;
+    }
   },
   { deep: true }
 );
@@ -166,18 +172,47 @@ const pickupTimeInfo = computed(() => {
     };
   }
 
-  const deadline = new Date(currentPurchase.value.max_pickup_datetime).getTime();
+  const deadlineDate = new Date(currentPurchase.value.max_pickup_datetime);
+  const deadline = deadlineDate.getTime();
   const diffMs = deadline - now.value;
 
-  const deadlineFormatted = new Date(currentPurchase.value.max_pickup_datetime).toLocaleTimeString('es-AR', {
+  const startRaw =
+    currentPurchase.value.pickup_start_datetime ||
+    currentPurchase.value.sell_details?.[0]?.pickup_start_datetime ||
+    null;
+  const startDate = startRaw ? new Date(startRaw) : null;
+
+  const isToday = (startDate || deadlineDate).toDateString() === new Date(now.value).toDateString();
+  const dateLabel = isToday
+    ? 'Hoy'
+    : (startDate || deadlineDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+
+  const startFormatted = startDate
+    ? startDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : null;
+  const deadlineFormatted = deadlineDate.toLocaleTimeString('es-AR', {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const windowLabel = startFormatted
+    ? `${dateLabel} ${startFormatted} a ${deadlineFormatted} hs`
+    : `${dateLabel} hasta las ${deadlineFormatted} hs`;
 
   if (diffMs <= 0) {
     return {
       schedule: `Plazo vencido (${deadlineFormatted} hs)`,
       badge: 'Vencido',
+    };
+  }
+
+  if (startDate && startDate.getTime() > now.value) {
+    const startDiffMins = Math.floor((startDate.getTime() - now.value) / (1000 * 60));
+    const startHours = Math.floor(startDiffMins / 60);
+    const startRemMins = startDiffMins % 60;
+    return {
+      schedule: windowLabel,
+      badge: startHours > 0 ? `Abre en ${startHours}h ${startRemMins}m` : `Abre en ${startRemMins}m`,
     };
   }
 
@@ -187,14 +222,14 @@ const pickupTimeInfo = computed(() => {
 
   if (diffHours === 0) {
     return {
-      schedule: `Hoy hasta las ${deadlineFormatted} hs`,
+      schedule: windowLabel,
       badge: `Cierra en ${remainingMinutes}m`,
     };
   }
 
   return {
-    schedule: `Hoy hasta las ${deadlineFormatted} hs`,
-    badge: `Abre en ${diffHours}h ${remainingMinutes}m`,
+    schedule: windowLabel,
+    badge: `Quedan ${diffHours}h ${remainingMinutes}m`,
   };
 });
 
@@ -259,11 +294,57 @@ const copyPickupCode = async () => {
   }
 };
 
-// Validación de cancelación estricta por whitelist (AGENTS.md)
+const activeClaim = computed(() => localClaim.value || currentPurchase.value.claim || null);
+const isRefunded = computed(() => currentPurchase.value.payment_status === 'refunded');
+const isPartiallyRefunded = computed(() => currentPurchase.value.payment_status === 'partially_refunded');
+
+const claimStatusText = computed(() => {
+  const status = activeClaim.value?.status;
+  if (status === 'pending') return 'Pendiente de revisión';
+  if (status === 'under_review') return 'En revisión';
+  if (status === 'approved') {
+    return activeClaim.value?.refund_type === 'partial'
+      ? 'Aprobado (reembolso parcial)'
+      : 'Aprobado (reembolso total)';
+  }
+  if (status === 'rejected') return 'Rechazado';
+  return status || 'Registrado';
+});
+
+const claimBadgeClass = computed(() => {
+  const status = activeClaim.value?.status;
+  if (status === 'approved') return 'bg-success/15 text-success border-success/30';
+  if (status === 'rejected') return 'bg-danger/15 text-danger border-danger/30';
+  return 'bg-warning/15 text-brand border-warning/30';
+});
+
+const handleClaimSubmitted = (createdClaim) => {
+  localClaim.value = createdClaim;
+  currentPurchase.value.claim = createdClaim;
+  emit('claim-created', createdClaim);
+};
+
+// Validación de cancelación y QR estricta por whitelist (AGENTS.md)
 const CANCELLABLE_STATES = ['confirmed', 'ready'];
 const canCancel = computed(() => {
   const state = currentPurchase.value.state;
-  return CANCELLABLE_STATES.includes(state) && !currentPurchase.value.is_picked_up;
+  return (
+    CANCELLABLE_STATES.includes(state) &&
+    !currentPurchase.value.is_picked_up &&
+    !isRefunded.value &&
+    !isPartiallyRefunded.value
+  );
+});
+
+const PICKUP_QR_STATES = ['confirmed', 'ready', 'pending'];
+const canShowPickupQr = computed(() => {
+  const state = currentPurchase.value.state;
+  return (
+    PICKUP_QR_STATES.includes(state) &&
+    !currentPurchase.value.is_picked_up &&
+    !isRefunded.value &&
+    !isPartiallyRefunded.value
+  );
 });
 
 const executeCancellation = async () => {
@@ -381,9 +462,9 @@ const openDirections = () => {
             </div>
           </div>
 
-          <!-- Fila de Ventana de Retiro y Urgencia + Cancelar en estado colapsado -->
+          <!-- Fila de Ventana de Retiro y Urgencia + Cancelar / Reclamo en estado colapsado -->
           <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-content-secondary pt-1">
-            <div class="flex items-center gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
               <svg class="w-3.5 h-3.5 text-content-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke-width="2" />
                 <polyline points="12 6 12 12 16 14" stroke-width="2" />
@@ -395,17 +476,47 @@ const openDirections = () => {
               >
                 {{ pickupTimeInfo.badge }}
               </span>
+              <span
+                v-if="isRefunded"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-danger/15 text-danger border border-danger/30 ml-1"
+              >
+                Reembolsado por reclamo
+              </span>
+              <span
+                v-else-if="isPartiallyRefunded"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-warning/15 text-brand border border-warning/30 ml-1"
+              >
+                Reembolso parcial (${{ Number(currentPurchase.refunded_amount || 0).toLocaleString('es-AR') }})
+              </span>
             </div>
 
-            <!-- Cancelar reserva en el margen derecho de la fila de horario según Figma -->
-            <button
-              v-if="canCancel && !isExpanded"
-              type="button"
-              class="text-xs text-brand hover:underline font-medium cursor-pointer"
-              @click="showCancelModal = true"
-            >
-              Cancelar reserva
-            </button>
+            <div class="flex items-center gap-3 ml-auto">
+              <span
+                v-if="activeClaim"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+                :class="claimBadgeClass"
+              >
+                Reclamo: {{ claimStatusText }}
+              </span>
+              <button
+                v-else-if="currentPurchase.can_claim"
+                type="button"
+                class="text-xs text-danger hover:underline font-semibold cursor-pointer"
+                @click="showClaimModal = true"
+              >
+                Hacer reclamo
+              </button>
+
+              <!-- Cancelar reserva en el margen derecho de la fila de horario según Figma -->
+              <button
+                v-if="canCancel && !isExpanded"
+                type="button"
+                class="text-xs text-brand hover:underline font-medium cursor-pointer"
+                @click="showCancelModal = true"
+              >
+                Cancelar reserva
+              </button>
+            </div>
           </div>
         </div>
 
@@ -419,7 +530,7 @@ const openDirections = () => {
           </div>
 
           <!-- Si la tarjeta está EXPANDIDA: Resumen detallado con items individuales -->
-          <div v-if="isExpanded" class="space-y-3">
+          <div v-if="isExpanded && canShowPickupQr" class="space-y-3">
             <span class="text-[10px] font-bold uppercase tracking-wider text-content-muted block font-heading">
               RESUMEN DE COMPRA
             </span>
@@ -460,7 +571,7 @@ const openDirections = () => {
             </button>
           </div>
 
-          <!-- Si la tarjeta está COLAPSADA: Total con desglose de items y botón Ver QR abajo -->
+          <!-- Si la tarjeta está COLAPSADA o no permite QR: Total con desglose de items y botón Ver QR / Reclamo -->
           <div v-else class="flex flex-col justify-end h-full space-y-3 text-left lg:text-right">
             <div>
               <span class="text-[10px] font-bold uppercase tracking-wider text-content-muted font-heading block">
@@ -476,11 +587,20 @@ const openDirections = () => {
 
             <!-- Botón Ver QR y detalles de retiro (Vermilion Flame sólida según Figma) -->
             <button
+              v-if="canShowPickupQr"
               type="button"
               class="w-full lg:w-auto px-5 py-2.5 rounded-[10px] bg-brand hover:bg-brand-hover text-surface text-xs font-bold transition shadow-sm active:scale-95 cursor-pointer select-none"
               @click="toggleExpand"
             >
               Ver QR y detalles de retiro ▾
+            </button>
+            <button
+              v-else-if="!activeClaim && currentPurchase.can_claim"
+              type="button"
+              class="w-full lg:w-auto px-5 py-2.5 rounded-[10px] bg-danger/10 hover:bg-danger/20 border border-danger/30 text-danger text-xs font-bold transition active:scale-95 cursor-pointer select-none"
+              @click="showClaimModal = true"
+            >
+              Hacer reclamo
             </button>
           </div>
         </div>
@@ -489,7 +609,7 @@ const openDirections = () => {
 
     <!-- Gaveta Inferior Expandida: Código QR, PIN de Retiro y Mapa Interactivo -->
     <div
-      v-if="isExpanded"
+      v-if="isExpanded && canShowPickupQr"
       class="bg-canvas border-t border-border-subtle p-5 sm:p-6 rounded-b-card"
     >
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -669,5 +789,13 @@ const openDirections = () => {
         </div>
       </div>
     </Teleport>
+
+    <!-- Modal de Reclamo -->
+    <PurchaseClaimModal
+      v-model="showClaimModal"
+      :sell-id="currentPurchase.sell_id || currentPurchase.id"
+      :establishment-name="establishmentName"
+      @submitted="handleClaimSubmitted"
+    />
   </article>
 </template>

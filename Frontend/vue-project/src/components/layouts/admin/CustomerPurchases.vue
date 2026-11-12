@@ -30,10 +30,14 @@ const getPurchases = async () => {
 
 const calculateTotalSpent = () => {
   return purchases.value.reduce((total, purchase) => {
+    if (purchase.state === 'cancelled' || purchase.payment_status === 'refunded') {
+      return total;
+    }
     const purchaseTotal = (purchase.sell_details || []).reduce((purchaseSum, detail) => {
       return purchaseSum + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
     }, 0);
-    return total + purchaseTotal;
+    const effective = Math.max(0, purchaseTotal - Number(purchase.refunded_amount || 0));
+    return total + effective;
   }, 0).toFixed(2);
 };
 

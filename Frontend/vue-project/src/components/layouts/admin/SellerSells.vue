@@ -30,10 +30,18 @@ const getSells = async () => {
 
 const calculateTotalRevenue = () => {
   return sells.value.reduce((total, sell) => {
-    const sellTotal = (sell.sell_details || []).reduce((sellSum, detail) => {
-      return sellSum + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
-    }, 0);
-    return total + sellTotal;
+    if (sell.state === 'cancelled' || sell.payment_status === 'refunded') {
+      return total;
+    }
+
+    const sellTotal = sell.gross_amount !== undefined
+      ? Number(sell.gross_amount)
+      : (sell.sell_details || []).reduce((sellSum, detail) => {
+          return sellSum + (Number(detail.offer_quantity || 0) * Number(detail.pack_price || 0));
+        }, 0);
+    const refundedAmount = Number(sell.refunded_amount || 0);
+
+    return total + Math.max(0, sellTotal - refundedAmount);
   }, 0).toFixed(2);
 };
 

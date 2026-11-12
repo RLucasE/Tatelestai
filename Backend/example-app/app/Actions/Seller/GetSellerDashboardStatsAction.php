@@ -4,6 +4,7 @@ namespace App\Actions\Seller;
 
 use App\Actions\Sell\ProcessExpiredSellsAction;
 use App\Enums\OfferState;
+use App\Enums\PaymentStatus;
 use App\Enums\SellState;
 use App\Models\FoodEstablishment;
 use App\Models\Offer;
@@ -46,35 +47,40 @@ class GetSellerDashboardStatsAction
      */
     public function buildSummary(FoodEstablishment $establishment, Carbon $startOfDay, Carbon $endOfDay): array
     {
-        $sellsQuery = Sell::query()
+        $validPaymentStatuses = [
+            PaymentStatus::APPROVED->value,
+            PaymentStatus::PARTIALLY_REFUNDED->value,
+        ];
+
+        $sellsToday = Sell::with('sellDetails')
             ->where('sold_by', $establishment->id)
             ->whereBetween('created_at', [$startOfDay, $endOfDay])
-            ->where('state', '!=', SellState::CANCELLED->value);
-
-        $ordersToday = (clone $sellsQuery)->count();
-
-        // Obtener detalles de ventas para calcular unidades vendidas y recaudación
-        $sellDetails = SellDetail::query()
-            ->whereHas('sell', function ($query) use ($establishment, $startOfDay, $endOfDay) {
-                $query->where('sold_by', $establishment->id)
-                    ->whereBetween('created_at', [$startOfDay, $endOfDay])
-                    ->where('state', '!=', SellState::CANCELLED->value);
+            ->where('state', '!=', SellState::CANCELLED->value)
+            ->where(function ($query) use ($validPaymentStatuses) {
+                $query->whereIn('payment_status', $validPaymentStatuses)
+                    ->orWhereNull('payment_status');
             })
-            ->get(['offer_quantity', 'pack_price']);
+            ->get();
 
-        $packsSoldToday = (int) $sellDetails->sum('offer_quantity');
-        $earningsToday = (float) $sellDetails->sum(function ($detail) {
-            return (int) $detail->offer_quantity * (float) $detail->pack_price;
+        $ordersToday = $sellsToday->count();
+        $packsSoldToday = (int) $sellsToday->sum(function (Sell $sell) {
+            return $sell->sellDetails->sum('offer_quantity');
         });
 
+        $earningsToday = round((float) $sellsToday->sum(fn (Sell $sell) => $sell->getEffectiveGrossAmount()), 2);
         $commissionPercentage = (float) config('services.mercadopago.commission_percentage', 15.0);
-        $commissionToday = round($earningsToday * ($commissionPercentage / 100), 2);
-        $netEarningsToday = round($earningsToday - $commissionToday, 2);
+        $commissionToday = round((float) $sellsToday->sum(fn (Sell $sell) => $sell->getEffectiveCommissionAmount()), 2);
+        $netEarningsToday = round((float) $sellsToday->sum(fn (Sell $sell) => $sell->getEffectiveNetAmount()), 2);
 
-        // Retiros completados hoy
+        // Retiros completados hoy (excluye cancelados y reembolsados totales)
         $completedPickupsToday = Sell::query()
             ->where('sold_by', $establishment->id)
             ->where('is_picked_up', true)
+            ->where('state', '!=', SellState::CANCELLED->value)
+            ->where(function ($query) use ($validPaymentStatuses) {
+                $query->whereIn('payment_status', $validPaymentStatuses)
+                    ->orWhereNull('payment_status');
+            })
             ->where(function ($query) use ($startOfDay, $endOfDay) {
                 $query->whereBetween('picked_up_at', [$startOfDay, $endOfDay])
                     ->orWhere(function ($q) use ($startOfDay, $endOfDay) {
@@ -84,11 +90,15 @@ class GetSellerDashboardStatsAction
             })
             ->count();
 
-        // Retiros pendientes para la jornada
+        // Retiros pendientes para la jornada (excluye cancelados, expirados y reembolsados)
         $pendingPickupsToday = Sell::query()
             ->where('sold_by', $establishment->id)
             ->where('is_picked_up', false)
-            ->where('state', '!=', SellState::CANCELLED->value)
+            ->whereNotIn('state', [SellState::CANCELLED->value, SellState::EXPIRED->value])
+            ->where(function ($query) use ($validPaymentStatuses) {
+                $query->whereIn('payment_status', $validPaymentStatuses)
+                    ->orWhereNull('payment_status');
+            })
             ->where(function ($query) use ($startOfDay, $endOfDay) {
                 $query->whereBetween('created_at', [$startOfDay, $endOfDay])
                     ->orWhereBetween('max_pickup_datetime', [$startOfDay, $endOfDay]);
@@ -100,8 +110,8 @@ class GetSellerDashboardStatsAction
             'packs_sold_today' => $packsSoldToday,
             'pending_pickups_today' => $pendingPickupsToday,
             'completed_pickups_today' => $completedPickupsToday,
-            'earnings_today' => round($earningsToday, 2),
-            'gross_earnings_today' => round($earningsToday, 2),
+            'earnings_today' => $earningsToday,
+            'gross_earnings_today' => $earningsToday,
             'commission_percentage' => $commissionPercentage,
             'commission_today' => $commissionToday,
             'net_earnings_today' => $netEarningsToday,
@@ -198,9 +208,10 @@ class GetSellerDashboardStatsAction
                 'customer_name' => $sell->customer?->name ?? 'Cliente',
                 'packs' => $items->values()->toArray(),
                 'total_price' => $totalPrice,
-                'gross_amount' => $sell->getGrossAmount(),
-                'commission_amount' => $sell->getCommissionAmount(),
-                'net_amount' => $sell->getNetAmount(),
+                'gross_amount' => $sell->getEffectiveGrossAmount(),
+                'refunded_amount' => $sell->getEffectiveRefundedAmount(),
+                'commission_amount' => $sell->getEffectiveCommissionAmount(),
+                'net_amount' => $sell->getEffectiveNetAmount(),
                 'commission_percentage' => (float) ($sell->commission_percentage ?: config('services.mercadopago.commission_percentage', 15.0)),
                 'payment_status' => $sell->payment_status?->value ?? 'approved',
                 'cancelled_by' => $sell->cancelled_by,

@@ -18,8 +18,8 @@ class OfferFactory extends Factory
      */
     public function definition(): array
     {
-        $pickupStart = $this->faker->dateTimeBetween('now', '+3 hours');
-        $pickupEnd = (clone $pickupStart)->modify('+2 hours');
+        $pickupStart = (new \DateTimeImmutable('+1 hour'))->setTime((int) date('H'), 0, 0);
+        $pickupEnd = $pickupStart->modify('+2 hours');
         $price = $this->faker->numberBetween(1500, 5000);
 
         $titles = [

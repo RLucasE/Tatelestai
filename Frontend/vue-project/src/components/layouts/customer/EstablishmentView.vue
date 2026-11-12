@@ -20,6 +20,7 @@ const showOfferModal = ref(false);
 const showReportModal = ref(false);
 const establishmentRatingSummary = ref(null);
 const activeCategory = ref('Todas');
+const activeSchedule = ref('Todos');
 
 const establishmentId = computed(() => route.params.id);
 
@@ -149,6 +150,24 @@ function getOfferCategory(o) {
   return o.pack_type || 'Panadería Salada';
 }
 
+const formatOfferPickupWindow = (o) => {
+  const start = o?.pickup_start_datetime ? new Date(o.pickup_start_datetime) : null;
+  const end = o?.expiration_datetime || o?.offer_expiration_datetime
+    ? new Date(o.expiration_datetime || o.offer_expiration_datetime)
+    : null;
+  if (start && end) {
+    const isToday = start.toDateString() === new Date().toDateString();
+    const dateLabel = isToday ? 'Hoy' : start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    const startTime = start.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const endTime = end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return `${dateLabel} ${startTime} a ${endTime} hs`;
+  }
+  if (end) {
+    return `Hasta ${end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs`;
+  }
+  return 'Horario comercial';
+};
+
 // Categorías dinámicas derivadas de las ofertas del local
 const categories = computed(() => {
   const map = new Map();
@@ -165,12 +184,26 @@ const categories = computed(() => {
   return list;
 });
 
-const filteredOffers = computed(() => {
-  if (activeCategory.value === 'Todas') {
-    return offers.value;
+// Turnos de retiro disponibles en este establecimiento
+const pickupSchedules = computed(() => {
+  const map = new Map();
+  offers.value.forEach((o) => {
+    const label = formatOfferPickupWindow(o);
+    map.set(label, (map.get(label) || 0) + 1);
+  });
+  if (map.size <= 1) return [];
+  const list = [{ label: 'Todos', count: offers.value.length }];
+  for (const [label, count] of map.entries()) {
+    list.push({ label, count });
   }
+  return list;
+});
+
+const filteredOffers = computed(() => {
   return offers.value.filter((o) => {
-    return getOfferCategory(o) === activeCategory.value;
+    const matchesCat = activeCategory.value === 'Todas' || getOfferCategory(o) === activeCategory.value;
+    const matchesSched = activeSchedule.value === 'Todos' || formatOfferPickupWindow(o) === activeSchedule.value;
+    return matchesCat && matchesSched;
   });
 });
 
@@ -344,7 +377,32 @@ const handleBuyOffer = async ({ id, quantity, food_establishment_id }) => {
     };
 
     const prepareResponse = await axiosInstance.post('/customer/pack-reservations/prepare', offerPayload);
-    sessionStorage.setItem('purchaseConfirmation', JSON.stringify(prepareResponse.data.data));
+    const targetOffer = offers.value.find((o) => Number(o.id) === Number(id)) || selectedOffer.value;
+    const pickupWin = targetOffer ? formatOfferPickupWindow(targetOffer) : 'Hoy en horario de retiro';
+
+    const confirmationData = {
+      ...prepareResponse.data.data,
+      schedules_count: 1,
+      establishment: {
+        ...(prepareResponse.data.data?.establishment || {}),
+        pickup_window: pickupWin,
+      },
+      offersDetails: targetOffer
+        ? [
+            {
+              id: targetOffer.id,
+              title: targetOffer.title,
+              description: targetOffer.description,
+              price: Number(targetOffer.price || 0),
+              original_price: Number(targetOffer.minimum_value || 0),
+              quantity: Number(quantity || 1),
+              pickup_window: pickupWin,
+            },
+          ]
+        : undefined,
+    };
+
+    sessionStorage.setItem('purchaseConfirmation', JSON.stringify(confirmationData));
 
     closeOfferModal();
     router.push({
@@ -554,6 +612,35 @@ onMounted(() => {
               @click="activeCategory = cat.name"
             >
               {{ cat.name }} ({{ cat.count }})
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtro de Turnos de Retiro si el establecimiento tiene múltiples horarios -->
+        <div
+          v-if="pickupSchedules.length > 0"
+          class="p-3.5 rounded-2xl bg-surface border border-border-subtle flex flex-wrap items-center justify-between gap-3"
+        >
+          <div class="flex items-center gap-2 text-xs font-bold text-content-strong">
+            <span>🕒 Filtrar por turno de retiro:</span>
+            <span class="text-content-secondary font-normal">
+              (Este comercio tiene ofertas en distintos horarios)
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              v-for="sched in pickupSchedules"
+              :key="sched.label"
+              type="button"
+              class="px-3 py-1 rounded-full text-xs transition-all duration-150 cursor-pointer select-none"
+              :class="
+                activeSchedule === sched.label
+                  ? 'bg-brand text-surface font-bold shadow-xs'
+                  : 'bg-surface-sunken border border-border-subtle text-content-secondary hover:text-content font-medium'
+              "
+              @click="activeSchedule = sched.label"
+            >
+              {{ sched.label }} ({{ sched.count }})
             </button>
           </div>
         </div>

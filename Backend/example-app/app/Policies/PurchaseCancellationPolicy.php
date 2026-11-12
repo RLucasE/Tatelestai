@@ -43,9 +43,13 @@ class PurchaseCancellationPolicy
             throw new CancellationNotAllowedException('El pedido ya fue retirado en el local y no puede ser cancelado.', 422);
         }
 
-        // 3. Verificación de estado ya cancelado
+        // 3. Verificación de estado ya cancelado o reembolsado
         if ($sell->state === SellState::CANCELLED) {
             throw new CancellationNotAllowedException('La compra ya se encuentra cancelada.', 422);
+        }
+
+        if ($sell->isRefundedOrPartiallyRefunded()) {
+            throw new CancellationNotAllowedException('La compra ya cuenta con un reembolso emitido.', 422);
         }
 
         // 4. Franjas horarias

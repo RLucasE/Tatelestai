@@ -42,25 +42,39 @@ class SellerCancelSellAction
             throw new CancellationNotAllowedException('El pedido ya se encuentra cancelado.', 422);
         }
 
+        if ($sell->isRefundedOrPartiallyRefunded()) {
+            throw new CancellationNotAllowedException('El pedido ya cuenta con un reembolso emitido y no puede ser cancelado nuevamente.', 422);
+        }
+
         return DB::transaction(function () use ($sell, $reason, $restoreStock) {
             $affected = Sell::where('id', $sell->id)
                 ->where('state', '!=', SellState::CANCELLED->value)
+                ->whereNotIn('payment_status', [
+                    PaymentStatus::REFUNDED->value,
+                    PaymentStatus::PARTIALLY_REFUNDED->value,
+                ])
                 ->update([
                     'state' => SellState::CANCELLED->value,
                     'payment_status' => PaymentStatus::REFUNDED->value,
+                    'refunded_amount' => $sell->getGrossAmount(),
                     'refunded_at' => now(),
                     'cancelled_by' => 'seller',
                     'cancellation_reason' => $reason,
                 ]);
 
             if ($affected === 0) {
-                throw new CancellationNotAllowedException('El pedido ya se encuentra cancelado.', 422);
+                throw new CancellationNotAllowedException('El pedido ya se encuentra cancelado o reembolsado.', 422);
             }
 
-            // Devolver automáticamente el 100% del dinero por Mercado Pago
+            // Devolver automáticamente el dinero por Mercado Pago (parcial si pertenece a una compra dividida por turnos)
             if ($sell->payment_id) {
                 try {
-                    $this->paymentService->refundPayment($sell->payment_id);
+                    $sharedPaymentCount = $sell->preference_id
+                        ? Sell::where('preference_id', $sell->preference_id)->count()
+                        : Sell::where('payment_id', $sell->payment_id)->count();
+
+                    $refundAmount = $sharedPaymentCount > 1 ? $sell->getGrossAmount() : null;
+                    $this->paymentService->refundPayment($sell->payment_id, $refundAmount);
                 } catch (\Throwable $e) {
                     Log::error('Fallo al emitir reembolso de comercio en pasarela:', [
                         'sell_id' => $sell->id,

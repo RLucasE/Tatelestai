@@ -8,6 +8,7 @@ enum PaymentStatus: string
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
     case REFUNDED = 'refunded';
+    case PARTIALLY_REFUNDED = 'partially_refunded';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum PaymentStatus: string
             self::APPROVED => 'Aprobado',
             self::REJECTED => 'Rechazado',
             self::REFUNDED => 'Reembolsado',
+            self::PARTIALLY_REFUNDED => 'Reembolsado parcialmente',
         };
     }
 }

@@ -154,8 +154,13 @@ const openPublishModal = (tpl) => {
   showPublishModal.value = true;
 };
 
-const onPackPublished = () => {
-  showToast("Oferta diaria publicada exitosamente");
+const onPackPublished = (resPayload) => {
+  const warningMsg = resPayload?.schedule_warning?.warning_message;
+  if (warningMsg) {
+    showToast(`Oferta publicada • ${warningMsg}`);
+  } else {
+    showToast("Oferta diaria publicada exitosamente");
+  }
   fetchTemplates();
   fetchOffers();
 };
@@ -494,6 +499,7 @@ const executeDelete = async () => {
     <PublishPackModal
       v-model="showPublishModal"
       :template="publishingTemplate"
+      :active-offers="offers"
       @published="onPackPublished"
     />
 

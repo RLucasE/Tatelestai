@@ -81,21 +81,33 @@ class CustomerPaymentController extends Controller
                 );
                 $this->verifyPurchaseDataFreshnessAction->execute($preparePurchaseDTO);
 
-                $sellResult = $this->makeSellAction->execute(
+                $sellResult = $this->makeSellAction->executeMultiple(
                     $preparePurchaseDTO,
                     Auth::id(),
                     $preparePurchaseDTO->food_establishment_id,
-                    paymentStatus: PaymentStatus::PENDING->value
+                    paymentStatus: PaymentStatus::PENDING->value,
+                    cleanCart: false
                 );
             });
 
-            $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
-                ->findOrFail($sellResult['sell_id']);
+            $sellIds = $sellResult['sell_ids'] ?? [$sellResult['sell_id']];
+            $sells = Sell::with(['customer', 'foodEstablishment', 'sellDetails.offer'])
+                ->whereIn('id', $sellIds)
+                ->orderBy('id')
+                ->get();
+
+            $primarySell = $sells->firstOrFail();
+
+            // Si se crearon múltiples Sells, combinar todos los sellDetails temporalmente en primarySell para que MP cobre el total
+            if ($sells->count() > 1) {
+                $allDetails = $sells->flatMap(fn (Sell $s) => $s->sellDetails);
+                $primarySell->setRelation('sellDetails', $allDetails);
+            }
 
             // Generar preferencia en Mercado Pago
-            $preference = $this->paymentService->createPreference($sell, Auth::user());
+            $preference = $this->paymentService->createPreference($primarySell, Auth::user());
 
-            $sell->update([
+            Sell::whereIn('id', $sellIds)->update([
                 'preference_id' => $preference['preference_id'],
             ]);
 
@@ -103,16 +115,36 @@ class CustomerPaymentController extends Controller
             session()->forget('purchase_'.$purchaseToken);
             session()->save();
 
+            // Recargar los detalles propios de cada sell
+            $sells = Sell::with(['customer', 'foodEstablishment', 'sellDetails.offer'])
+                ->whereIn('id', $sellIds)
+                ->orderBy('id')
+                ->get();
+            $primarySell = $sells->firstOrFail();
+
+            $totalGrossAmount = round((float) $sells->sum(fn (Sell $s) => $s->getGrossAmount()), 2);
+
+            $sellsPayload = $sells->map(fn (Sell $s) => [
+                'sell_id' => $s->id,
+                'pickup_code' => $s->pickup_code,
+                'pickup_start_datetime' => $s->getPickupStartDatetime(),
+                'max_pickup_datetime' => $s->max_pickup_datetime,
+                'gross_amount' => $s->getGrossAmount(),
+            ])->values()->toArray();
+
             return response()->json([
                 'message' => 'Preferencia de pago generada exitosamente',
                 'data' => [
-                    'sell_id' => $sell->id,
+                    'sell_id' => $primarySell->id,
+                    'sell_ids' => $sellIds,
+                    'sells_count' => count($sellsPayload),
+                    'sells' => $sellsPayload,
                     'preference_id' => $preference['preference_id'],
                     'init_point' => $preference['init_point'],
                     'sandbox_init_point' => $preference['sandbox_init_point'],
-                    'gross_amount' => $sell->getGrossAmount(),
-                    'pickup_code' => $sell->pickup_code,
-                    'max_pickup_datetime' => $sell->max_pickup_datetime,
+                    'gross_amount' => $totalGrossAmount,
+                    'pickup_code' => $primarySell->pickup_code,
+                    'max_pickup_datetime' => $primarySell->max_pickup_datetime,
                 ],
             ], 200);
 
@@ -135,13 +167,47 @@ class CustomerPaymentController extends Controller
      */
     public function verifyPayment(VerifyPaymentRequest $request): JsonResponse
     {
-        $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails'])
+        $sell = Sell::with(['customer', 'foodEstablishment', 'sellDetails.offer'])
             ->where('id', $request->validated('sell_id'))
             ->where('bought_by', Auth::id())
             ->firstOrFail();
 
+        $preferenceId = $request->validated('preference_id') ?: $sell->preference_id;
+
+        if ($preferenceId) {
+            $sells = Sell::with(['customer', 'foodEstablishment', 'sellDetails.offer'])
+                ->where('bought_by', Auth::id())
+                ->where('preference_id', $preferenceId)
+                ->orderBy('id')
+                ->get();
+
+            if ($sells->isEmpty()) {
+                $sells = collect([$sell]);
+            }
+        } else {
+            $sells = collect([$sell]);
+        }
+
+        $formatSellsPayload = fn ($collection) => $collection->map(fn (Sell $s) => [
+            'sell_id' => $s->id,
+            'pickup_code' => $s->pickup_code,
+            'payment_status' => PaymentStatus::APPROVED->value,
+            'pickup_start_datetime' => $s->getPickupStartDatetime(),
+            'max_pickup_datetime' => $s->max_pickup_datetime,
+            'gross_amount' => $s->getGrossAmount(),
+            'offers' => $s->sellDetails->map(fn ($d) => [
+                'id' => $d->offer_id,
+                'title' => $d->pack_name,
+                'description' => $d->pack_description,
+                'price' => $d->pack_price,
+                'quantity' => $d->offer_quantity,
+            ])->values()->toArray(),
+        ])->values()->toArray();
+
         // Si ya fue aprobado (por ejemplo, vía Webhook concurrente)
         if ($sell->payment_status === PaymentStatus::APPROVED) {
+            $sellsPayload = $formatSellsPayload($sells);
+
             return response()->json([
                 'message' => 'Pago verificado y orden confirmada exitosamente',
                 'data' => [
@@ -149,6 +215,8 @@ class CustomerPaymentController extends Controller
                     'pickup_code' => $sell->pickup_code,
                     'payment_status' => PaymentStatus::APPROVED->value,
                     'max_pickup_datetime' => $sell->max_pickup_datetime,
+                    'sells_count' => count($sellsPayload),
+                    'sells' => $sellsPayload,
                 ],
             ], 200);
         }
@@ -168,23 +236,45 @@ class CustomerPaymentController extends Controller
         }
 
         if ($isApproved) {
-            $sell->update([
-                'payment_status' => PaymentStatus::APPROVED->value,
-                'payment_id' => $paymentId ?: ($sell->payment_id ?: 'approved_direct'),
-                'payment_method' => $paymentMethod ?: 'mercadopago',
-                'state' => SellState::PENDING->value,
-            ]);
+            $purchasedOfferIds = [];
 
-            // Transicionar carrito a comprado
-            $activeCart = app(CartController::class)->getActiveCartByEstablishment(
-                Auth::id(),
-                $sell->sold_by
-            );
-            if ($activeCart) {
-                $activeCart->update(['state' => CartState::PURCHASED->value]);
+            foreach ($sells as $targetSell) {
+                $targetSell->update([
+                    'payment_status' => PaymentStatus::APPROVED->value,
+                    'payment_id' => $paymentId ?: ($targetSell->payment_id ?: 'approved_direct'),
+                    'payment_method' => $paymentMethod ?: 'mercadopago',
+                    'state' => SellState::PENDING->value,
+                ]);
+
+                foreach ($targetSell->sellDetails as $detail) {
+                    if ($detail->offer_id) {
+                        $purchasedOfferIds[] = (int) $detail->offer_id;
+                    }
+                }
             }
 
-            PurchaseCompleted::dispatch($sell);
+            // Limpiar selectivamente del carrito las ofertas compradas
+            if (! empty($purchasedOfferIds)) {
+                $this->makeSellAction->cleanPurchasedOffersFromCart(
+                    (int) Auth::id(),
+                    (int) $sell->sold_by,
+                    array_unique($purchasedOfferIds)
+                );
+            } else {
+                $activeCart = app(CartController::class)->getActiveCartByEstablishment(
+                    Auth::id(),
+                    $sell->sold_by
+                );
+                if ($activeCart) {
+                    $activeCart->update(['state' => CartState::PURCHASED->value]);
+                }
+            }
+
+            foreach ($sells as $targetSell) {
+                PurchaseCompleted::dispatch($targetSell);
+            }
+
+            $sellsPayload = $formatSellsPayload($sells);
 
             return response()->json([
                 'message' => 'Pago confirmado exitosamente',
@@ -193,26 +283,30 @@ class CustomerPaymentController extends Controller
                     'pickup_code' => $sell->pickup_code,
                     'payment_status' => PaymentStatus::APPROVED->value,
                     'max_pickup_datetime' => $sell->max_pickup_datetime,
+                    'sells_count' => count($sellsPayload),
+                    'sells' => $sellsPayload,
                 ],
             ], 200);
         }
 
-        // Si el pago fue rechazado o cancelado, revertir reserva de stock
-        DB::transaction(function () use ($sell, $paymentId) {
-            $sell->update([
-                'payment_status' => PaymentStatus::REJECTED->value,
-                'payment_id' => $paymentId,
-                'state' => SellState::CANCELLED->value,
-                'cancelled_by' => 'system',
-                'cancellation_reason' => 'Pago no aprobado en Mercado Pago',
-            ]);
+        // Si el pago fue rechazado o cancelado, revertir reserva de stock de todos los Sells vinculados
+        DB::transaction(function () use ($sells, $paymentId) {
+            foreach ($sells as $targetSell) {
+                $targetSell->update([
+                    'payment_status' => PaymentStatus::REJECTED->value,
+                    'payment_id' => $paymentId,
+                    'state' => SellState::CANCELLED->value,
+                    'cancelled_by' => 'system',
+                    'cancellation_reason' => 'Pago no aprobado en Mercado Pago',
+                ]);
 
-            foreach ($sell->sellDetails as $detail) {
-                if ($detail->offer_id && $detail->offer_quantity > 0) {
-                    $this->restoreOfferStockAction->execute(
-                        (int) $detail->offer_id,
-                        (int) $detail->offer_quantity
-                    );
+                foreach ($targetSell->sellDetails as $detail) {
+                    if ($detail->offer_id && $detail->offer_quantity > 0) {
+                        $this->restoreOfferStockAction->execute(
+                            (int) $detail->offer_id,
+                            (int) $detail->offer_quantity
+                        );
+                    }
                 }
             }
         });

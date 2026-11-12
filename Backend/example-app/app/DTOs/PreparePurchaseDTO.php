@@ -45,6 +45,9 @@ class PreparePurchaseDTO
                     description: $offer->description,
                     price: $offer->price,
                     quantity: $offer->quantity,
+                    allergens: $offer->allergens,
+                    estimated_weight_kg: $offer->estimated_weight_kg,
+                    minimum_value: $offer->minimum_value,
                 );
             }
 

@@ -24,6 +24,7 @@ class Sell extends Model
         'commission_percentage' => 'float',
         'commission_amount' => 'float',
         'net_amount' => 'float',
+        'refunded_amount' => 'float',
         'refunded_at' => 'datetime',
     ];
 
@@ -45,6 +46,11 @@ class Sell extends Model
     public function review(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(EstablishmentReview::class);
+    }
+
+    public function claim(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PurchaseClaim::class);
     }
 
     /**
@@ -106,6 +112,80 @@ class Sell extends Model
         }
 
         return round($this->getGrossAmount() - $this->getCommissionAmount(), 2);
+    }
+
+    public function isRefundedOrPartiallyRefunded(): bool
+    {
+        $paymentStatus = $this->payment_status instanceof PaymentStatus
+            ? $this->payment_status
+            : PaymentStatus::tryFrom((string) $this->payment_status);
+
+        return in_array($paymentStatus, [PaymentStatus::REFUNDED, PaymentStatus::PARTIALLY_REFUNDED], true);
+    }
+
+    public function getEffectiveRefundedAmount(): float
+    {
+        $paymentStatus = $this->payment_status instanceof PaymentStatus
+            ? $this->payment_status
+            : PaymentStatus::tryFrom((string) $this->payment_status);
+
+        $gross = $this->getGrossAmount();
+
+        if ($paymentStatus === PaymentStatus::REFUNDED) {
+            $recorded = (float) $this->refunded_amount;
+
+            return $recorded > 0 ? min($gross, round($recorded, 2)) : $gross;
+        }
+
+        if ($paymentStatus === PaymentStatus::PARTIALLY_REFUNDED) {
+            return min($gross, max(0.0, round((float) $this->refunded_amount, 2)));
+        }
+
+        return 0.0;
+    }
+
+    public function getEffectiveGrossAmount(): float
+    {
+        $state = $this->state instanceof SellState
+            ? $this->state
+            : SellState::tryFrom((string) $this->state);
+
+        $paymentStatus = $this->payment_status instanceof PaymentStatus
+            ? $this->payment_status
+            : PaymentStatus::tryFrom((string) $this->payment_status);
+
+        if ($state === SellState::CANCELLED || in_array($paymentStatus, [PaymentStatus::PENDING, PaymentStatus::REJECTED, PaymentStatus::REFUNDED], true)) {
+            return 0.0;
+        }
+
+        return max(0.0, round($this->getGrossAmount() - $this->getEffectiveRefundedAmount(), 2));
+    }
+
+    public function getEffectiveCommissionAmount(): float
+    {
+        $effectiveGross = $this->getEffectiveGrossAmount();
+        if ($effectiveGross <= 0) {
+            return 0.0;
+        }
+
+        $gross = $this->getGrossAmount();
+        if ($gross > 0 && abs($effectiveGross - $gross) < 0.01) {
+            return $this->getCommissionAmount();
+        }
+
+        $rate = (float) ($this->commission_percentage ?: config('services.mercadopago.commission_percentage', 15.0));
+
+        return round($effectiveGross * ($rate / 100), 2);
+    }
+
+    public function getEffectiveNetAmount(): float
+    {
+        $effectiveGross = $this->getEffectiveGrossAmount();
+        if ($effectiveGross <= 0) {
+            return 0.0;
+        }
+
+        return max(0.0, round($effectiveGross - $this->getEffectiveCommissionAmount(), 2));
     }
 
     /**

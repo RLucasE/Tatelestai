@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import axiosInstance from '@/lib/axios';
 import PurchaseCard from './PurchaseCard.vue';
 import QuickRatingModal from '@/components/common/QuickRatingModal.vue';
+import PurchaseClaimModal from '@/components/common/PurchaseClaimModal.vue';
 import { useNotificationStore } from '@/stores/notifications';
 
 const notificationStore = useNotificationStore();
@@ -48,6 +49,10 @@ const handleSortClickOutside = (event) => {
 const showRatingModal = ref(false);
 const selectedSellForRating = ref(null);
 const initialRatingValue = ref(0);
+
+// Modal de Reclamo
+const showClaimModal = ref(false);
+const selectedSellForClaim = ref(null);
 
 // Datos de demostración y fallback con paridad exacta a Figma
 const defaultActivePurchases = [
@@ -309,7 +314,11 @@ const filteredActivePurchases = computed(() => {
   if (activeTab.value === 'Retiradas') return [];
 
   let list = [...purchases.value].filter(
-    (p) => (!p.state || ACTIVE_STATES.includes(p.state)) && !p.is_picked_up
+    (p) =>
+      (!p.state || ACTIVE_STATES.includes(p.state)) &&
+      !p.is_picked_up &&
+      p.payment_status !== 'refunded' &&
+      p.payment_status !== 'partially_refunded'
   );
 
   // Filtrado por pestaña 'Listas para retirar' (únicamente las listas para retiro inmediato)
@@ -394,11 +403,13 @@ const filteredCompletedPurchases = computed(() => {
 
 // Total de packs rescatados en compras anteriores
 const totalHistoryPacksRescued = computed(() => {
-  return historyPurchases.value.reduce((acc, p) => {
-    const details = getPurchaseOffers(p);
-    const sum = details.reduce((s, d) => s + Number(d.offer_quantity || 1), 0);
-    return acc + (sum || 1);
-  }, 14); // Métrica base acumulada si inicia en 0
+  return historyPurchases.value
+    .filter((p) => p.payment_status !== 'refunded')
+    .reduce((acc, p) => {
+      const details = getPurchaseOffers(p);
+      const sum = details.reduce((s, d) => s + Number(d.offer_quantity || 1), 0);
+      return acc + (sum || 1);
+    }, 0);
 });
 
 // Formato de fecha para retirados
@@ -466,6 +477,34 @@ const handlePurchaseCancelled = (purchaseId) => {
   if (item) {
     item.state = 'cancelled';
   }
+};
+
+const openClaimModal = (purchase) => {
+  selectedSellForClaim.value = purchase;
+  showClaimModal.value = true;
+};
+
+const handleClaimSubmitted = (createdClaim) => {
+  const targetId = getPurchaseId(selectedSellForClaim.value);
+  const item = historyPurchases.value.find((p) => getPurchaseId(p) === targetId);
+  if (item) {
+    item.claim = createdClaim;
+    item.can_claim = false;
+  }
+  fetchPurchases(true);
+};
+
+const getClaimStatusLabel = (claim) => {
+  if (!claim) return '';
+  if (claim.status === 'pending') return 'Reclamo: Pendiente';
+  if (claim.status === 'under_review') return 'Reclamo: En revisión';
+  if (claim.status === 'approved') {
+    return claim.refund_type === 'partial'
+      ? 'Reclamo: Reembolso parcial'
+      : 'Reclamo: Reembolso total';
+  }
+  if (claim.status === 'rejected') return 'Reclamo: Rechazado';
+  return `Reclamo: ${claim.status}`;
 };
 
 // Sincronización en vivo ante notificaciones del vendedor
@@ -612,6 +651,7 @@ onUnmounted(() => {
               :purchase="purchase"
               :default-expanded="index === 0"
               @cancelled="handlePurchaseCancelled"
+              @claim-created="fetchPurchases(true)"
             />
           </div>
         </section>
@@ -713,8 +753,8 @@ onUnmounted(() => {
                   </span>
                 </div>
 
-                <!-- Bloque de Calificación con 5 Estrellas en Píldora/Contenedor Figma -->
-                <div class="pt-2">
+                <!-- Bloque de Calificación y Reclamo -->
+                <div class="pt-2 flex flex-col items-end gap-2">
                   <!-- Caso 1: Ya fue calificado -->
                   <div
                     v-if="getPurchaseRating(completed)"
@@ -756,6 +796,43 @@ onUnmounted(() => {
                         </svg>
                       </button>
                     </div>
+                  </div>
+
+                  <!-- Estado de Reembolso / Reclamo -->
+                  <div class="flex flex-wrap items-center justify-end gap-2">
+                    <span
+                      v-if="completed.payment_status === 'refunded'"
+                      class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-danger/15 text-danger border border-danger/30"
+                    >
+                      Reembolsado
+                    </span>
+                    <span
+                      v-else-if="completed.payment_status === 'partially_refunded'"
+                      class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-warning/15 text-brand border border-warning/30"
+                    >
+                      Reembolso parcial (${{ Number(completed.refunded_amount || 0).toLocaleString('es-AR') }})
+                    </span>
+                    <span
+                      v-if="completed.claim"
+                      class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                      :class="
+                        completed.claim.status === 'approved'
+                          ? 'bg-success/15 text-success border-success/30'
+                          : completed.claim.status === 'rejected'
+                            ? 'bg-danger/15 text-danger border-danger/30'
+                            : 'bg-warning/15 text-brand border-warning/30'
+                      "
+                    >
+                      {{ getClaimStatusLabel(completed.claim) }}
+                    </span>
+                    <button
+                      v-else-if="completed.can_claim"
+                      type="button"
+                      class="inline-flex items-center px-3 py-1 rounded-[10px] text-xs font-bold text-danger bg-danger/10 hover:bg-danger/20 border border-danger/30 transition cursor-pointer"
+                      @click="openClaimModal(completed)"
+                    >
+                      Hacer reclamo
+                    </button>
                   </div>
                 </div>
               </div>
@@ -799,6 +876,14 @@ onUnmounted(() => {
       :establishment-name="selectedSellForRating?.establishment?.name"
       :initial-rating="initialRatingValue"
       @reviewed="handleRatingSubmitted"
+    />
+
+    <!-- Modal de Reclamo -->
+    <PurchaseClaimModal
+      v-model="showClaimModal"
+      :sell-id="getPurchaseId(selectedSellForClaim) || 0"
+      :establishment-name="selectedSellForClaim?.establishment?.name || 'el comercio'"
+      @submitted="handleClaimSubmitted"
     />
   </div>
 </template>

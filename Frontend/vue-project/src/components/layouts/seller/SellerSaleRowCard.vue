@@ -81,7 +81,12 @@ const pickupWindowText = computed(() => {
 });
 
 const grossAmount = computed(() => {
-  if (props.sale.gross_amount !== undefined) return Number(props.sale.gross_amount);
+  if (props.sale.effective_gross_amount !== undefined && props.sale.effective_gross_amount !== null) {
+    return Number(props.sale.effective_gross_amount);
+  }
+  if (props.sale.gross_amount !== undefined) {
+    return Math.max(0, Number(props.sale.gross_amount) - Number(props.sale.refunded_amount || 0));
+  }
   if (props.sale.total_price !== undefined) return Number(props.sale.total_price);
   const details = props.sale.sell_details || props.sale.packs || [];
   return details.reduce((sum, item) => {
@@ -92,12 +97,16 @@ const grossAmount = computed(() => {
 });
 
 const commissionAmount = computed(() => {
-  if (props.sale.commission_amount !== undefined) return Number(props.sale.commission_amount);
+  if (props.sale.commission_amount !== undefined && props.sale.commission_amount !== null) {
+    return Number(props.sale.commission_amount);
+  }
   return Math.round(grossAmount.value * 0.15);
 });
 
 const netAmount = computed(() => {
-  if (props.sale.net_amount !== undefined) return Number(props.sale.net_amount);
+  if (props.sale.net_amount !== undefined && props.sale.net_amount !== null) {
+    return Number(props.sale.net_amount);
+  }
   return Math.max(0, grossAmount.value - commissionAmount.value);
 });
 
@@ -107,6 +116,14 @@ const isPickedUp = computed(() => {
 
 const isCancelled = computed(() => {
   return props.sale.state === 'cancelled' || props.sale.status === 'cancelled';
+});
+
+const isRefunded = computed(() => {
+  return props.sale.payment_status === 'refunded';
+});
+
+const isPartiallyRefunded = computed(() => {
+  return props.sale.payment_status === 'partially_refunded';
 });
 
 const isExpired = computed(() => {
@@ -120,14 +137,19 @@ const isExpired = computed(() => {
 
 const statusLabel = computed(() => {
   if (isCancelled.value) return 'Reembolsado';
+  if (isRefunded.value) return 'Reembolsado por reclamo';
+  if (isPartiallyRefunded.value) return 'Reembolso parcial';
   if (isPickedUp.value) return 'Retirado';
   if (isExpired.value) return 'Expirado';
   return 'Pendiente';
 });
 
 const statusPillClass = computed(() => {
-  if (isCancelled.value || isExpired.value) {
+  if (isCancelled.value || isExpired.value || isRefunded.value) {
     return 'bg-danger/14 text-danger';
+  }
+  if (isPartiallyRefunded.value) {
+    return 'bg-warning/14 text-brand';
   }
   if (isPickedUp.value) {
     return 'bg-content/8 text-content';
@@ -194,12 +216,24 @@ const statusPillClass = computed(() => {
     </div>
 
     <!-- SaleStatusPill -->
-    <div class="shrink-0">
+    <div class="shrink-0 flex flex-col items-start lg:items-end gap-1">
       <span
         class="inline-flex items-center px-3.5 py-1.5 rounded-full text-[12px] font-bold"
         :class="statusPillClass"
       >
         {{ statusLabel }}
+      </span>
+      <span
+        v-if="Number(sale.refunded_amount || 0) > 0 && !isCancelled"
+        class="text-[11px] font-medium text-danger"
+      >
+        Reembolsado: -${{ formatCurrency(sale.refunded_amount) }}
+      </span>
+      <span
+        v-if="sale.claim?.status_label"
+        class="text-[11px] font-medium text-content-secondary"
+      >
+        Reclamo: {{ sale.claim.status_label }}
       </span>
     </div>
   </div>
